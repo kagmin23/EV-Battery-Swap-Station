@@ -1,5 +1,6 @@
 
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigation } from 'expo-router';
 import {
   View,
   Text,
@@ -8,30 +9,50 @@ import {
   SafeAreaView,
   TouchableOpacity,
   TextInput,
+  Pressable,
+  Animated,
+  PanResponder,
+  Linking,
+  Platform,
 } from 'react-native';
-import MapComponent from '../driver/component/MapComponent';
+import MapComponent, { MapComponentHandle } from '../driver/component/MapComponent';
 import { Ionicons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const SearchAndFilterBar: React.FC = () => {
-
+  const filterChips = [
+    { label: '0—350+', icon: 'flash', color: '#6d4aff' },
+    { label: 'Rapid', icon: 'flash', color: '#6d4aff' },
+    { label: 'Ultra', icon: 'flash', color: '#6d4aff' },
+  ];
 
   return (
     <View style={styles.searchBarContainer}>
       <View style={styles.searchInputWrapper}>
-        <Ionicons name="search-outline" size={28} color="#fff" style={styles.searchIcon} />
+        <Ionicons name="search-outline" size={20} color="#fff" style={styles.searchIcon} />
         <TextInput
           placeholder="Search location"
-          placeholderTextColor="#463c5d"
+          placeholderTextColor="#8b7bb8"
           style={styles.searchInput}
         />
       </View>
 
+      <View style={styles.filterChipsContainer}>
+        <TouchableOpacity style={styles.filterButton}>
+          <Ionicons name="options-outline" size={18} color="white" style={styles.listIcon} />
+        </TouchableOpacity>
+        {filterChips.map((chip, index) => (
+          <TouchableOpacity key={index} style={[styles.categoryChip, { backgroundColor: chip.color }]}>
+            <Ionicons name={chip.icon as any} size={14} color="white" style={styles.categoryIcon} />
+            <Text style={styles.categoryLabel}>{chip.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 };
-const FloatingActionButtons: React.FC = () => {
+const FloatingActionButtons: React.FC<{ onNavigatePress?: () => void }> = ({ onNavigatePress }) => {
   const buttons = [
 
     { name: 'list-sharp', bgColor: '#0e012f' },
@@ -45,6 +66,7 @@ const FloatingActionButtons: React.FC = () => {
           key={index}
           style={[styles.fabButton, { backgroundColor: btn.bgColor }]}
           accessibilityLabel={btn.name}
+          onPress={btn.name === 'navigate-outline' ? onNavigatePress : undefined}
         >
           <Ionicons name={btn.name as keyof typeof Ionicons.glyphMap} color="white" size={24} />
         </TouchableOpacity>
@@ -55,28 +77,190 @@ const FloatingActionButtons: React.FC = () => {
 
 
 const LocationSation: React.FC = () => {
+  const mapRef = useRef<MapComponentHandle>(null);
+  const [selectedStation, setSelectedStation] = useState<any | null>(null);
+  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
+  const sheetY = useRef(new Animated.Value(height)).current; // start off-screen
+  const startOffsetRef = useRef(0);
+  const navigation = useNavigation<any>();
+
+  const handleNavigatePress = () => {
+    if (!selectedStation) return;
+    const { latitude, longitude, title } = selectedStation;
+    const label = encodeURIComponent(title || 'Destination');
+    const scheme = Platform.select({ ios: 'maps:0,0?q=', android: 'geo:0,0?q=' });
+    const latLng = `${latitude},${longitude}`;
+    const url = Platform.select({
+      ios: `${scheme}${label}@${latLng}`,
+      android: `${scheme}${latLng}(${label})`
+    });
+    if (url) {
+      Linking.openURL(url).catch(() => {
+        console.log('Could not open maps app');
+      });
+    }
+  };
+
+  const PEEK_OFFSET = Math.max(160, Math.floor(height * 0.45));
+
+  const openTo = useCallback((to: number) => {
+    Animated.spring(sheetY, { toValue: to, useNativeDriver: true, bounciness: 0, speed: 18 }).start();
+  }, [sheetY]);
+
+  useEffect(() => {
+    if (selectedStation) {
+      sheetY.setValue(height);
+      setTimeout(() => openTo(0), 0);
+      setIsSheetExpanded(true);
+    }
+  }, [selectedStation, sheetY, PEEK_OFFSET, openTo]);
+
+  // Hide bottom tab bar while sheet is visible
+  useEffect(() => {
+    // expo-router Tabs parent
+    if (selectedStation) {
+      navigation.setOptions({ tabBarStyle: { display: 'none' } });
+    } else {
+      // Restore original tab bar style from _layout.tsx
+      navigation.setOptions({
+        tabBarStyle: {
+          position: 'absolute',
+          bottom: 0,
+          backgroundColor: '#190d35',
+          height: 80,
+          paddingTop: 8,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          shadowColor: '#FF74E2',
+          shadowOffset: { width: 0, height: -5 },
+          shadowOpacity: 1,
+          shadowRadius: 15,
+          elevation: 20,
+          borderTopWidth: 0,
+        }
+      });
+    }
+  }, [navigation, selectedStation]);
+
+  const panResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onPanResponderGrant: () => {
+      // @ts-ignore private API to fetch current value synchronously
+      startOffsetRef.current = (sheetY as any)._value ?? PEEK_OFFSET;
+    },
+    onPanResponderMove: (_evt, gesture) => {
+      const next = Math.min(Math.max(0, startOffsetRef.current + gesture.dy), height);
+      sheetY.setValue(next);
+    },
+    onPanResponderRelease: (_evt, gesture) => {
+      // decide snap
+      // @ts-ignore
+      const current = (sheetY as any)._value ?? PEEK_OFFSET;
+      if (gesture.vy < -0.5 || gesture.dy < -30 || current < PEEK_OFFSET * 0.8) {
+        openTo(0); // expand
+        setIsSheetExpanded(true);
+        return;
+      }
+      if (gesture.vy > 1.0 || current > PEEK_OFFSET + 120) {
+        // close
+        openTo(height);
+        setTimeout(() => setSelectedStation(null), 180);
+        setIsSheetExpanded(false);
+        return;
+      }
+      openTo(PEEK_OFFSET); // snap to peek
+      setIsSheetExpanded(false);
+    },
+  }), [sheetY, PEEK_OFFSET, openTo]);
 
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.appContainer}>
-        <View style={styles.statusBar}>
-          <Text style={styles.statusBarText}>11:42</Text>
-          <Text style={styles.statusBarText}>5G 🔋</Text>
-        </View>
 
         <MapComponent
+          ref={mapRef}
           style={styles.mapContainer}
           onStationSelect={(station) => {
-            console.log('Selected station:', station);
+            setSelectedStation(station);
           }}
         />
 
-        <FloatingActionButtons />
+        {!isSheetExpanded && (
+          <FloatingActionButtons onNavigatePress={() => mapRef.current?.centerOnUser()} />
+        )}
 
-        <SearchAndFilterBar />
+        {!isSheetExpanded && <SearchAndFilterBar />}
+
+        {selectedStation && (
+          <>
+            {isSheetExpanded && (
+              <Pressable style={styles.scrim} onPress={() => { openTo(height); setTimeout(() => setSelectedStation(null), 180); }} />
+            )}
+            <Animated.View style={[styles.sheetContainer, { transform: [{ translateY: sheetY }] }]}>
+              <View style={styles.dragHandle} {...panResponder.panHandlers}>
+                <View style={styles.dragGrip} />
+              </View>
+              <View style={styles.sheetHeader}>
+                <Text style={styles.sheetTitle}>EV Battery Swap Station</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <View style={{ borderRadius: 20, padding: 4 }}>
+                    <Ionicons name="star-outline" size={20} color="#bfa8ff" />
+                  </View>
+                  <View style={{ backgroundColor: '#6d4aff', borderRadius: 20, padding: 4 }}>
+                    <Ionicons name="ellipsis-horizontal" size={20} color="#bfa8ff" />
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.statRow}>
+                <View style={styles.statBox}>
+                  <Ionicons name="battery-charging-outline" size={16} color="#bfa8ff" />
+                  <Text style={styles.statValue}>{selectedStation.availableBatteries}</Text>
+                  <Text style={styles.statLabel}>Available </Text>
+                </View>
+                <View style={styles.statBox}>
+                  <Ionicons name="albums-outline" size={16} color="#bfa8ff" />
+                  <Text style={styles.statValue}>{selectedStation.totalBatteries}</Text>
+                  <Text style={styles.statLabel}>Total Slots</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <View style={[styles.statusDot, { backgroundColor: selectedStation.status === 'available' ? '#22c55e' : selectedStation.status === 'busy' ? '#facc15' : '#ef4444' }]} />
+                  <Text style={styles.statValue}>{selectedStation.status.charAt(0).toUpperCase() + selectedStation.status.slice(1)}</Text>
+                  <Text style={styles.statLabel}>Status</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={() => {
+                  // Giả lập chuyển trang: ví dụ chuyển sang màn hình "SwapBattery"
+                  // navigation.navigate('SwapBattery');
+                  alert('Chuyển Booking ');
+                }}
+              >
+                <Text style={styles.primaryButtonText}>Swap Battery</Text>
+              </TouchableOpacity>
+
+              <View style={styles.addressRow}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    style={styles.addressText}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {selectedStation.title}, {selectedStation.description}
+                  </Text>
+                </View>
+                <TouchableOpacity style={styles.roundIconButton} onPress={handleNavigatePress}>
+                  <Ionicons name="return-up-forward-sharp" size={18} color="#d6c7ff" />
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+          </>
+        )}
       </View>
-    </SafeAreaView>
+    </SafeAreaView >
   );
 };
 
@@ -140,49 +324,49 @@ const styles = StyleSheet.create({
     margin: 0,
   },
   filterChipsContainer: {
-    paddingBottom: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 8,
     gap: 8,
   },
   filterButton: {
-    backgroundColor: '#0e012f',
-    borderRadius: 8,
-    padding: 8,
-    height: 40,
-    width: 40,
+    backgroundColor: '#1a0f3e',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    height: 36,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
   },
   listIcon: {
-    transform: [{ rotate: '90deg' }],
+    color: 'white',
   },
   categoryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 8,
+    backgroundColor: '#1a0f3e',
+    borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    height: 40,
+    height: 36,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 5,
-    marginRight: 8,
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
   },
   categoryIcon: {
-    fontSize: 18,
     marginRight: 4,
-    lineHeight: 20,
   },
   categoryLabel: {
     color: 'white',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 13,
   },
   fabContainer: {
     position: 'absolute',
@@ -230,6 +414,15 @@ const styles = StyleSheet.create({
     elevation: 20,
     zIndex: 30,
   },
+  scrim: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    zIndex: 45,
+  },
   navItemButton: {
     flex: 1,
     flexDirection: 'column',
@@ -251,6 +444,103 @@ const styles = StyleSheet.create({
   },
   navItemLabelInactive: {
     color: '#A063FE',
+  },
+  sheetContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#120935',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 32,
+    gap: 12,
+    zIndex: 50,
+  },
+  dragHandle: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  dragGrip: {
+    width: 48,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#3b2c66',
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sheetTitle: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  statBox: {
+    flex: 1,
+    backgroundColor: '#0b0624',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    gap: 4,
+  },
+  statValue: {
+    color: 'white',
+    fontWeight: '700',
+  },
+  statLabel: {
+    color: '#bfa8ff',
+    fontSize: 12,
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#22c55e',
+  },
+  primaryButton: {
+    backgroundColor: '#6d4aff',
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  primaryButtonText: {
+    color: 'white',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  addressRow: {
+    marginTop: 4,
+    backgroundColor: '#0b0624',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  addressText: {
+    color: 'white',
+    fontWeight: '700',
+  },
+  roundIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#6d4aff',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

@@ -1,8 +1,6 @@
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Tabs } from 'expo-router';
 import React from 'react';
-
-import { Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
 
@@ -12,8 +10,6 @@ export default function TabLayout() {
         tabBarActiveTintColor: '#FF74E2', // Pink color for active tab
         tabBarInactiveTintColor: '#A063FE', // Purple color for inactive tab
         headerShown: false,
-        // tabBarButton: HapticTab,
-        // tabBarBackground: TabBarBackground,
         tabBarStyle: {
           position: 'absolute',
           bottom: 0,
@@ -43,9 +39,9 @@ export default function TabLayout() {
         options={{
           title: 'Map',
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol
+            <Ionicons
               size={focused ? 28 : 24}
-              name="house.fill"
+              name={focused ? "map" : "map-outline"}
               color={color}
             />
           ),
@@ -56,14 +52,28 @@ export default function TabLayout() {
         options={{
           title: 'Activity',
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol
+            <Ionicons
               size={focused ? 28 : 24}
-              name="paperplane.fill"
+              name={focused ? "rocket" : "rocket-outline"}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              size={focused ? 28 : 24}
+              name={focused ? "person" : "person-outline"}
               color={color}
             />
           ),
         }}
       />
     </Tabs>
+
   );
 }
