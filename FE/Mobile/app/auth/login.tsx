@@ -1,19 +1,39 @@
+import { useAuth } from '@/features/auth/context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    SafeAreaView,
-    TouchableOpacity,
-    StatusBar,
+    ActivityIndicator,
     Image,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 const loginPic = require('../../assets/images/loginPic2.png');
 
 const LoginScreen: React.FC = () => {
     const [showEmailLogin, setShowEmailLogin] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const { login, loading } = useAuth();
+    const router = useRouter();
+
+    const handleSubmit = async () => {
+        if (!email || !password) return;
+        setSubmitting(true);
+        try {
+            await login(email, password);
+            router.replace('/(tabs)');
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -66,21 +86,59 @@ const LoginScreen: React.FC = () => {
                 {/* Login Options */}
                 <View style={styles.loginOptions}>
                     {/* Google Login */}
-                    <TouchableOpacity style={styles.loginButton}>
+                    <TouchableOpacity style={styles.loginButton} disabled={loading || submitting}>
                         <Ionicons name="logo-google" size={20} color="#4285F4" />
                         <Text style={styles.loginButtonText}>Continue with Google</Text>
                     </TouchableOpacity>
 
                     {/* Email Login */}
-                    <TouchableOpacity
-                        style={[styles.loginButton, styles.emailButton]}
-                        onPress={() => setShowEmailLogin(true)}
-                    >
-                        <Ionicons name="mail" size={20} color="white" />
-                        <Text style={[styles.loginButtonText, styles.emailButtonText]}>
-                            Continue with email
-                        </Text>
-                    </TouchableOpacity>
+                    {showEmailLogin ? (
+                        <View style={styles.emailLoginContainer}>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Email"
+                                placeholderTextColor="#a0a0a0"
+                                autoCapitalize="none"
+                                keyboardType="email-address"
+                                value={email}
+                                onChangeText={setEmail}
+                            />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Password"
+                                placeholderTextColor="#a0a0a0"
+                                secureTextEntry
+                                value={password}
+                                onChangeText={setPassword}
+                            />
+                            <TouchableOpacity
+                                style={[styles.loginButton, styles.emailButton, { marginBottom: 0 }]}
+                                onPress={handleSubmit}
+                                disabled={submitting || loading}
+                            >
+                                {submitting ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <>
+                                        <Ionicons name="mail" size={20} color="white" />
+                                        <Text style={[styles.loginButtonText, styles.emailButtonText]}>
+                                            Login
+                                        </Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <TouchableOpacity
+                            style={[styles.loginButton, styles.emailButton]}
+                            onPress={() => setShowEmailLogin(true)}
+                        >
+                            <Ionicons name="mail" size={20} color="white" />
+                            <Text style={[styles.loginButtonText, styles.emailButtonText]}>
+                                Continue with email
+                            </Text>
+                        </TouchableOpacity>
+                    )}
 
                     {/* Divider */}
                     <View style={styles.dividerContainer}>
@@ -282,6 +340,13 @@ const styles = StyleSheet.create({
     loginOptions: {
         marginBottom: 30,
     },
+    emailLoginContainer: {
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        padding: 16,
+        borderRadius: 20,
+        marginBottom: 12,
+        gap: 12,
+    },
     loginButton: {
         backgroundColor: 'white',
         borderRadius: 25,
@@ -302,6 +367,16 @@ const styles = StyleSheet.create({
     },
     emailButton: {
         backgroundColor: '#6d4aff',
+    },
+    input: {
+        backgroundColor: '#140a30',
+        borderRadius: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        color: 'white',
+        fontSize: 15,
+        borderWidth: 1,
+        borderColor: '#2a1f4d',
     },
     loginButtonText: {
         fontSize: 16,
