@@ -1,27 +1,41 @@
+import { useState } from "react";
 import { mockBatteries } from "../../../mock/BatteryData";
 import SearchBar from "../components/SearchBar";
 import ActionMenu from "../components/ActionMenu";
 import { Plus } from "lucide-react";
+import Pagination from "../components/Pagination";
 
 export default function Dashboard() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Calculate pagination
+  const totalItems = mockBatteries.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentBatteries = mockBatteries.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
   const handleEdit = (id: string) => {
     console.log("Edit battery:", id);
-   
   };
 
   const handleDelete = (id: string) => {
     console.log("Delete battery:", id);
-    
   };
 
   const handleView = (id: string) => {
     console.log("View battery:", id);
-    
   };
 
   const handleAddBattery = () => {
     console.log("Add new battery");
-  
   };
 
   return (
@@ -82,7 +96,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-neutral-700">
-                {mockBatteries.map((battery) => (
+                {currentBatteries.map((battery) => (
                   <tr key={battery.battery_id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-neutral-200">{battery.battery_id}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-neutral-200">{battery.battery_model}</td>
@@ -102,9 +116,17 @@ export default function Dashboard() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+          />
         </div>
       </div>
     </div>
+    <div></div>
     </>
   );
 }
