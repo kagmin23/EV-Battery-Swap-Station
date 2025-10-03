@@ -1,6 +1,7 @@
-import { useAuth } from '@/features/auth/context/AuthContext';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useAuth } from '@/features/auth/context/AuthContext';
 
 export default function HomeScreen() {
   const { user, logout, loading } = useAuth();

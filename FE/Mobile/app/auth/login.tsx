@@ -21,15 +21,22 @@ const LoginScreen: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const { login, loading } = useAuth();
     const router = useRouter();
 
     const handleSubmit = async () => {
-        if (!email || !password) return;
+        if (!email || !password) {
+            setError('Vui lòng nhập email và mật khẩu');
+            return;
+        }
         setSubmitting(true);
         try {
+            setError(null);
             await login(email, password);
             router.replace('/(tabs)');
+        } catch (e: any) {
+            setError(e?.message || 'Đăng nhập thất bại');
         } finally {
             setSubmitting(false);
         }
@@ -111,6 +118,9 @@ const LoginScreen: React.FC = () => {
                                 value={password}
                                 onChangeText={setPassword}
                             />
+                            {error && (
+                                <Text style={styles.errorText}>{error}</Text>
+                            )}
                             <TouchableOpacity
                                 style={[styles.loginButton, styles.emailButton, { marginBottom: 0 }]}
                                 onPress={handleSubmit}
@@ -432,6 +442,13 @@ const styles = StyleSheet.create({
     linkText: {
         color: '#6d4aff',
         fontWeight: '600',
+    },
+    errorText: {
+        color: '#ff6b6b',
+        fontSize: 13,
+        marginTop: -4,
+        marginBottom: 4,
+        fontWeight: '500',
     },
 });
 

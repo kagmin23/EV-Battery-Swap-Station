@@ -49,16 +49,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [restore]);
 
   const login = async (email: string, password: string) => {
-    // TODO: replace with real API call
     setLoading(true);
     try {
-      // Simulate request delay
-      await new Promise(r => setTimeout(r, 800));
-      const fakeToken = 'demo-token';
-      const fakeUser: AuthUser = { id: '1', email, name: 'Demo User' };
+      await new Promise(r => setTimeout(r, 600));
+
+      // Hardcoded credential (can extend to a small map later)
+      const HARD_EMAIL = 'demo@ev.com';
+      const HARD_PASSWORD = '123123';
+
+      if (email.trim().toLowerCase() !== HARD_EMAIL || password !== HARD_PASSWORD) {
+        throw new Error('Sai tài khoản hoặc mật khẩu');
+      }
+
+      const fakeToken = 'hard-token-123';
+      const hardUser: AuthUser = { id: '1', email: HARD_EMAIL, name: 'EV Driver', role: 'driver' };
       await AsyncStorage.setItem(TOKEN_KEY, fakeToken);
-      await AsyncStorage.setItem(USER_KEY, JSON.stringify(fakeUser));
-      setUser(fakeUser);
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(hardUser));
+      setUser(hardUser);
     } finally {
       setLoading(false);
     }
