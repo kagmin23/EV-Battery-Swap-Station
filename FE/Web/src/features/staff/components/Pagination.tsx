@@ -75,16 +75,7 @@ export default function Pagination({
     : 0;
 
   return (
-    <div className="flex items-center justify-between py-4">
-      {/* Items info */}
-      {totalItems && (
-        <div className="text-sm text-gray-700 dark:text-neutral-300">
-          Showing <span className="font-medium">{startItem}</span> to{" "}
-          <span className="font-medium">{endItem}</span> of{" "}
-          <span className="font-medium">{totalItems}</span> results
-        </div>
-      )}
-
+    <div className="flex flex-col items-center py-4 gap-3">
       {/* Pagination */}
       <nav className="flex items-center -space-x-px" aria-label="Pagination">
         <button
@@ -138,6 +129,15 @@ export default function Pagination({
           <ChevronRight className="w-4 h-4" />
         </button>
       </nav>
+
+      {/* Items info */}
+      {totalItems && (
+        <div className="text-sm text-gray-700 dark:text-neutral-300">
+          Showing <span className="font-medium">{startItem}</span> to{" "}
+          <span className="font-medium">{endItem}</span> of{" "}
+          <span className="font-medium">{totalItems}</span> results
+        </div>
+      )}
     </div>
   );
 }
