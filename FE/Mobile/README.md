@@ -48,3 +48,34 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+## Auth & Navigation Structure (Customized)
+
+The app now starts at the login screen by default. Authentication state is managed via a lightweight context with AsyncStorage-backed token persistence (placeholder implementation).
+
+Key behaviors:
+
+- Unauthenticated: Only auth screens (`/auth/login`, `/auth/register`, `/auth/forgot-password`) are mounted.
+- Authenticated: Tab navigator (`/(tabs)`) is mounted; auth screens unmounted.
+- Root path (`/`) redirects dynamically based on auth state.
+- Simple email/password form triggers `login()` and redirects to `/(tabs)`.
+
+Important files:
+
+| File | Role |
+|------|------|
+| `app/_layout.tsx` | Wraps the app with `AuthProvider` and conditionally renders stacks. |
+| `app/index.tsx` | Redirect logic for initial load. |
+| `features/auth/context/AuthContext.tsx` | Auth context + login/logout/restore methods. |
+| `app/auth/login.tsx` | Enhanced login UI with email/password form. |
+| `app/auth/register.tsx` | Placeholder register screen. |
+| `app/auth/forgot-password.tsx` | Placeholder forgot password screen. |
+
+Planned next improvements (optional):
+
+1. Replace fake login with real API and error handling.
+2. Add splash/loading component while restoring session.
+3. Implement register & password reset flows.
+4. Add role-based access control for tabs (driver/admin/staff).
+5. Centralize API layer + token refresh logic.
+

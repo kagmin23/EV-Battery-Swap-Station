@@ -1,0 +1,432 @@
+import React from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    SafeAreaView,
+    TouchableOpacity,
+    ScrollView,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const ProfileScreen: React.FC = () => {
+    return (
+        <SafeAreaView style={styles.container}>
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                <LinearGradient
+                    colors={['#6d4aff', '#ff74e2']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.greetingCard}
+                >
+                    <View style={styles.avatarContainer}>
+                        <View style={styles.avatar}>
+                            <Ionicons name="person" size={40} color="#d6d6d6" />
+                        </View>
+                    </View>
+                    <Text style={styles.greeting}>Hi John!</Text>
+                </LinearGradient>
+
+                {/* Account Card */}
+                <TouchableOpacity style={styles.actionCard}>
+                    <View style={styles.iconContainer}>
+                        <Ionicons name="person" size={24} color="#6d4aff" />
+                        <View style={styles.iconBadge}>
+                            <Ionicons name="settings" size={12} color="#6d4aff" />
+                        </View>
+                        <View style={styles.iconDecor}>
+                            <Ionicons name="heart" size={8} color="#ff69b4" />
+                        </View>
+                        <View style={styles.iconStar}>
+                            <Ionicons name="star" size={8} color="#ffd700" />
+                        </View>
+                    </View>
+                    <View style={styles.cardContent}>
+                        <Text style={styles.cardTitle}>Account</Text>
+                        <Text style={styles.cardSubtitle}>Manage my account</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="white" />
+                </TouchableOpacity>
+
+                {/* Add EV Card */}
+                <TouchableOpacity style={styles.actionCard}>
+                    <View style={styles.dashedIconContainer}>
+                        <Ionicons name="car" size={24} color="#6d4aff" />
+                        <View style={styles.plusIcon}>
+                            <Ionicons name="add" size={12} color="#6d4aff" />
+                        </View>
+                    </View>
+                    <View style={styles.cardContent}>
+                        <Text style={styles.cardTitle}>Add your EV</Text>
+                        <Text style={styles.cardSubtitle}>Personalise your app by adding</Text>
+                        <Text style={styles.cardSubtitle}>your EV!</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="white" />
+                </TouchableOpacity>
+
+                {/* Electrocard Card */}
+                <TouchableOpacity style={styles.actionCard}>
+                    <View style={styles.dashedIconContainer}>
+                        <Ionicons name="card" size={24} color="#6d4aff" />
+                        <View style={styles.plusIcon}>
+                            <Ionicons name="add" size={12} color="#6d4aff" />
+                        </View>
+                    </View>
+                    <View style={styles.cardContent}>
+                        <Text style={styles.cardTitle}>Add your Bank</Text>
+                        <Text style={styles.cardSubtitle}>
+                            Link your bank account to enable seamless payments and manage your transactions easily.
+                        </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="white" />
+                </TouchableOpacity>
+
+                {/* Current Subscription Plan */}
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Current Subscription Plan</Text>
+                </View>
+
+                <TouchableOpacity style={styles.subscriptionCard}>
+                    <View style={styles.subscriptionIcon}>
+                        <Ionicons name="battery-charging" size={24} color="#00d4aa" />
+                    </View>
+                    <View style={styles.subscriptionContent}>
+                        <Text style={styles.subscriptionTitle}>Premium Battery Plan</Text>
+                        <Text style={styles.subscriptionSubtitle}>Unlimited swaps • Priority access</Text>
+                        <Text style={styles.subscriptionPrice}>₫299,000/tháng</Text>
+                        <View style={styles.subscriptionStatus}>
+                            <View style={styles.activeIndicator} />
+                            <Text style={styles.statusText}>Active</Text>
+                        </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="white" />
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.subscriptionCard}>
+                    <View style={styles.subscriptionIcon}>
+                        <Ionicons name="time" size={24} color="#6d4aff" />
+                    </View>
+                    <View style={styles.subscriptionContent}>
+                        <Text style={styles.subscriptionTitle}>Battery Rental History</Text>
+                        <Text style={styles.subscriptionSubtitle}>View previously used plans</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="white" />
+                </TouchableOpacity>
+
+                <View style={styles.socialIconsContainer}>
+                    <TouchableOpacity style={styles.socialIconButton}>
+                        <Ionicons name="logo-linkedin" size={24} color="white" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.socialIconButton}>
+                        <Ionicons name="logo-twitter" size={24} color="white" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.socialIconButton}>
+                        <Ionicons name="logo-facebook" size={24} color="white" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.socialIconButton}>
+                        <Ionicons name="logo-instagram" size={24} color="white" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.socialIconButton}>
+                        <Ionicons name="logo-youtube" size={24} color="white" />
+                    </TouchableOpacity>
+                </View>
+
+                {/* App Info */}
+                <View style={styles.appInfo}>
+                    <Text style={styles.appVersion}>EV Battery Swap v1.0.0</Text>
+                    <Text style={styles.appCopyright}>© 2025 EV Battery Solutions</Text>
+                </View>
+            </ScrollView>
+        </SafeAreaView>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#0a0520',
+    },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        paddingHorizontal: 20,
+        paddingTop: 20,
+        paddingBottom: 100,
+    },
+    greetingCard: {
+
+        borderRadius: 20,
+        padding: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    avatarContainer: {
+        marginRight: 16,
+    },
+    avatar: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: 'white',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    greeting: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: 'white',
+    },
+    actionCard: {
+        backgroundColor: '#1a0f3e',
+        borderRadius: 16,
+        padding: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    progressCircle: {
+        width: 50,
+        height: 50,
+        marginRight: 16,
+        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    progressBar: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        borderWidth: 4,
+        borderColor: '#333',
+        position: 'absolute',
+    },
+    progressFill: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        borderWidth: 4,
+        borderColor: 'transparent',
+        borderTopColor: '#ff6b6b',
+        borderRightColor: '#ff6b6b',
+        transform: [{ rotate: '-90deg' }],
+    },
+    progressText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: 'white',
+    },
+    iconContainer: {
+        width: 50,
+        height: 50,
+        marginRight: 16,
+        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#2a1f4e',
+        borderRadius: 12,
+    },
+    iconBadge: {
+        position: 'absolute',
+        bottom: -2,
+        right: -2,
+        backgroundColor: '#2a1f4e',
+        borderRadius: 8,
+        padding: 2,
+    },
+    iconDecor: {
+        position: 'absolute',
+        top: -4,
+        right: 8,
+    },
+    iconStar: {
+        position: 'absolute',
+        top: 2,
+        left: -4,
+    },
+    dashedIconContainer: {
+        width: 50,
+        height: 50,
+        marginRight: 16,
+        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: '#6d4aff',
+        borderRadius: 12,
+        borderStyle: 'dashed',
+    },
+    plusIcon: {
+        position: 'absolute',
+        bottom: -4,
+        right: -4,
+        backgroundColor: '#1a0f3e',
+        borderRadius: 8,
+        padding: 2,
+    },
+    cardContent: {
+        flex: 1,
+    },
+    cardTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: 'white',
+        lineHeight: 22,
+    },
+    cardSubtitle: {
+        fontSize: 14,
+        color: '#a0a0a0',
+        lineHeight: 18,
+    },
+    creditsContainer: {
+        marginTop: 20,
+        marginBottom: 16,
+    },
+    creditsLabel: {
+        fontSize: 16,
+        color: '#a0a0a0',
+        marginBottom: 8,
+    },
+    creditsAmount: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: '#00d4aa',
+    },
+    redeemCard: {
+        backgroundColor: '#1a0f3e',
+        borderRadius: 16,
+        padding: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 40,
+    },
+    redeemIcon: {
+        width: 40,
+        height: 40,
+        backgroundColor: '#6d4aff',
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 16,
+    },
+    redeemText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: 'white',
+        flex: 1,
+    },
+    sectionHeader: {
+        marginTop: 30,
+        marginBottom: 16,
+    },
+    sectionTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#a0a0a0',
+
+    },
+    subscriptionCard: {
+        backgroundColor: '#1a0f3e',
+        borderRadius: 16,
+        padding: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    subscriptionIcon: {
+        width: 50,
+        height: 50,
+        backgroundColor: '#2a1f4e',
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 16,
+    },
+    subscriptionContent: {
+        flex: 1,
+    },
+    subscriptionTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: 'white',
+        marginBottom: 4,
+    },
+    subscriptionSubtitle: {
+        fontSize: 14,
+        color: '#a0a0a0',
+        marginBottom: 6,
+    },
+    subscriptionPrice: {
+        fontSize: 15,
+        fontWeight: 'bold',
+        color: '#00d4aa',
+        marginBottom: 8,
+    },
+    subscriptionStatus: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    activeIndicator: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#00d4aa',
+        marginRight: 6,
+    },
+    statusText: {
+        fontSize: 12,
+        color: '#00d4aa',
+        fontWeight: '500',
+    },
+    socialIconsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 20,
+        marginBottom: 20,
+        paddingHorizontal: 20,
+    },
+    socialIconButton: {
+        width: 50,
+        height: 50,
+        backgroundColor: '#6d4aff',
+        borderRadius: 25,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginHorizontal: 8,
+        shadowColor: '#6d4aff',
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    appInfo: {
+        alignItems: 'center',
+        marginTop: 30,
+        marginBottom: 20,
+    },
+    appVersion: {
+        fontSize: 14,
+        color: '#8b7bb8',
+        marginBottom: 4,
+    },
+    appCopyright: {
+        fontSize: 12,
+        color: '#666',
+    },
+});
+
+export default ProfileScreen;
