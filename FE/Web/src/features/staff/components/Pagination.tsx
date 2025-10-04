@@ -82,7 +82,7 @@ export default function Pagination({
           type="button"
           onClick={handlePrevious}
           disabled={currentPage === 1}
-          className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-s-lg border border-gray-200 text-gray-800 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-800 dark:focus:bg-neutral-800"
+          className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-s-lg border border-button-primary text-text-primary hover:bg-button-hover focus:outline-none focus:bg-button-hover disabled:opacity-50 disabled:pointer-events-none dark:bg-button-secondary dark:border-button-secondary dark:text-white dark:hover:bg-button-secondary-hover dark:focus:bg-button-secondary-hover"
           aria-label="Previous"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -94,7 +94,7 @@ export default function Pagination({
             return (
               <div
                 key={`ellipsis-${index}`}
-                className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-200 text-gray-800 py-2 px-3 text-sm dark:border-neutral-700 dark:text-white"
+                className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-200 text-text-primary py-2 px-3 text-sm dark:border-neutral-700 dark:text-white"
               >
                 ...
               </div>
@@ -108,8 +108,8 @@ export default function Pagination({
               onClick={() => onPageChange(page as number)}
               className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none ${
                 currentPage === page
-                  ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:border-blue-500"
-                  : "border-gray-200 text-gray-800 hover:bg-gray-100 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-800"
+                  ? "bg-button-primary text-text-primary border-button-primary hover:bg-button-hover dark:bg-button-secondary dark:border-button-secondary"
+                  : "border-button-primary text-text-primary hover:bg-button-hover dark:bg-button-secondary dark:border-button-secondary"
               }`}
               aria-current={currentPage === page ? "page" : undefined}
             >
@@ -122,7 +122,7 @@ export default function Pagination({
           type="button"
           onClick={handleNext}
           disabled={currentPage === totalPages}
-          className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-e-lg border border-gray-200 text-gray-800 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-800 dark:focus:bg-neutral-800"
+          className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-e-lg border border-button-primary text-text-primary hover:bg-button-hover focus:outline-none focus:bg-button-hover disabled:opacity-50 disabled:pointer-events-none dark:bg-button-secondary dark:border-button-secondary dark:text-white dark:hover:bg-button-secondary-hover dark:focus:bg-button-secondary-hover"
           aria-label="Next"
         >
           <span className="hidden sm:block">Next</span>
@@ -132,7 +132,7 @@ export default function Pagination({
 
       {/* Items info */}
       {totalItems && (
-        <div className="text-sm text-gray-700 dark:text-neutral-300">
+        <div className="text-sm text-text-primary">
           Showing <span className="font-medium">{startItem}</span> to{" "}
           <span className="font-medium">{endItem}</span> of{" "}
           <span className="font-medium">{totalItems}</span> results

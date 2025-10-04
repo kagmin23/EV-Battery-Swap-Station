@@ -40,69 +40,69 @@ export default function Dashboard() {
 
   return (
     <>
-    <div className="flex flex-col items-center justify-center min-h-screen py-8">
+    <div className="flex flex-col items-center justify-center min-h-screen py-8 ">
       <div className="w-full max-w-7xl px-4">
         <div className="flex justify-between items-center mb-6">
           <SearchBar />
           <button
             onClick={handleAddBattery}
-            className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg bg-yellow-400 text-white hover:bg-yellow-600 active:bg-yellow-700 dark:bg-blue-500 dark:hover:bg-blue-600 dark:active:bg-blue-700"
+            className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg bg-button-primary text-white hover:bg-button-hover active:bg-button-secondary dark:bg-button-secondary dark:hover:bg-button-secondary-hover dark:active:bg-button-secondary-hover"
           >
             <Plus className="w-5 h-5" />
             Add Battery
           </button>
         </div>
         <div className="overflow-x-auto">
-          <div className="border border-gray-200 rounded-lg shadow-xs overflow-hidden dark:border-neutral-700 dark:shadow-gray-900">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-neutral-700">
-              <thead className="bg-black dark:bg-neutral-700">
+          <div className="border border-border rounded-lg shadow-xs overflow-hidden dark:border-border dark:shadow-gray-900">
+            <table className="min-w-full divide-y divide-border dark:divide-border">
+              <thead className="bg-button-primary dark:bg-button-secondary">
                 <tr>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-start text-xs font-medium text-white uppercase dark:text-neutral-400"
+                    className="px-6 py-3 text-start text-xs font-medium text-text-primary uppercase dark:text-text-primary"
                   >
                     Battery ID
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-start text-xs font-medium text-white uppercase dark:text-neutral-400"
+                    className="px-6 py-3 text-start text-xs font-medium text-text-primary uppercase dark:text-text-primary"
                   >
                     Model
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-start text-xs font-medium text-white uppercase dark:text-neutral-400"
+                    className="px-6 py-3 text-start text-xs font-medium text-text-primary uppercase dark:text-text-primary"
                   >
                     Capacity
                   </th>
                   <th
                     scope="col"
-                      className="px-6 py-3 text-start text-xs font-medium text-white uppercase dark:text-neutral-400"
+                      className="px-6 py-3 text-start text-xs font-medium text-text-primary uppercase dark:text-text-primary"
                   >
                     SOH
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-start text-xs font-medium text-white uppercase dark:text-neutral-400"
+                    className="px-6 py-3 text-start text-xs font-medium text-text-primary uppercase dark:text-text-primary"
                   >
                     Status
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-center text-xs font-medium text-white uppercase dark:text-neutral-400"
+                    className="px-6 py-3 text-center text-xs font-medium text-text-primary uppercase dark:text-text-primary"
                   >
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-neutral-700">
+              <tbody className="bg-table-row divide-y divide-border dark:divide-border">
                 {currentBatteries.map((battery) => (
-                  <tr key={battery.battery_id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-neutral-200">{battery.battery_id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-neutral-200">{battery.battery_model}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-neutral-200">{battery.capacity_kWh}kWh</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-neutral-200">{battery.soh_percent}%</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-neutral-200">{battery.status}</td>
+                  <tr key={battery.battery_id} className="hover:bg-table-row-hover transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary dark:text-text-secondary">{battery.battery_id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary dark:text-text-secondary">{battery.battery_model}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary dark:text-text-secondary">{battery.capacity_kWh}kWh</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary dark:text-text-secondary">{battery.soh_percent}%</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary dark:text-text-secondary">{battery.status}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <ActionMenu
                         batteryId={battery.battery_id}

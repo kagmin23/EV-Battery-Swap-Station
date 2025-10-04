@@ -4,6 +4,7 @@ import Dashboard from './features/staff/page/Dashboard'
 import Home from './components/common/home'
 import Header from './components/common/header'
 import Footer from './components/common/footer'
+import ConfirmExchange from './features/staff/page/confirmExchange'
 function App() {
   return (
     <>
@@ -12,6 +13,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/staff/dashboard" element={<Dashboard />} />
+          <Route path="/staff/confirm-exchange" element={<ConfirmExchange />} />
         </Routes>
         <Footer />
       </BrowserRouter>
