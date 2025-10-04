@@ -21,13 +21,15 @@ function RootNavigator() {
     <Stack screenOptions={{ headerShown: false }}>
       {isAuthenticated ? (
         // Protected area
-        <Stack.Screen name="(tabs)" />
-      ) : (
-        // Auth flow screens
         <>
-          <Stack.Screen name="auth/login" />
-          <Stack.Screen name="auth/register" />
-          <Stack.Screen name="auth/forgot-password" />
+          <Stack.Screen name="(tabs)" />
+        </>
+      ) : (
+        <>
+          <Stack.Screen name="auth/login" options={{ presentation: 'card' }} />
+          <Stack.Screen name="auth/register" options={{ presentation: 'card' }} />
+          <Stack.Screen name="auth/forgot-password" options={{ presentation: 'card' }} />
+          <Stack.Screen name="auth/verify-email" options={{ presentation: 'card' }} />
         </>
       )}
       <Stack.Screen name="+not-found" />
