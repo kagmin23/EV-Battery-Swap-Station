@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     Image,
     SafeAreaView,
     StatusBar,
@@ -22,21 +23,69 @@ const LoginScreen: React.FC = () => {
     const [password, setPassword] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
     const { login, loading } = useAuth();
     const router = useRouter();
 
     const handleSubmit = async () => {
+        console.log('🚀 handleSubmit called');
         if (!email || !password) {
             setError('Vui lòng nhập email và mật khẩu');
             return;
         }
         setSubmitting(true);
+        console.log('📧 Attempting login with email:', email);
         try {
             setError(null);
+            console.log('🔐 Calling login function...');
             await login(email, password);
-            router.replace('/(tabs)');
+            console.log('✅ Login successful, navigating to home...');
+            // Navigate to the tabs home screen
+            router.replace('/(tabs)/home' as any);
         } catch (e: any) {
-            setError(e?.message || 'Đăng nhập thất bại');
+            console.log('❌ Login failed, error caught:', e);
+            // Check if error is about email verification
+            const errorMessage = e?.message || 'Đăng nhập thất bại';
+            const isEmailVerificationError = errorMessage.includes('Account not verified') ||
+                errorMessage.includes('verify') ||
+                errorMessage.includes('OTP') ||
+                e?.requireEmailVerification === true;
+
+            console.log('🔍 Is email verification error?', isEmailVerificationError);
+            console.log('🔍 Error message:', errorMessage);
+
+            // Only log as error if it's not an email verification case
+            if (!isEmailVerificationError) {
+                console.log('🔍 Login error details:', e);
+            }
+
+            if (isEmailVerificationError) {
+                // Navigate to verify email page first
+                console.log('📍 Email not verified, navigating to verify email...');
+                console.log('📍 Target email:', email);
+                
+                // Use simple navigation first
+                router.push('/auth/verify-email');
+                
+                // Then show alert after navigation
+                setTimeout(() => {
+                    Alert.alert(
+                        'Email Chưa Được Xác Thực',
+                        'Tài khoản của bạn chưa được xác thực. Vui lòng kiểm tra email và nhập mã OTP để kích hoạt tài khoản.',
+                        [
+                            {
+                                text: 'Verify Email',
+                                onPress: () => {
+                                    console.log('📍 User acknowledged verification needed');
+                                    // Alert will be dismissed automatically, user stays on verify page
+                                }
+                            }
+                        ]
+                    );
+                }, 500); // Small delay to ensure navigation is complete
+            } else {
+                setError(errorMessage);
+            }
         } finally {
             setSubmitting(false);
         }
@@ -110,17 +159,37 @@ const LoginScreen: React.FC = () => {
                                 value={email}
                                 onChangeText={setEmail}
                             />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Password"
-                                placeholderTextColor="#a0a0a0"
-                                secureTextEntry
-                                value={password}
-                                onChangeText={setPassword}
-                            />
+                            <View style={styles.passwordContainer}>
+                                <TextInput
+                                    style={styles.passwordInput}
+                                    placeholder="Password"
+                                    placeholderTextColor="#a0a0a0"
+                                    secureTextEntry={!showPassword}
+                                    value={password}
+                                    onChangeText={setPassword}
+                                />
+                                <TouchableOpacity
+                                    onPress={() => setShowPassword(!showPassword)}
+                                    style={styles.eyeButton}
+                                >
+                                    <Ionicons
+                                        name={showPassword ? "eye-off-outline" : "eye-outline"}
+                                        size={20}
+                                        color="#a0a0a0"
+                                    />
+                                </TouchableOpacity>
+                            </View>
                             {error && (
                                 <Text style={styles.errorText}>{error}</Text>
                             )}
+
+                            <TouchableOpacity
+                                style={styles.forgotPasswordLink}
+                                onPress={() => router.push('/auth/forgot-password')}
+                            >
+                                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                            </TouchableOpacity>
+
                             <TouchableOpacity
                                 style={[styles.loginButton, styles.emailButton, { marginBottom: 0 }]}
                                 onPress={handleSubmit}
@@ -136,6 +205,15 @@ const LoginScreen: React.FC = () => {
                                         </Text>
                                     </>
                                 )}
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.signUpLink}
+                                onPress={() => router.push('/auth/register')}
+                            >
+                                <Text style={styles.signUpText}>
+                                    Don&apos;t have an account? <Text style={styles.signUpLinkText}>Sign Up</Text>
+                                </Text>
                             </TouchableOpacity>
                         </View>
                     ) : (
@@ -449,6 +527,46 @@ const styles = StyleSheet.create({
         marginTop: -4,
         marginBottom: 4,
         fontWeight: '500',
+    },
+    forgotPasswordLink: {
+        alignSelf: 'flex-end',
+        marginBottom: 12,
+    },
+    forgotPasswordText: {
+        color: '#6d4aff',
+        fontSize: 13,
+        fontWeight: '500',
+    },
+    signUpLink: {
+        alignItems: 'center',
+        marginTop: 12,
+    },
+    signUpText: {
+        color: '#a0a0a0',
+        fontSize: 13,
+    },
+    signUpLinkText: {
+        color: '#6d4aff',
+        fontWeight: '600',
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1a0a36',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#2a1f4d',
+        paddingHorizontal: 16,
+        marginBottom: 8,
+    },
+    passwordInput: {
+        flex: 1,
+        color: '#fff',
+        fontSize: 15,
+        paddingVertical: 12,
+    },
+    eyeButton: {
+        padding: 4,
     },
 });
 

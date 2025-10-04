@@ -1,6 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
 
@@ -35,6 +35,19 @@ export default function TabLayout() {
         },
       }}>
       <Tabs.Screen
+        name="home"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              size={focused ? 28 : 24}
+              name={focused ? "rocket" : "rocket-outline"}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="index"
         options={{
           title: 'Map',
@@ -42,19 +55,6 @@ export default function TabLayout() {
             <Ionicons
               size={focused ? 28 : 24}
               name={focused ? "map" : "map-outline"}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Activity',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              size={focused ? 28 : 24}
-              name={focused ? "rocket" : "rocket-outline"}
               color={color}
             />
           ),

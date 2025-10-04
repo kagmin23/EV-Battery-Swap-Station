@@ -1,11 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
+import { loginUser, logoutUser } from '../apis/authAPI';
 
 // Shape of the auth user (adjust when backend shape known)
 export interface AuthUser {
   id: string;
   email: string;
   name?: string;
+  fullName?: string;
   role?: string;
 }
 
@@ -51,21 +53,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 600));
-
-      // Hardcoded credential (can extend to a small map later)
-      const HARD_EMAIL = 'demo@ev.com';
-      const HARD_PASSWORD = '123123';
-
-      if (email.trim().toLowerCase() !== HARD_EMAIL || password !== HARD_PASSWORD) {
-        throw new Error('Sai tài khoản hoặc mật khẩu');
+      // Call real API
+      const response = await loginUser({ email: email.trim(), password });
+      
+      if (response.success && response.data) {
+        const { token, user: userInfo } = response.data;
+        
+        // Create user object matching our AuthUser interface
+        const authUser: AuthUser = {
+          id: userInfo.id,
+          email: userInfo.email,
+          name: userInfo.fullName,
+          fullName: userInfo.fullName,
+          role: userInfo.role || 'user'
+        };
+        
+        // Store token and user data
+        await AsyncStorage.setItem(TOKEN_KEY, token);
+        await AsyncStorage.setItem(USER_KEY, JSON.stringify(authUser));
+        setUser(authUser);
+      } else {
+        throw new Error(response.message || 'Login failed');
       }
-
-      const fakeToken = 'hard-token-123';
-      const hardUser: AuthUser = { id: '1', email: HARD_EMAIL, name: 'EV Driver', role: 'driver' };
-      await AsyncStorage.setItem(TOKEN_KEY, fakeToken);
-      await AsyncStorage.setItem(USER_KEY, JSON.stringify(hardUser));
-      setUser(hardUser);
+    } catch (error: any) {
+      // Handle different types of errors
+      const isEmailVerificationError = error?.requireEmailVerification || 
+        error?.message?.includes('Account not verified') ||
+        error?.message?.includes('verify') ||
+        error?.message?.includes('OTP');
+      
+      // Only log as error if it's not an email verification case
+      if (!isEmailVerificationError) {
+        console.log('🔍 AuthContext login error:', error);
+      }
+      
+      if (error?.message) {
+        // Preserve additional error properties for email verification detection
+        const errorToThrow = new Error(error.message);
+        // Add custom properties to help identify email verification errors
+        if (isEmailVerificationError) {
+          (errorToThrow as any).requireEmailVerification = true;
+        }
+        throw errorToThrow;
+      } else if (error?.errors) {
+        // Handle validation errors from backend
+        const errorMessages = Object.values(error.errors).join(', ');
+        throw new Error(errorMessages);
+      } else {
+        throw new Error('Unable to connect to server. Please check your internet connection.');
+      }
     } finally {
       setLoading(false);
     }
@@ -74,6 +110,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     setLoading(true);
     try {
+      // Try to call logout API - token added automatically by axios interceptor
+      try {
+        await logoutUser();
+      } catch (error) {
+        // Continue with logout even if API call fails
+        console.warn('Logout API call failed:', error);
+      }
+      
+      // Always clear local storage
       await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
       setUser(null);
     } finally {
