@@ -5,33 +5,14 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import 'react-native-reanimated';
 
-import { AuthProvider, useAuth } from '@/features/auth/context/AuthContext';
+import { AuthProvider } from '@/features/auth/context/AuthContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 // Separate component so we can use the auth hook inside provider
 function RootNavigator() {
-  const { isAuthenticated, loading } = useAuth();
-
-  // Could show splash/loading screen here
-  if (loading) {
-    return null;
-  }
-
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {isAuthenticated ? (
-        // Protected area
-        <>
-          <Stack.Screen name="(tabs)" />
-        </>
-      ) : (
-        <>
-          <Stack.Screen name="auth/login" options={{ presentation: 'card' }} />
-          <Stack.Screen name="auth/register" options={{ presentation: 'card' }} />
-          <Stack.Screen name="auth/forgot-password" options={{ presentation: 'card' }} />
-          <Stack.Screen name="auth/verify-email" options={{ presentation: 'card' }} />
-        </>
-      )}
+      <Stack.Screen name="(tabs)" />
       <Stack.Screen name="+not-found" />
     </Stack>
   );

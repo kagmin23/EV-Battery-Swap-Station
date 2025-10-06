@@ -28,7 +28,7 @@ const SearchAndFilterBar: React.FC = () => {
   ];
 
   return (
-    <View style={styles.searchBarContainer}>
+    <View style={styles.searchBarContainer} pointerEvents="box-none">
       <View style={styles.searchInputWrapper}>
         <Ionicons name="search-outline" size={20} color="#fff" style={styles.searchIcon} />
         <TextInput
@@ -60,7 +60,7 @@ const FloatingActionButtons: React.FC<{ onNavigatePress?: () => void }> = ({ onN
   ];
 
   return (
-    <View style={styles.fabContainer}>
+    <View style={styles.fabContainer} pointerEvents="box-none">
       {buttons.map((btn, index) => (
         <TouchableOpacity
           key={index}
@@ -186,11 +186,9 @@ const LocationSation: React.FC = () => {
           }}
         />
 
-        {!isSheetExpanded && (
-          <FloatingActionButtons onNavigatePress={() => mapRef.current?.centerOnUser()} />
-        )}
+        <FloatingActionButtons onNavigatePress={() => mapRef.current?.centerOnUser()} />
 
-        {!isSheetExpanded && <SearchAndFilterBar />}
+        {!selectedStation && <SearchAndFilterBar />}
 
         {selectedStation && (
           <>
