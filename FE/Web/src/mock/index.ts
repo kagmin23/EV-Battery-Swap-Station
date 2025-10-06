@@ -2,4 +2,7 @@
 export * from './StationData';
 export * from './BatteryData';
 export * from './InventoryData';
+export * from './TransactionData';
+export * from './UserData';
+export * from './SupportRequestData';
 

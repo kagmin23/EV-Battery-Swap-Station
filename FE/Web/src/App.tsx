@@ -1,10 +1,12 @@
-import './App.css'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Dashboard from './features/staff/page/Dashboard'
-import Home from './components/common/home'
-import Header from './components/common/header'
-import Footer from './components/common/footer'
-import ConfirmExchange from './features/staff/page/confirmExchange'
+import './App.css';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Home from './components/common/home';
+import Header from './components/common/header';
+import Footer from './components/common/footer';
+import AdminRouter from './routes/adminRouter';
+import StaffRouter from './routes/staffRouter';
+import DriverRouter from './routes/driverRouter';
+
 function App() {
   return (
     <>
@@ -12,13 +14,14 @@ function App() {
         <Header />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/staff/dashboard" element={<Dashboard />} />
-          <Route path="/staff/confirm-exchange" element={<ConfirmExchange />} />
+          <Route path="/admin/*" element={<AdminRouter />} />
+          <Route path="/staff/*" element={<StaffRouter />} />
+          <Route path="/driver/*" element={<DriverRouter />} />
         </Routes>
         <Footer />
       </BrowserRouter>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
