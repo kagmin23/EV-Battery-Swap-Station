@@ -73,6 +73,23 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="evs"
+        options={{
+          // Hide from tab bar and hide the bar when focused
+          href: null,
+          tabBarStyle: { display: 'none' },
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="booking"
+        options={{
+          href: null,
+          tabBarStyle: { display: 'none' },
+          headerShown: false,
+        }}
+      />
       {/* <Tabs.Screen
         name="login"
         options={{

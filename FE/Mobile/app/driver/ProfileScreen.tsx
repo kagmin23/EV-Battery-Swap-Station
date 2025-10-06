@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -7,97 +7,22 @@ import {
     TouchableOpacity,
     ScrollView,
     Dimensions,
-    TextInput,
     Pressable,
     Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
+import LinkVehicleSheet from './component/LinkVehicleSheet';
 
 const { height } = Dimensions.get('window');
 
-type Option = { label: string; value: string };
-
-const SearchableDropdown: React.FC<{
-    label: string;
-    value: string;
-    options: Option[];
-    placeholder?: string;
-    onSelect: (v: string) => void;
-}> = ({ label, value, options, placeholder, onSelect }) => {
-    const [open, setOpen] = useState(false);
-    const [query, setQuery] = useState('');
-    const filtered = useMemo(() => {
-        const q = query.trim().toLowerCase();
-        if (!q) return options;
-        return options.filter(o => o.label.toLowerCase().includes(q));
-    }, [options, query]);
-
-    return (
-        <View style={styles.formRow}>
-            <Text style={styles.inputLabel}>{label}</Text>
-            <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={() => setOpen(!open)}
-                style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
-            >
-                <Text style={{ color: value ? 'white' : '#7f6fb1' }}>
-                    {value || (placeholder || 'Select...')}
-                </Text>
-                <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color="#bfa8ff" />
-            </TouchableOpacity>
-            {open && (
-                <View style={styles.dropdownPanel}>
-                    <View style={styles.dropdownSearchRow}>
-                        <Ionicons name="search" size={16} color="#bfa8ff" style={{ marginRight: 8 }} />
-                        <TextInput
-                            value={query}
-                            onChangeText={setQuery}
-                            placeholder={placeholder || 'Search'}
-                            placeholderTextColor="#7f6fb1"
-                            style={styles.dropdownSearchInput}
-                        />
-                        {query ? (
-                            <TouchableOpacity onPress={() => setQuery('')}>
-                                <Ionicons name="close" size={16} color="#bfa8ff" />
-                            </TouchableOpacity>
-                        ) : null}
-                    </View>
-                    <ScrollView style={{ maxHeight: 180 }} keyboardShouldPersistTaps="handled">
-                        {filtered.map(opt => (
-                            <TouchableOpacity
-                                key={opt.value}
-                                style={styles.dropdownItem}
-                                onPress={() => {
-                                    onSelect(opt.value);
-                                    setOpen(false);
-                                    setQuery('');
-                                }}
-                            >
-                                <Text style={styles.dropdownItemText}>{opt.label}</Text>
-                                {value === opt.value && <Ionicons name="checkmark" size={16} color="#6d4aff" />}
-                            </TouchableOpacity>
-                        ))}
-                        {filtered.length === 0 && (
-                            <View style={styles.dropdownEmpty}>
-                                <Text style={{ color: '#7f6fb1' }}>No results</Text>
-                            </View>
-                        )}
-                    </ScrollView>
-                </View>
-            )}
-        </View>
-    );
-};
+// Reuse Option type from the extracted component when needed
 
 const ProfileScreen: React.FC = () => {
     const navigation = useNavigation<any>();
+    const router = useRouter();
     const [isAddEvOpen, setIsAddEvOpen] = useState(false);
-    const [vin, setVin] = useState('');
-    const [brand, setBrand] = useState('');
-    const [carName, setCarName] = useState('');
-    const [batteryModel, setBatteryModel] = useState('');
     const sheetY = useRef(new Animated.Value(height)).current;
 
     const openSheet = () => {
@@ -112,9 +37,10 @@ const ProfileScreen: React.FC = () => {
         });
     };
 
-    const handleSave = () => {
-        // TODO: integrate with backend later
+    const handleAddVehicle = (_data: { vin: string; brand: string; carName: string; batteryModel: string }) => {
         closeSheet();
+        // Navigate within Tabs to keep BottomTab visible
+        router.push('/(tabs)/evs');
     };
 
     // Hide/restore BottomTab when sheet opens/closes
@@ -142,29 +68,7 @@ const ProfileScreen: React.FC = () => {
         }
     }, [isAddEvOpen, navigation]);
 
-    const brandOptions: Option[] = useMemo(() => [
-        { label: 'VinFast', value: 'VinFast' },
-        { label: 'Tesla', value: 'Tesla' },
-        { label: 'BYD', value: 'BYD' },
-        { label: 'Hyundai', value: 'Hyundai' },
-        { label: 'Kia', value: 'Kia' },
-        { label: 'Toyota', value: 'Toyota' },
-    ], []);
-
-    const carOptions: Option[] = useMemo(() => [
-        { label: 'VF 3', value: 'VF 3' },
-        { label: 'VF 5', value: 'VF 5' },
-        { label: 'VF 6', value: 'VF 6' },
-        { label: 'Model 3', value: 'Model 3' },
-        { label: 'Model Y', value: 'Model Y' },
-    ], []);
-
-    const batteryOptions: Option[] = useMemo(() => [
-        { label: 'LFP-42', value: 'LFP-42' },
-        { label: 'LFP-60', value: 'LFP-60' },
-        { label: 'NMC-75', value: 'NMC-75' },
-        { label: 'NCA-82', value: 'NCA-82' },
-    ], []);
+    // Kept for type reuse in this file
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView
@@ -240,6 +144,18 @@ const ProfileScreen: React.FC = () => {
                     <Ionicons name="chevron-forward" size={20} color="white" />
                 </TouchableOpacity>
 
+                {/* My EVs */}
+                <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/evs')}>
+                    <View style={styles.iconContainer}>
+                        <Ionicons name="car" size={24} color="#6d4aff" />
+                    </View>
+                    <View style={styles.cardContent}>
+                        <Text style={styles.cardTitle}>My EVs</Text>
+                        <Text style={styles.cardSubtitle}>View and manage linked vehicles</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="white" />
+                </TouchableOpacity>
+
                 {/* Current Subscription Plan */}
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Current Subscription Plan</Text>
@@ -294,6 +210,8 @@ const ProfileScreen: React.FC = () => {
                     </TouchableOpacity>
                 </View>
 
+                {/* EVs Section moved to /profile/linked-vehicle */}
+
                 {/* App Info */}
                 <View style={styles.appInfo}>
                     <Text style={styles.appVersion}>EV Battery Swap v1.0.0</Text>
@@ -306,60 +224,12 @@ const ProfileScreen: React.FC = () => {
                 <Pressable style={styles.scrim} onPress={closeSheet} />
             )}
 
-            {/* Add EV Sheet */}
-            <Animated.View
-                pointerEvents={isAddEvOpen ? 'auto' : 'none'}
-                style={[
-                    styles.sheetContainer,
-                    { transform: [{ translateY: sheetY }] },
-                ]}
-            >
-                <View style={styles.sheetHeader}>
-                    <Text style={styles.sheetTitle}>Add your EV</Text>
-                    <TouchableOpacity onPress={closeSheet}>
-                        <Ionicons name="close" size={22} color="#bfa8ff" />
-                    </TouchableOpacity>
-                </View>
-
-                <View style={styles.formRow}>
-                    <Text style={styles.inputLabel}>VIN</Text>
-                    <TextInput
-                        placeholder="1HGCM82633A004352"
-                        placeholderTextColor="#7f6fb1"
-                        value={vin}
-                        onChangeText={setVin}
-                        style={styles.input}
-                    />
-                </View>
-                <SearchableDropdown
-                    label="Brand"
-                    value={brand}
-                    options={brandOptions}
-                    placeholder="Tesla, VinFast..."
-                    onSelect={setBrand}
-                />
-                <SearchableDropdown
-                    label="Car Name"
-                    value={carName}
-                    options={carOptions}
-                    placeholder="Model 3, VF 6..."
-                    onSelect={setCarName}
-                />
-                <SearchableDropdown
-                    label="Battery Model"
-                    value={batteryModel}
-                    options={batteryOptions}
-                    placeholder="LFP-60, NMC-75..."
-                    onSelect={setBatteryModel}
-                />
-
-                <View style={styles.actionsRow}>
-
-                    <TouchableOpacity style={[styles.button, styles.buttonPrimary]} onPress={handleSave}>
-                        <Text style={styles.buttonPrimaryText}>Add Vehicle</Text>
-                    </TouchableOpacity>
-                </View>
-            </Animated.View>
+            {/* Add EV Sheet (extracted) */}
+            <LinkVehicleSheet
+                visible={isAddEvOpen}
+                onClose={closeSheet}
+                onAdd={handleAddVehicle}
+            />
         </SafeAreaView>
     );
 };
@@ -632,6 +502,14 @@ const styles = StyleSheet.create({
         marginTop: 30,
         marginBottom: 20,
     },
+    vehicleCard: { backgroundColor: '#1a0f3e', borderRadius: 16, padding: 16, marginBottom: 14 },
+    vehicleTitle: { color: 'white', fontSize: 24, fontWeight: '800' },
+    vehicleSub: { color: '#bfa8ff', marginTop: 6 },
+    vSection: { backgroundColor: '#120935', borderRadius: 12, padding: 14, marginTop: 14 },
+    vSectionTitle: { color: 'white', fontSize: 18, fontWeight: '800', marginBottom: 8 },
+    rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
+    vKey: { color: '#bfa8ff' },
+    vVal: { color: 'white', fontWeight: '700' },
     appVersion: {
         fontSize: 14,
         color: '#8b7bb8',
