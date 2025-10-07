@@ -22,12 +22,12 @@ export default function VerifyEmailScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const email = params.email as string || '';
-    
+
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [submitting, setSubmitting] = useState(false);
     const [resending, setResending] = useState(false);
     const [countdown, setCountdown] = useState(0);
-    
+
     // Refs for OTP inputs
     const inputRefs = useRef<(TextInput | null)[]>([]);
 
@@ -39,10 +39,26 @@ export default function VerifyEmailScreen() {
         }
     }, [countdown]);
 
+    // Check if email is provided
+    useEffect(() => {
+        if (!email) {
+            Alert.alert(
+                'Email Required',
+                'No email provided. Please go back to login page.',
+                [
+                    {
+                        text: 'Go to Login',
+                        onPress: () => router.replace('/auth/login')
+                    }
+                ]
+            );
+        }
+    }, [email, router]);
+
     const handleOtpChange = (value: string, index: number) => {
         // Only allow numbers
         if (value && !/^\d$/.test(value)) return;
-        
+
         const newOtp = [...otp];
         newOtp[index] = value;
         setOtp(newOtp);
@@ -51,7 +67,7 @@ export default function VerifyEmailScreen() {
         if (value && index < 5) {
             inputRefs.current[index + 1]?.focus();
         }
-        
+
         // Auto-hide keyboard when all 6 digits are entered
         if (value && index === 5) {
             const completedOtp = [...newOtp];
@@ -72,9 +88,15 @@ export default function VerifyEmailScreen() {
 
     const handleVerify = async () => {
         const otpCode = otp.join('');
-        
+
         if (otpCode.length !== 6) {
             Alert.alert('Invalid OTP', 'Please enter all 6 digits');
+            return;
+        }
+
+        // Check if email is available
+        if (!email) {
+            Alert.alert('Error', 'Email is required. Please go back to login page.');
             return;
         }
 
@@ -83,16 +105,10 @@ export default function VerifyEmailScreen() {
 
         setSubmitting(true);
         try {
-            console.log('📧 Verifying email with:', { email, otp: otpCode });
-            
             const response = await verifyEmail({
                 email: email,
                 otp: otpCode,
             });
-            
-            console.log('✅ Verify email response:', response);
-            
-            // Check if verification was successful
             if (response && (response.success === true || response.message)) {
                 Alert.alert(
                     'Email Verified! ✅',
@@ -108,13 +124,11 @@ export default function VerifyEmailScreen() {
                 throw new Error(response?.message || 'Verification failed');
             }
         } catch (error: any) {
-            console.error('💥 Verification error:', error);
-            
             let errorMessage = 'Verification failed. Please try again.';
             if (error?.message) {
                 errorMessage = error.message;
             }
-            
+
             Alert.alert('Verification Failed', errorMessage);
         } finally {
             setSubmitting(false);
@@ -124,34 +138,33 @@ export default function VerifyEmailScreen() {
     const handleResendOtp = async () => {
         if (countdown > 0) return;
 
+        // Check if email is available
+        if (!email) {
+            Alert.alert('Error', 'Email is required. Please go back to login page.');
+            return;
+        }
+
         setResending(true);
         try {
-            console.log('📧 Resending OTP to:', email);
-            
             const response = await resendOtp({ email });
-            
-            console.log('✅ Resend OTP response:', response);
-            
             Alert.alert(
-                'OTP Sent! 📧',
+                '📧 OTP Sent!',
                 response.message || 'A new OTP has been sent to your email.',
                 [{ text: 'OK' }]
             );
-            
+
             setCountdown(60);
-            
+
             // Clear current OTP
             setOtp(['', '', '', '', '', '']);
             inputRefs.current[0]?.focus();
-            
+
         } catch (error: any) {
-            console.error('💥 Resend OTP error:', error);
-            
             let errorMessage = 'Failed to resend OTP. Please try again.';
             if (error?.message) {
                 errorMessage = error.message;
             }
-            
+
             Alert.alert('Resend Failed', errorMessage);
         } finally {
             setResending(false);
@@ -161,7 +174,7 @@ export default function VerifyEmailScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="#0a0520" />
-            
+
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <View style={styles.content}>
                     {/* Header */}
@@ -176,107 +189,118 @@ export default function VerifyEmailScreen() {
                         <View style={{ width: 40 }} />
                     </View>
 
-                {/* Background Illustration */}
-                <View style={styles.backgroundContainer}>
-                    <View style={styles.illustration}>
-                        {/* Floating Elements */}
-                        <View style={styles.floatingElements}>
-                            <View style={[styles.floatingBall, styles.ball1]} />
-                            <View style={[styles.floatingBall, styles.ball2]} />
-                            <View style={[styles.floatingBall, styles.ball3]} />
-                            <View style={[styles.floatingBall, styles.ball4]} />
-                            <View style={[styles.floatingBall, styles.ball5]} />
+                    {/* Background Illustration */}
+                    <View style={styles.backgroundContainer}>
+                        <View style={styles.illustration}>
+                            {/* Floating Elements */}
+                            <View style={styles.floatingElements}>
+                                <View style={[styles.floatingBall, styles.ball1]} />
+                                <View style={[styles.floatingBall, styles.ball2]} />
+                                <View style={[styles.floatingBall, styles.ball3]} />
+                                <View style={[styles.floatingBall, styles.ball4]} />
+                                <View style={[styles.floatingBall, styles.ball5]} />
 
-                            {/* Stars */}
-                            <View style={styles.star1}>
-                                <Ionicons name="star" size={8} color="#ffd700" />
+                                {/* Stars */}
+                                <View style={styles.star1}>
+                                    <Ionicons name="star" size={8} color="#ffd700" />
+                                </View>
+                                <View style={styles.star2}>
+                                    <Ionicons name="star" size={6} color="#ff69b4" />
+                                </View>
+                                <View style={styles.star3}>
+                                    <Ionicons name="star" size={10} color="#00d4aa" />
+                                </View>
                             </View>
-                            <View style={styles.star2}>
-                                <Ionicons name="star" size={6} color="#ff69b4" />
+
+                            {/* Center Illustration Image */}
+                            <Image source={loginPic} style={styles.loginImage} />
+                        </View>
+                    </View>
+
+                    {/* Form Card Overlay */}
+                    <View style={styles.formCard}>
+                        <View style={styles.emailContainer}>
+                            <Ionicons name="mail" size={32} color="#6d4aff" />
+                            <Text style={styles.subtitle}>
+                                We sent a verification code to
+                            </Text>
+                            
+                            <View style={styles.emailInputContainer}>
+                                <TextInput
+                                    style={styles.emailInput}
+                                    value={email}
+                                    editable={false}
+                                    placeholder="Email address"
+                                    placeholderTextColor="#a0a0a0"
+                                />
+                                <Ionicons name="lock-closed" size={16} color="#a0a0a0" style={styles.lockIcon} />
                             </View>
-                            <View style={styles.star3}>
-                                <Ionicons name="star" size={10} color="#00d4aa" />
-                            </View>
+                            
+                            <Text style={styles.description}>
+                                Enter the 6-digit code to verify your email
+                            </Text>
                         </View>
 
-                        {/* Center Illustration Image */}
-                        <Image source={loginPic} style={styles.loginImage} />
-                    </View>
-                </View>
+                        {/* OTP Input */}
+                        <View style={styles.otpContainer}>
+                            {otp.map((digit, index) => (
+                                <TextInput
+                                    key={index}
+                                    ref={(ref) => {
+                                        inputRefs.current[index] = ref;
+                                    }}
+                                    style={[
+                                        styles.otpInput,
+                                        digit ? styles.otpInputFilled : null
+                                    ]}
+                                    value={digit}
+                                    onChangeText={(value) => handleOtpChange(value, index)}
+                                    onKeyPress={({ nativeEvent }) => {
+                                        if (nativeEvent.key === 'Backspace') {
+                                            handleBackspace(digit, index);
+                                        }
+                                    }}
+                                    maxLength={1}
+                                    keyboardType="numeric"
+                                    textAlign="center"
+                                    selectTextOnFocus
+                                    autoFocus={index === 0}
+                                />
+                            ))}
+                        </View>
 
-                {/* Form Card Overlay */}
-                <View style={styles.formCard}>
-                    <View style={styles.emailContainer}>
-                        <Ionicons name="mail" size={32} color="#6d4aff" />
-                        <Text style={styles.subtitle}>
-                            We sent a verification code to
-                        </Text>
-                        <Text style={styles.emailText}>{email}</Text>
-                        <Text style={styles.description}>
-                            Enter the 6-digit code to verify your email address
-                        </Text>
-                    </View>
-
-                    {/* OTP Input */}
-                    <View style={styles.otpContainer}>
-                        {otp.map((digit, index) => (
-                            <TextInput
-                                key={index}
-                                ref={(ref) => {
-                                    inputRefs.current[index] = ref;
-                                }}
-                                style={[
-                                    styles.otpInput,
-                                    digit ? styles.otpInputFilled : null
-                                ]}
-                                value={digit}
-                                onChangeText={(value) => handleOtpChange(value, index)}
-                                onKeyPress={({ nativeEvent }) => {
-                                    if (nativeEvent.key === 'Backspace') {
-                                        handleBackspace(digit, index);
-                                    }
-                                }}
-                                maxLength={1}
-                                keyboardType="numeric"
-                                textAlign="center"
-                                selectTextOnFocus
-                                autoFocus={index === 0}
-                            />
-                        ))}
-                    </View>
-
-                    {/* Verify Button */}
-                    <TouchableOpacity
-                        style={[styles.verifyButton, submitting && styles.verifyButtonDisabled]}
-                        onPress={handleVerify}
-                        disabled={submitting}
-                    >
-                        {submitting ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            <Text style={styles.verifyButtonText}>Verify Email</Text>
-                        )}
-                    </TouchableOpacity>
-
-                    {/* Resend OTP */}
-                    <View style={styles.resendContainer}>
-                        <Text style={styles.resendText}>
-                            Didn&apos;t receive the code?{' '}
-                        </Text>
+                        {/* Verify Button */}
                         <TouchableOpacity
-                            onPress={handleResendOtp}
-                            disabled={countdown > 0 || resending}
+                            style={[styles.verifyButton, submitting && styles.verifyButtonDisabled]}
+                            onPress={handleVerify}
+                            disabled={submitting}
                         >
-                            <Text style={[
-                                styles.resendLink,
-                                (countdown > 0 || resending) && styles.resendDisabled
-                            ]}>
-                                {resending ? 'Sending...' : 
-                                 countdown > 0 ? `Resend in ${countdown}s` : 'Resend'}
-                            </Text>
+                            {submitting ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.verifyButtonText}>Verify Email</Text>
+                            )}
                         </TouchableOpacity>
+
+                        {/* Resend OTP */}
+                        <View style={styles.resendContainer}>
+                            <Text style={styles.resendText}>
+                                Didn&apos;t receive the code?{' '}
+                            </Text>
+                            <TouchableOpacity
+                                onPress={handleResendOtp}
+                                disabled={countdown > 0 || resending}
+                            >
+                                <Text style={[
+                                    styles.resendLink,
+                                    (countdown > 0 || resending) && styles.resendDisabled
+                                ]}>
+                                    {resending ? 'Sending...' :
+                                        countdown > 0 ? `Resend in ${countdown}s` : 'Resend'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
                 </View>
             </TouchableWithoutFeedback>
         </SafeAreaView>
@@ -404,6 +428,28 @@ const styles = StyleSheet.create({
     emailContainer: {
         alignItems: 'center',
         marginBottom: 30,
+    },
+    emailInputContainer: {
+        position: 'relative',
+        width: '100%',
+        marginVertical: 12,
+    },
+    emailInput: {
+        backgroundColor: '#140a30',
+        borderWidth: 2,
+        borderColor: '#2a1f4d',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        color: '#c0c0c0ff',
+        fontSize: 16,
+        textAlign: 'center',
+    },
+    lockIcon: {
+        position: 'absolute',
+        right: 16,
+        top: '50%',
+        marginTop: -8,
     },
     subtitle: {
         fontSize: 16,

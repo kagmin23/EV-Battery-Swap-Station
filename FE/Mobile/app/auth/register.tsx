@@ -80,8 +80,6 @@ export default function RegisterScreen() {
 
         setSubmitting(true);
         try {
-            console.log('🚀 Starting registration process...');
-            
             const response = await registerUser({
                 fullName: formData.fullName.trim(),
                 email: formData.email.trim().toLowerCase(),
@@ -89,16 +87,8 @@ export default function RegisterScreen() {
                 password: formData.password,
                 confirmPassword: formData.confirmPassword,
             });
-            
-            console.log('📦 Register response received:', response);
-            console.log('📦 Response type:', typeof response);
-            console.log('📦 Response keys:', response ? Object.keys(response) : 'null');
-            
-            // Check if registration was successful
-            // API returns { message: "...", userId: "..." } for success
-            if (response && (response.success === true || response.userId || response.message)) {
-                console.log('✅ Registration success detected');
-                // Show success message and navigate to verify email
+
+            if (response && (response.success === true || response.message)) {
                 const successMessage = response.message || 'Your account has been created successfully.';
                 Alert.alert(
                     'Registration Successful! 🎉',
@@ -111,17 +101,9 @@ export default function RegisterScreen() {
                     ]
                 );
             } else {
-                console.log('❌ Registration failed - invalid response format');
                 throw new Error(response?.message || 'Registration failed');
             }
         } catch (error: any) {
-            console.error('💥 Registration catch block triggered');
-            console.error('💥 Error type:', typeof error);
-            console.error('💥 Error instanceof Error:', error instanceof Error);
-            console.error('💥 Full error object:', error);
-            console.error('💥 Error message:', error?.message);
-            console.error('💥 Error stack:', error?.stack);
-            
             // Show error message
             let errorMessage = 'Registration failed. Please try again.';
             if (error?.message) {

@@ -1,18 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import { loginUser, logoutUser } from '../apis/authAPI';
-
-// Shape of the auth user (adjust when backend shape known)
-export interface AuthUser {
-  id: string;
-  email: string;
-  name?: string;
-  fullName?: string;
-  role?: string;
-}
+import { IUser } from '../types/auth.types';
 
 interface AuthContextValue {
-  user: AuthUser | null;
+  user: IUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -24,22 +16,29 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
+const REFRESH_TOKEN_KEY = 'refresh_token';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<IUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   const restore = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem(TOKEN_KEY);
       const rawUser = await AsyncStorage.getItem(USER_KEY);
+      const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+      
       if (token && rawUser) {
-        setUser(JSON.parse(rawUser));
+        const userData = JSON.parse(rawUser);
+        // Make sure refresh token is included in user data
+        if (refreshToken && !userData.refreshToken) {
+          userData.refreshToken = refreshToken;
+        }
+        setUser(userData);
       } else {
         setUser(null);
       }
-    } catch (e) {
-      console.warn('Failed to restore auth state', e);
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);
@@ -53,25 +52,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Call real API
       const response = await loginUser({ email: email.trim(), password });
       
       if (response.success && response.data) {
-        const { token, user: userInfo } = response.data;
+        const { accessToken, refreshToken, user: userInfo } = response.data;
         
-        // Create user object matching our AuthUser interface
-        const authUser: AuthUser = {
-          id: userInfo.id,
-          email: userInfo.email,
-          name: userInfo.fullName,
-          fullName: userInfo.fullName,
-          role: userInfo.role || 'user'
+        // Store tokens and user info
+        await AsyncStorage.setItem(TOKEN_KEY, accessToken);
+        await AsyncStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+        
+        // Create user object with additional token info
+        const userWithToken = {
+          ...userInfo,
+          _id: userInfo.id, // Map id to _id for consistency
+          refreshToken,
+          refreshTokenExpiresAt: null, // Will be set by BE if needed
+          isVerified: true, // If login succeeds, user must be verified
+          emailOTP: '',
+          emailOTPExpires: '',
+          emailOTPLastSentAt: '',
+          emailOTPResendCount: 0,
+          emailOTPResendWindowStart: '',
+          createdAt: '',
+          updatedAt: '',
+          __v: 0,
+          password: '' // Don't store password in client
         };
         
-        // Store token and user data
-        await AsyncStorage.setItem(TOKEN_KEY, token);
-        await AsyncStorage.setItem(USER_KEY, JSON.stringify(authUser));
-        setUser(authUser);
+        await AsyncStorage.setItem(USER_KEY, JSON.stringify(userWithToken));
+        setUser(userWithToken);
       } else {
         throw new Error(response.message || 'Login failed');
       }
@@ -82,9 +91,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         error?.message?.includes('verify') ||
         error?.message?.includes('OTP');
       
-      // Only log as error if it's not an email verification case
-      if (!isEmailVerificationError) {
-        console.log('🔍 AuthContext login error:', error);
+      // Only log error for unexpected/technical issues (not user input errors or BE messages)
+      const isBackendError = error?.message || error?.errors;
+      if (!isEmailVerificationError && !isBackendError) {
+        console.error('Login error:', error);
       }
       
       if (error?.message) {
@@ -110,16 +120,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     setLoading(true);
     try {
-      // Try to call logout API - token added automatically by axios interceptor
+      // Try to call logout API with refreshToken
       try {
-        await logoutUser();
-      } catch (error) {
+        const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+        
+        // Only call API if we have a refreshToken
+        if (refreshToken) {
+          await logoutUser(refreshToken);
+        } else {
+        }
+      } catch {
         // Continue with logout even if API call fails
-        console.warn('Logout API call failed:', error);
       }
       
       // Always clear local storage
-      await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
+      await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY, REFRESH_TOKEN_KEY]);
       setUser(null);
     } finally {
       setLoading(false);

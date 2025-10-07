@@ -27,14 +27,4 @@ export const isDevelopment = () => config.NODE_ENV === 'development';
 export const isProduction = () => config.NODE_ENV === 'production';
 export const isStaging = () => config.NODE_ENV === 'staging';
 
-// Log configuration in development
-if (isDevelopment()) {
-  console.log('App Configuration:', {
-    API_BASE_URL: config.API_BASE_URL,
-    NODE_ENV: config.NODE_ENV,
-    APP_NAME: config.APP_NAME,
-    APP_VERSION: config.APP_VERSION,
-  });
-}
-
 export default config;

@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
   const { user, logout, loading } = useAuth();
@@ -24,8 +24,8 @@ export default function HomeScreen() {
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Xin chào,</Text>
-          <Text style={styles.name}>{user?.name || user?.email}</Text>
+          <Text style={styles.greeting}>Welcome,</Text>
+          <Text style={styles.name}>{user?.fullName || user?.email}</Text>
         </View>
         <TouchableOpacity style={styles.logoutBtn} onPress={logout} disabled={loading}>
           <Ionicons name="log-out-outline" size={20} color="#fff" />
@@ -33,7 +33,7 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Tổng quan hôm nay</Text>
+        <Text style={styles.sectionTitle}>Today&apos;s Overview</Text>
         <View style={styles.grid}>
           {cards.map(c => (
             <View key={c.label} style={[styles.card, { backgroundColor: '#1a1233' }]}>
@@ -48,7 +48,7 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Tác vụ nhanh</Text>
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionsRow}>
           {quickActions.map(a => (
             <TouchableOpacity key={a.label} style={styles.actionBtn}>
@@ -62,7 +62,7 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Trạng thái hệ thống</Text>
+        <Text style={styles.sectionTitle}>System status</Text>
         <View style={styles.systemBox}>
           <Ionicons name="pulse" size={26} color="#6d4aff" />
           <View style={{ flex: 1 }}>

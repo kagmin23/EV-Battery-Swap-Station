@@ -26,8 +26,15 @@ export interface LoginResponse {
   success: boolean;
   message: string;
   data?: {
-    token: string;
-    user: IUser;
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: string;
+    user: {
+      id: string;
+      email: string;
+      fullName: string;
+      phoneNumber: string;
+    };
   };
 }
 
@@ -40,12 +47,11 @@ export interface RegisterRequest {
 }
 
 export interface RegisterResponse {
-  success?: boolean;
-  message: string;
-  userId?: string;
-  data?: {
-    user: IUser;
+  success: boolean;
+  data: {
+    email: string;
   };
+  message: string;
 }
 
 export interface VerifyEmailRequest {
@@ -54,9 +60,11 @@ export interface VerifyEmailRequest {
 }
 
 export interface VerifyEmailResponse {
-  success?: boolean;
+  success: boolean;
+  data: {
+    email: string;
+  } | null;
   message: string;
-  data?: IUser;
 }
 
 export interface ResendOtpRequest {
@@ -65,6 +73,15 @@ export interface ResendOtpRequest {
 
 export interface ResendOtpResponse {
   success?: boolean;
+  message: string;
+}
+
+export interface LogoutRequest {
+  refreshToken: string;
+}
+
+export interface LogoutResponse {
+  success: boolean;
   message: string;
 }
 
