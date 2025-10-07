@@ -1,6 +1,6 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigation } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -28,7 +28,7 @@ const SearchAndFilterBar: React.FC = () => {
   ];
 
   return (
-    <View style={styles.searchBarContainer}>
+    <View style={styles.searchBarContainer} pointerEvents="box-none">
       <View style={styles.searchInputWrapper}>
         <Ionicons name="search-outline" size={20} color="#fff" style={styles.searchIcon} />
         <TextInput
@@ -60,7 +60,7 @@ const FloatingActionButtons: React.FC<{ onNavigatePress?: () => void }> = ({ onN
   ];
 
   return (
-    <View style={styles.fabContainer}>
+    <View style={styles.fabContainer} pointerEvents="box-none">
       {buttons.map((btn, index) => (
         <TouchableOpacity
           key={index}
@@ -83,6 +83,7 @@ const LocationSation: React.FC = () => {
   const sheetY = useRef(new Animated.Value(height)).current; // start off-screen
   const startOffsetRef = useRef(0);
   const navigation = useNavigation<any>();
+  const router = useRouter();
 
   const handleNavigatePress = () => {
     if (!selectedStation) return;
@@ -186,11 +187,9 @@ const LocationSation: React.FC = () => {
           }}
         />
 
-        {!isSheetExpanded && (
-          <FloatingActionButtons onNavigatePress={() => mapRef.current?.centerOnUser()} />
-        )}
+        <FloatingActionButtons onNavigatePress={() => mapRef.current?.centerOnUser()} />
 
-        {!isSheetExpanded && <SearchAndFilterBar />}
+        {!selectedStation && <SearchAndFilterBar />}
 
         {selectedStation && (
           <>
@@ -234,9 +233,18 @@ const LocationSation: React.FC = () => {
               <TouchableOpacity
                 style={styles.primaryButton}
                 onPress={() => {
-                  // Giả lập chuyển trang: ví dụ chuyển sang màn hình "SwapBattery"
-                  // navigation.navigate('SwapBattery');
-                  alert('Chuyển Booking ');
+                  try {
+                    const stationParam = encodeURIComponent(JSON.stringify({
+                      title: selectedStation.title,
+                      description: selectedStation.description,
+                      availableBatteries: selectedStation.availableBatteries,
+                      totalBatteries: selectedStation.totalBatteries,
+                      status: selectedStation.status,
+                    }));
+                    router.push(`/(tabs)/booking?station=${stationParam}`);
+                  } catch {
+                    router.push('/(tabs)/booking');
+                  }
                 }}
               >
                 <Text style={styles.primaryButtonText}>Swap Battery</Text>

@@ -44,28 +44,58 @@ const MapComponent = forwardRef<MapComponentHandle, MapComponentProps>(({
     const mapRef = useRef<MapView>(null);
 
     const [userLocation, setUserLocation] = useState<Region | null>(null);
+    const hasCenteredOnUserRef = useRef(false);
 
-    //  Lấy vị trí user
+    // Theo dõi vị trí bằng Expo Location (đồng bộ với vị trí emulator/thiết bị)
     useEffect(() => {
+        let subscription: Location.LocationSubscription | null = null;
         (async () => {
-            let { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                console.log('Permission to access location was denied');
-                return;
+            try {
+                const { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== 'granted') {
+                    console.log('Permission to access location was denied');
+                    return;
+                }
+
+                const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
+                const region: Region = {
+                    latitude: current.coords.latitude,
+                    longitude: current.coords.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                };
+                setUserLocation(region);
+                mapRef.current?.animateToRegion(region, 1000);
+                hasCenteredOnUserRef.current = true;
+
+                subscription = await Location.watchPositionAsync(
+                    {
+                        accuracy: Location.Accuracy.Highest,
+                        timeInterval: 2000,
+                        distanceInterval: 1,
+                    },
+                    (loc) => {
+                        const next: Region = {
+                            latitude: loc.coords.latitude,
+                            longitude: loc.coords.longitude,
+                            latitudeDelta: 0.01,
+                            longitudeDelta: 0.01,
+                        };
+                        setUserLocation(next);
+                        if (!hasCenteredOnUserRef.current) {
+                            mapRef.current?.animateToRegion(next, 1000);
+                            hasCenteredOnUserRef.current = true;
+                        }
+                    }
+                );
+            } catch (e) {
+                console.log('Expo location error', e);
             }
-
-            let location = await Location.getCurrentPositionAsync({});
-            const region: Region = {
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-            };
-            setUserLocation(region);
-
-            // Zoom đến vị trí user
-            mapRef.current?.animateToRegion(region, 1000);
         })();
+
+        return () => {
+            try { subscription && subscription.remove(); } catch { }
+        };
     }, []);
 
     useImperativeHandle(ref, () => ({
@@ -357,13 +387,23 @@ const MapComponent = forwardRef<MapComponentHandle, MapComponentProps>(({
                 style={styles.map}
                 provider={PROVIDER_GOOGLE}
                 initialRegion={initialRegion}
-                showsUserLocation={showUserLocation}
-                showsMyLocationButton={true}
+                showsUserLocation={false}
+                showsMyLocationButton={false}
                 showsCompass={true}
                 showsScale={true}
                 zoomEnabled={true}
                 mapType="standard"
             >
+                {userLocation && (
+                    <Marker
+                        coordinate={{ latitude: userLocation.latitude, longitude: userLocation.longitude }}
+                        title="Your location"
+                    >
+                        <View style={[styles.markerContainer, { backgroundColor: '#2563eb' }]}>
+                            <Ionicons name="navigate" size={18} color="white" />
+                        </View>
+                    </Marker>
+                )}
                 {batteryStations.map((station) => (
                     <Marker
                         key={station.id}
