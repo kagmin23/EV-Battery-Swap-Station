@@ -6,7 +6,6 @@ import {
   Text,
   StyleSheet,
   Dimensions,
-  SafeAreaView,
   TouchableOpacity,
   TextInput,
   Pressable,
@@ -15,6 +14,7 @@ import {
   Linking,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MapComponent, { MapComponentHandle } from '../driver/component/MapComponent';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -176,7 +176,7 @@ const LocationSation: React.FC = () => {
 
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView edges={['left', 'right']} style={styles.safeArea}>
       <View style={styles.appContainer}>
 
         <MapComponent
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#190d35', // dark purple
     height: 80,
-    paddingTop: 8,
+    paddingTop: 0,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     shadowColor: '#0e012f', // pink glow
