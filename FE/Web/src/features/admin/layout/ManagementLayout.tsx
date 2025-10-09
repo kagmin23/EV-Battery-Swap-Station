@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ManagementSidebar } from '../components/ManagementSidebar';
+import { CommonHeader } from '@/components/common/CommonHeader';
 
 interface ManagementLayoutProps {
     children: React.ReactNode;
@@ -20,7 +21,10 @@ export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-            <div className="flex h-screen">
+            {/* Common Header */}
+            <CommonHeader />
+            
+            <div className="flex" style={{ height: 'calc(100vh - 56px)' }}>
                 {/* Sidebar */}
                 <ManagementSidebar
                     activeTab={activeTab}
