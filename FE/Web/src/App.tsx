@@ -1,6 +1,6 @@
 
 import './App.css';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Home from './components/common/home';
 import Header from './components/common/header';
 import Footer from './components/common/footer';
@@ -12,7 +12,6 @@ import { ManagementMainPage } from './features/admin/pages/ManagementMainPage';
 function App() {
   return (
     <>
-      <BrowserRouter>
         <Header />
         <Routes>
           <Route path="/" element={<Navigate to="/overview" replace />} />
@@ -32,7 +31,6 @@ function App() {
           <Route path="/settings" element={<ManagementMainPage />} />
         </Routes>
         <Footer />
-      </BrowserRouter>
     </>
     );
 }
