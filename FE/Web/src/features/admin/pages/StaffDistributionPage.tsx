@@ -1,6 +1,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StaffDistributionChart } from '../components/StaffDistributionChart';
+import { PageHeader } from '../components/PageHeader';
+import { StatsCard } from '../components/StatsCard';
 import { BarChart3, MapPin, Users, TrendingUp } from 'lucide-react';
 import type { Staff, StaffStats } from '../types/staff';
 
@@ -100,82 +102,57 @@ export const StaffDistributionPage: React.FC = () => {
         return acc;
     }, {} as Record<string, number>);
 
-    const staffByStatus = mockStaff.reduce((acc, staff) => {
-        acc[staff.status] = (acc[staff.status] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
+    // const staffByStatus = mockStaff.reduce((acc, staff) => {
+    //     acc[staff.status] = (acc[staff.status] || 0) + 1;
+    //     return acc;
+    // }, {} as Record<string, number>);
 
     return (
         <div className="p-6 space-y-8">
             {/* Header */}
-            <div className="space-y-2">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
-                    Phân bố nhân viên
-                </h1>
-                <p className="text-slate-600 font-medium">Phân tích và thống kê phân bố nhân viên theo trạm và vai trò</p>
-            </div>
+            <PageHeader
+                title="Phân bố nhân viên"
+                description="Phân tích và thống kê phân bố nhân viên theo trạm và vai trò"
+            />
 
             {/* Overview Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <Card className="bg-gradient-to-r from-blue-50 to-blue-100/50 border-blue-200/50 shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center space-x-4">
-                            <div className="p-3 bg-blue-500 rounded-xl">
-                                <Users className="h-6 w-6 text-white" />
-                            </div>
-                            <div>
-                                <div className="text-2xl font-bold text-blue-900">{mockStats.totalStaff}</div>
-                                <div className="text-sm text-blue-700 font-medium">Tổng nhân viên</div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-r from-green-50 to-green-100/50 border-green-200/50 shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center space-x-4">
-                            <div className="p-3 bg-green-500 rounded-xl">
-                                <MapPin className="h-6 w-6 text-white" />
-                            </div>
-                            <div>
-                                <div className="text-2xl font-bold text-green-900">{mockStats.staffByStation.length}</div>
-                                <div className="text-sm text-green-700 font-medium">Trạm hoạt động</div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-r from-orange-50 to-orange-100/50 border-orange-200/50 shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center space-x-4">
-                            <div className="p-3 bg-orange-500 rounded-xl">
-                                <TrendingUp className="h-6 w-6 text-white" />
-                            </div>
-                            <div>
-                                <div className="text-2xl font-bold text-orange-900">
-                                    {Math.round((mockStats.onlineStaff / mockStats.totalStaff) * 100)}%
-                                </div>
-                                <div className="text-sm text-orange-700 font-medium">Tỷ lệ online</div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-r from-purple-50 to-purple-100/50 border-purple-200/50 shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center space-x-4">
-                            <div className="p-3 bg-purple-500 rounded-xl">
-                                <BarChart3 className="h-6 w-6 text-white" />
-                            </div>
-                            <div>
-                                <div className="text-2xl font-bold text-purple-900">
-                                    {Math.round(mockStats.totalStaff / mockStats.staffByStation.length)}
-                                </div>
-                                <div className="text-sm text-purple-700 font-medium">TB/Trạm</div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <StatsCard
+                    title="Tổng nhân viên"
+                    value={mockStats.totalStaff}
+                    icon={Users}
+                    gradientFrom="from-blue-50"
+                    gradientTo="to-blue-100/50"
+                    textColor="text-blue-900"
+                    iconBg="bg-blue-500"
+                />
+                <StatsCard
+                    title="Trạm hoạt động"
+                    value={mockStats.staffByStation.length}
+                    icon={MapPin}
+                    gradientFrom="from-green-50"
+                    gradientTo="to-green-100/50"
+                    textColor="text-green-900"
+                    iconBg="bg-green-500"
+                />
+                <StatsCard
+                    title="Tỷ lệ online"
+                    value={`${Math.round((mockStats.onlineStaff / mockStats.totalStaff) * 100)}%`}
+                    icon={TrendingUp}
+                    gradientFrom="from-orange-50"
+                    gradientTo="to-orange-100/50"
+                    textColor="text-orange-900"
+                    iconBg="bg-orange-500"
+                />
+                <StatsCard
+                    title="TB/Trạm"
+                    value={Math.round(mockStats.totalStaff / mockStats.staffByStation.length)}
+                    icon={BarChart3}
+                    gradientFrom="from-purple-50"
+                    gradientTo="to-purple-100/50"
+                    textColor="text-purple-900"
+                    iconBg="bg-purple-500"
+                />
             </div>
 
             {/* Main Charts */}

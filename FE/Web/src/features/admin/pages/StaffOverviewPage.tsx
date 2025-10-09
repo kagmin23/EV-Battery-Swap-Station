@@ -1,7 +1,9 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { StaffStatsWidget } from '../components/StaffStatsWidget';
+// import { StaffStatsWidget } from '../components/StaffStatsWidget';
 import { StaffShiftCoverage } from '../components/StaffShiftCoverage';
+import { PageHeader } from '../components/PageHeader';
+import { StatsCard } from '../components/StatsCard';
 import { Activity, TrendingUp, Users, Clock } from 'lucide-react';
 import type { Staff, StaffStats, StaffActivity } from '../types/staff';
 
@@ -100,15 +102,41 @@ export const StaffOverviewPage: React.FC = () => {
   return (
     <div className="p-6 space-y-8">
       {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
-          Tổng quan nhân viên
-        </h1>
-        <p className="text-slate-600 font-medium">Thống kê và theo dõi hoạt động nhân viên</p>
-      </div>
+      <PageHeader
+        title="Tổng quan nhân viên"
+        description="Thống kê và theo dõi hoạt động nhân viên"
+      />
 
       {/* Stats Widgets */}
-      <StaffStatsWidget stats={mockStats} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatsCard
+          title="Tổng nhân viên"
+          value={mockStats.totalStaff}
+          icon={Users}
+          gradientFrom="from-blue-50"
+          gradientTo="to-blue-100/50"
+          textColor="text-blue-900"
+          iconBg="bg-blue-500"
+        />
+        <StatsCard
+          title="Đang online"
+          value={mockStats.onlineStaff}
+          icon={Clock}
+          gradientFrom="from-green-50"
+          gradientTo="to-green-100/50"
+          textColor="text-green-900"
+          iconBg="bg-green-500"
+        />
+        <StatsCard
+          title="Đang ca làm"
+          value={mockStats.shiftActiveStaff}
+          icon={Activity}
+          gradientFrom="from-orange-50"
+          gradientTo="to-orange-100/50"
+          textColor="text-orange-900"
+          iconBg="bg-orange-500"
+        />
+      </div>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

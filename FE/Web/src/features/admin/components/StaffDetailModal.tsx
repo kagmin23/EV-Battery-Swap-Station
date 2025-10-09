@@ -22,7 +22,7 @@ import {
     XCircle,
     AlertCircle
 } from 'lucide-react';
-import type { Staff, StaffActivity, StaffPermission } from '../types/staff';
+import type { Staff, StaffActivity } from '../types/staff';
 
 interface StaffDetailModalProps {
     isOpen: boolean;

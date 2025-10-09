@@ -6,6 +6,8 @@ import { StaffSearchBar } from '../components/StaffSearchBar';
 import { StaffCard } from '../components/StaffCard';
 import { StaffTable } from '../components/StaffTable';
 import { StaffModal } from '../components/StaffModal';
+import { PageHeader } from '../components/PageHeader';
+import { StatsCard } from '../components/StatsCard';
 import type { Staff, StaffFilters, AddStaffRequest, UpdateStaffRequest, StaffPermission, Station } from '../types/staff';
 
 // Mock data - trong thực tế sẽ lấy từ API
@@ -164,13 +166,10 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
     return (
         <div className="p-6 space-y-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
-                        Danh sách nhân viên
-                    </h1>
-                    <p className="text-slate-600 font-medium">Quản lý thông tin nhân viên trạm đổi pin</p>
-                </div>
+            <PageHeader
+                title="Danh sách nhân viên"
+                description="Quản lý thông tin nhân viên trạm đổi pin"
+            >
                 <Button
                     onClick={handleAddStaff}
                     className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-6 py-3 rounded-xl"
@@ -178,55 +177,37 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     <Plus className="h-5 w-5 mr-2" />
                     Thêm nhân viên
                 </Button>
-            </div>
+            </PageHeader>
 
             {/* Quick Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="bg-gradient-to-r from-blue-50 to-blue-100/50 border-blue-200/50 shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center space-x-4">
-                            <div className="p-3 bg-blue-500 rounded-xl">
-                                <Users className="h-8 w-8 text-white" />
-                            </div>
-                            <div>
-                                <div className="text-4xl font-bold text-blue-900">{mockStaff.length}</div>
-                                <div className="text-lg text-blue-700 font-medium">Tổng nhân viên</div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-r from-green-50 to-green-100/50 border-green-200/50 shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center space-x-4">
-                            <div className="p-3 bg-green-500 rounded-xl">
-                                <Clock className="h-8 w-8 text-white" />
-                            </div>
-                            <div>
-                                <div className="text-4xl font-bold text-green-900">
-                                    {mockStaff.filter(s => s.status === 'ONLINE').length}
-                                </div>
-                                <div className="text-lg text-green-700 font-medium">Đang online</div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-r from-orange-50 to-orange-100/50 border-orange-200/50 shadow-lg">
-                    <CardContent className="p-6">
-                        <div className="flex items-center space-x-4">
-                            <div className="p-3 bg-orange-500 rounded-xl">
-                                <Activity className="h-8 w-8 text-white" />
-                            </div>
-                            <div>
-                                <div className="text-4xl font-bold text-orange-900">
-                                    {mockStaff.filter(s => s.status === 'SHIFT_ACTIVE').length}
-                                </div>
-                                <div className="text-lg text-orange-700 font-medium">Đang ca làm</div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <StatsCard
+                    title="Tổng nhân viên"
+                    value={mockStaff.length}
+                    icon={Users}
+                    gradientFrom="from-blue-50"
+                    gradientTo="to-blue-100/50"
+                    textColor="text-blue-900"
+                    iconBg="bg-blue-500"
+                />
+                <StatsCard
+                    title="Đang online"
+                    value={mockStaff.filter(s => s.status === 'ONLINE').length}
+                    icon={Clock}
+                    gradientFrom="from-green-50"
+                    gradientTo="to-green-100/50"
+                    textColor="text-green-900"
+                    iconBg="bg-green-500"
+                />
+                <StatsCard
+                    title="Đang ca làm"
+                    value={mockStaff.filter(s => s.status === 'SHIFT_ACTIVE').length}
+                    icon={Activity}
+                    gradientFrom="from-orange-50"
+                    gradientTo="to-orange-100/50"
+                    textColor="text-orange-900"
+                    iconBg="bg-orange-500"
+                />
             </div>
 
             {/* Search and Filters */}

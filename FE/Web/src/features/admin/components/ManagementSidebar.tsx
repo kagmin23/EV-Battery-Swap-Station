@@ -12,7 +12,8 @@ import {
   Car,
   CreditCard,
   FileText,
-  UserCheck
+  UserCheck,
+  Battery
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -53,6 +54,12 @@ const menuItems = [
     label: 'Danh sách tài xế',
     icon: UserCheck,
     description: 'Quản lý tài xế'
+  },
+  {
+    id: 'battery-inventory',
+    label: 'Kho pin',
+    icon: Battery,
+    description: 'Quản lý kho pin'
   },
   {
     id: 'vehicles',
