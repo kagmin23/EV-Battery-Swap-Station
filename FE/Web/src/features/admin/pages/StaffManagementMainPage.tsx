@@ -4,7 +4,6 @@ import { ManagementLayout } from '../layout/ManagementLayout';
 import { StaffOverviewPage } from './StaffOverviewPage';
 import { StaffListPage } from './StaffListPage';
 import { StaffDistributionPage } from './StaffDistributionPage';
-import { BatteryStatusReturnPage } from './BatteryStatusReturnPage';
 import { StaffDetailModal } from '../components/StaffDetailModal';
 import type { Staff, StaffActivity } from '../types/staff';
 
@@ -111,7 +110,6 @@ export const StaffManagementMainPage: React.FC = () => {
         if (path.includes('/staff/list')) return 'staff-list';
         if (path.includes('/staff/distribution')) return 'staff-distribution';
         if (path.includes('/staff/activities')) return 'staff-activities';
-        if (path.includes('/battery-return')) return 'battery-return';
         if (path.includes('/staff/settings')) return 'settings';
         return 'overview';
     };
@@ -138,9 +136,6 @@ export const StaffManagementMainPage: React.FC = () => {
                 break;
             case 'staff-activities':
                 navigate('/staff/activities');
-                break;
-            case 'battery-return':
-                navigate('/battery-return');
                 break;
             case 'settings':
                 navigate('/staff/settings');
@@ -200,8 +195,6 @@ export const StaffManagementMainPage: React.FC = () => {
                         </div>
                     </div>
                 );
-            case 'battery-return':
-                return <BatteryStatusReturnPage />;
             case 'settings':
                 return (
                     <div className="p-6">

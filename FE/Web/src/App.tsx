@@ -14,7 +14,6 @@ function App() {
       <Route path="/staff/activities" element={<ManagementMainPage />} />
       <Route path="/driver/list" element={<ManagementMainPage />} />
       <Route path="/battery-inventory" element={<ManagementMainPage />} />
-      <Route path="/battery-return" element={<ManagementMainPage />} />
       <Route path="/vehicles" element={<ManagementMainPage />} />
       <Route path="/subscriptions" element={<ManagementMainPage />} />
       <Route path="/transactions" element={<ManagementMainPage />} />
