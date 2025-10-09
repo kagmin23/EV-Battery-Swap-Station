@@ -1,8 +1,25 @@
+import { useAuth } from '@/features/auth/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
+import { ActivityIndicator, View } from 'react-native';
 
 export default function TabLayout() {
+  const { user, loading } = useAuth();
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0520' }}>
+        <ActivityIndicator size="large" color="#6d4aff" />
+      </View>
+    );
+  }
+
+  // Redirect to login if not authenticated
+  if (!user) {
+    return <Redirect href="/auth/login" />;
+  }
 
   return (
     <Tabs
@@ -71,6 +88,23 @@ export default function TabLayout() {
               color={color}
             />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="evs"
+        options={{
+          // Hide from tab bar and hide the bar when focused
+          href: null,
+          tabBarStyle: { display: 'none' },
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="booking"
+        options={{
+          href: null,
+          tabBarStyle: { display: 'none' },
+          headerShown: false,
         }}
       />
       {/* <Tabs.Screen

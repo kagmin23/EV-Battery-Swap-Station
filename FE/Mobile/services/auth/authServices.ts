@@ -1,4 +1,4 @@
-import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, ResendOtpRequest, ResendOtpResponse, VerifyEmailRequest, VerifyEmailResponse } from "@/features/auth/types/auth.types";
+import { LoginRequest, LoginResponse, LogoutResponse, RegisterRequest, RegisterResponse, ResendOtpRequest, ResendOtpResponse, VerifyEmailRequest, VerifyEmailResponse } from "@/features/auth/types/auth.types";
 import httpClient from "../rootAPI";
 
 export const authAPI = {
@@ -10,11 +10,10 @@ export const authAPI = {
     return httpClient.post<RegisterResponse>('/auth/register', userData);
   },
 
-  async logout(): Promise<{ success: boolean; message: string }> {
-    return httpClient.post('/auth/logout');
+  async logout(refreshToken: string): Promise<LogoutResponse> {
+    return httpClient.post<LogoutResponse>('/auth/logout', { refreshToken });
   },
 
-  // Refresh token - token added automatically by interceptor
   async refreshToken(): Promise<LoginResponse> {
     return httpClient.post<LoginResponse>('/auth/refresh');
   },
@@ -23,17 +22,14 @@ export const authAPI = {
     return httpClient.post('/auth/forgot-password', { email });
   },
 
-  // Reset password
   async resetPassword(token: string, newPassword: string): Promise<{ success: boolean; message: string }> {
     return httpClient.post('/auth/reset-password', { token, password: newPassword });
   },
 
-  // Verify email with OTP
   async verifyEmail(data: VerifyEmailRequest): Promise<VerifyEmailResponse> {
     return httpClient.post<VerifyEmailResponse>('/auth/verify-email', data);
   },
 
-  // Resend OTP
   async resendOtp(data: ResendOtpRequest): Promise<ResendOtpResponse> {
     return httpClient.post<ResendOtpResponse>('/auth/resend-otp', data);
   },

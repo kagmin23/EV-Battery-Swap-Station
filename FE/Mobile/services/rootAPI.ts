@@ -6,13 +6,6 @@ import { config } from '../config/env';
 const BASE_URL = config.API_BASE_URL;
 const TOKEN_KEY = 'auth_token';
 
-// Debug: Log the base URL being used
-console.log('🔧 API Configuration:', {
-  BASE_URL,
-  CONFIG_SOURCE: 'config.API_BASE_URL',
-  TIMESTAMP: new Date().toISOString()
-});
-
 // Create axios instance with default configuration
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -30,8 +23,8 @@ axiosInstance.interceptors.request.use(
       if (token && config.headers && !config.headers.Authorization) {
         config.headers.Authorization = `Bearer ${token}`;
       }
-    }).catch((error) => {
-      console.warn('Failed to get auth token:', error);
+    }).catch(() => {
+      // Silently handle token retrieval errors
     });
 
     // Ensure headers exist
@@ -39,19 +32,9 @@ axiosInstance.interceptors.request.use(
       config.headers = {};
     }
 
-    // Log requests in development
-    if (__DEV__) {
-      console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
-        data: config.data,
-        headers: config.headers,
-      });
-    }
     return config;
   },
   (error) => {
-    if (__DEV__) {
-      console.error('❌ Request Error:', error);
-    }
     return Promise.reject(error);
   }
 );
@@ -59,30 +42,15 @@ axiosInstance.interceptors.request.use(
 // Response interceptor
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Log responses in development
-    if (__DEV__) {
-      console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, {
-        status: response.status,
-        data: response.data,
-      });
-    }
     return response;
   },
   (error) => {
-    // Check if this is an email verification error (not a real error)
-    const isEmailVerificationError = error?.response?.data?.message?.includes('Account not verified') ||
-      error?.response?.data?.message?.includes('verify') ||
-      error?.response?.data?.message?.includes('OTP') ||
-      error?.response?.data?.requireEmailVerification === true;
-
-    if (__DEV__ && !isEmailVerificationError) {
-      console.error('❌ Response Error:', {
-        url: error.config?.url,
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
-      });
-    }
+    // Check if this is an email verification error (403 status with specific data)
+    const isEmailVerificationError = error?.response?.status === 403 &&
+      (error?.response?.data?.data?.requireEmailVerification === true ||
+       error?.response?.data?.message?.includes('Account not verified') ||
+       error?.response?.data?.message?.includes('verify') ||
+       error?.response?.data?.message?.includes('OTP'));
 
     // Transform axios error to our ApiError format
     const apiError: ApiError = {
@@ -97,9 +65,10 @@ axiosInstance.interceptors.response.use(
       apiError.message = responseData?.message || `HTTP Error ${error.response.status}`;
       apiError.errors = responseData?.errors || {};
       
-      // Preserve email verification flag
+      // Preserve email verification flag and data
       if (isEmailVerificationError) {
         (apiError as any).requireEmailVerification = true;
+        (apiError as any).data = responseData?.data; // Include nextActions etc.
       }
     } else if (error.request) {
       // Request was made but no response received

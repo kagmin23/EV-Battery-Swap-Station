@@ -28,61 +28,40 @@ const LoginScreen: React.FC = () => {
     const router = useRouter();
 
     const handleSubmit = async () => {
-        console.log('🚀 handleSubmit called');
         if (!email || !password) {
-            setError('Vui lòng nhập email và mật khẩu');
+            setError('Please enter email and password');
             return;
         }
         setSubmitting(true);
-        console.log('📧 Attempting login with email:', email);
         try {
             setError(null);
-            console.log('🔐 Calling login function...');
             await login(email, password);
-            console.log('✅ Login successful, navigating to home...');
-            // Navigate to the tabs home screen
-            router.replace('/(tabs)/home' as any);
-        } catch (e: any) {
-            console.log('❌ Login failed, error caught:', e);
-            // Check if error is about email verification
-            const errorMessage = e?.message || 'Đăng nhập thất bại';
+            router.replace('/' as any);
+                } catch (e: any) {
+            
+            // Get clean error message from backend
+            const errorMessage = e?.message || 'Login failed';
             const isEmailVerificationError = errorMessage.includes('Account not verified') ||
                 errorMessage.includes('verify') ||
                 errorMessage.includes('OTP') ||
                 e?.requireEmailVerification === true;
 
-            console.log('🔍 Is email verification error?', isEmailVerificationError);
-            console.log('🔍 Error message:', errorMessage);
-
-            // Only log as error if it's not an email verification case
-            if (!isEmailVerificationError) {
-                console.log('🔍 Login error details:', e);
-            }
-
             if (isEmailVerificationError) {
-                // Navigate to verify email page first
-                console.log('📍 Email not verified, navigating to verify email...');
-                console.log('📍 Target email:', email);
-                
-                // Use simple navigation first
-                router.push('/auth/verify-email');
+                router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
                 
                 // Then show alert after navigation
                 setTimeout(() => {
                     Alert.alert(
-                        'Email Chưa Được Xác Thực',
-                        'Tài khoản của bạn chưa được xác thực. Vui lòng kiểm tra email và nhập mã OTP để kích hoạt tài khoản.',
+                        'Email Not Verified',
+                        'Your account is not verified. Please check your email and enter the OTP code to activate your account.',
                         [
                             {
                                 text: 'Verify Email',
-                                onPress: () => {
-                                    console.log('📍 User acknowledged verification needed');
-                                    // Alert will be dismissed automatically, user stays on verify page
-                                }
+                                onPress: () => {}
                             }
                         ]
                     );
-                }, 500); // Small delay to ensure navigation is complete
+                }, 500);
             } else {
                 setError(errorMessage);
             }
