@@ -6,6 +6,7 @@ import { StaffListPage } from './StaffListPage';
 import { StaffDistributionPage } from './StaffDistributionPage';
 import { DriverListPage } from './DriverListPage';
 import { BatteryInventoryPage } from './BatteryInventoryPage';
+import { BatteryStatusReturnPage } from './BatteryStatusReturnPage';
 import type { Staff } from '../types/staff';
 import type { Driver as DriverType } from '../types/driver';
 import type { Battery } from '../types/battery';
@@ -27,6 +28,7 @@ export const ManagementMainPage: React.FC = () => {
         if (path.includes('/staff/activities')) return 'staff-activities';
         if (path.includes('/driver/list')) return 'driver-list';
         if (path.includes('/battery-inventory')) return 'battery-inventory';
+        if (path.includes('/battery-return')) return 'battery-return';
         if (path.includes('/vehicles')) return 'vehicles';
         if (path.includes('/subscriptions')) return 'subscriptions';
         if (path.includes('/transactions')) return 'transactions';
@@ -62,6 +64,9 @@ export const ManagementMainPage: React.FC = () => {
                 break;
             case 'battery-inventory':
                 navigate('/battery-inventory');
+                break;
+            case 'battery-return':
+                navigate('/battery-return');
                 break;
             case 'vehicles':
                 navigate('/vehicles');
@@ -137,6 +142,8 @@ export const ManagementMainPage: React.FC = () => {
                 return <DriverListPage onDriverSelect={handleDriverSelect} />;
             case 'battery-inventory':
                 return <BatteryInventoryPage onBatterySelect={handleBatterySelect} />;
+            case 'battery-return':
+                return <BatteryStatusReturnPage />;
             case 'vehicles':
                 return (
                     <div className="p-6">

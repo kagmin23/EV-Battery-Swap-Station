@@ -13,7 +13,8 @@ import {
   CreditCard,
   FileText,
   UserCheck,
-  Battery
+  Battery,
+  RotateCcw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -60,6 +61,12 @@ const menuItems = [
     label: 'Kho pin',
     icon: Battery,
     description: 'Quản lý kho pin'
+  },
+  {
+    id: 'battery-return',
+    label: 'Trả pin',
+    icon: RotateCcw,
+    description: 'Quản lý trả pin'
   },
   {
     id: 'vehicles',
