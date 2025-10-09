@@ -6,6 +6,7 @@ import { StaffListPage } from './StaffListPage';
 import { StaffDistributionPage } from './StaffDistributionPage';
 import { DriverListPage } from './DriverListPage';
 import { BatteryInventoryPage } from './BatteryInventoryPage';
+import { SubscriptionPage } from './SubscriptionPage';
 import type { Staff } from '../types/staff';
 import type { Driver as DriverType } from '../types/driver';
 import type { Battery } from '../types/battery';
@@ -147,14 +148,7 @@ export const ManagementMainPage: React.FC = () => {
                     </div>
                 );
             case 'subscriptions':
-                return (
-                    <div className="p-6">
-                        <div className="text-center py-12">
-                            <h2 className="text-2xl font-bold text-slate-800 mb-4">Quản lý gói thuê</h2>
-                            <p className="text-slate-600">Tính năng đang được phát triển</p>
-                        </div>
-                    </div>
-                );
+                return <SubscriptionPage />;
             case 'transactions':
                 return (
                     <div className="p-6">
