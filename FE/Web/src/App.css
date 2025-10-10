@@ -4,36 +4,35 @@
 @source "./node_modules/preline/dist/*.js";
 @import "preline/variants.css";
 
-@theme{
+@theme {
     /* Text Colors - Electroverse Theme */
-    --color-text-primary: rgb(255,255,255);
-    --color-text-secondary: rgb(200,200,220);
-    --color-text-focus: rgb(240,80,248);
+    --color-text-primary: rgb(255, 255, 255);
+    --color-text-secondary: rgb(200, 200, 220);
+    --color-text-focus: rgb(240, 80, 248);
     --color-text-hover: rgb(177, 3, 186);
-    
-    /* Button Colors - Electroverse Purple/Blue */
-    --color-button-primary: rgb(91,76,255);
-    --color-button-hover: rgb(124,58,237);
-    --color-button-secondary: rgb(39,5,100);
-    --color-button-secondary-hover: rgb(30, 4, 83);
-    
-    /* Background Colors - Deep Purple Gradient */
-    --color-bg-primary: rgb(26,11,63);
-    --color-bg-secondary: rgb(45,27,105);
-    --color-bg-tertiary: rgb(31,14,74);
-    --color-bg-darker: rgb(20,8,48);
-    
-    /* Table & UI Elements */
-    --color-table-header: rgb(91,76,255);
-    --color-table-row: rgb(42,26,94);
-    --color-table-row-hover: rgb(50,32,110);
-    
-    /* Borders - Lighter Purple */
-    --color-border: rgb(74,58,138);
-    --color-border-light: rgb(90,75,160);
-    
-    /* Accent Colors */
-    --color-accent-pink: rgb(233,30,140);
-    --color-accent-blue: rgb(91,76,255);
-}
 
+    /* Button Colors - Electroverse Purple/Blue */
+    --color-button-primary: rgb(91, 76, 255);
+    --color-button-hover: rgb(124, 58, 237);
+    --color-button-secondary: rgb(39, 5, 100);
+    --color-button-secondary-hover: rgb(30, 4, 83);
+
+    /* Background Colors - Deep Purple Gradient */
+    --color-bg-primary: rgb(26, 11, 63);
+    --color-bg-secondary: rgb(45, 27, 105);
+    --color-bg-tertiary: rgb(31, 14, 74);
+    --color-bg-darker: rgb(20, 8, 48);
+
+    /* Table & UI Elements */
+    --color-table-header: rgb(91, 76, 255);
+    --color-table-row: rgb(42, 26, 94);
+    --color-table-row-hover: rgb(50, 32, 110);
+
+    /* Borders - Lighter Purple */
+    --color-border: rgb(74, 58, 138);
+    --color-border-light: rgb(90, 75, 160);
+
+    /* Accent Colors */
+    --color-accent-pink: rgb(233, 30, 140);
+    --color-accent-blue: rgb(91, 76, 255);
+}

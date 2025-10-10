@@ -109,11 +109,10 @@ export default function ConfirmExchange() {
               </div>
               <div className="flex justify-between items-center py-2">
                 <span className="text-text-secondary">State of Health</span>
-                <span className={`font-bold text-lg ${
-                  oldBattery.soh >= 90 ? 'text-green-400' : 
-                  oldBattery.soh >= 70 ? 'text-yellow-400' : 
-                  'text-red-400'
-                }`}>
+                <span className={`font-bold text-lg ${oldBattery.soh >= 90 ? 'text-green-400' :
+                  oldBattery.soh >= 70 ? 'text-yellow-400' :
+                    'text-red-400'
+                  }`}>
                   {oldBattery.soh}%
                 </span>
               </div>
@@ -135,11 +134,10 @@ export default function ConfirmExchange() {
               <div
                 key={battery.id}
                 onClick={() => setSelectedBattery(battery.id)}
-                className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${
-                  selectedBattery === battery.id
-                    ? 'border-button-primary bg-button-primary/20'
-                    : 'border-border hover:border-border-light'
-                }`}
+                className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${selectedBattery === battery.id
+                  ? 'border-button-primary bg-button-primary/20'
+                  : 'border-border hover:border-border-light'
+                  }`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-text-primary font-semibold">{battery.id}</span>
@@ -158,11 +156,10 @@ export default function ConfirmExchange() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-text-secondary">SOH:</span>
-                    <span className={`font-bold ${
-                      battery.soh >= 95 ? 'text-green-400' : 
-                      battery.soh >= 90 ? 'text-yellow-400' : 
-                      'text-orange-400'
-                    }`}>
+                    <span className={`font-bold ${battery.soh >= 95 ? 'text-green-400' :
+                      battery.soh >= 90 ? 'text-yellow-400' :
+                        'text-orange-400'
+                      }`}>
                       {battery.soh}%
                     </span>
                   </div>

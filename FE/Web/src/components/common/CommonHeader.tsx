@@ -14,8 +14,8 @@ interface CommonHeaderProps {
   title?: string;
 }
 
-export const CommonHeader: React.FC<CommonHeaderProps> = ({ 
-  title = 'EV Battery Swap Station' 
+export const CommonHeader: React.FC<CommonHeaderProps> = ({
+  title = 'EV Battery Swap Station'
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState<'admin' | 'staff' | 'driver' | null>(null);
