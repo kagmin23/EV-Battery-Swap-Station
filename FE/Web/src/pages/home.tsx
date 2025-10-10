@@ -1,18 +1,27 @@
-import Header from "../components/common/header"
-import Footer from "../components/common/footer"
- 
-
-export default function HomePage() {
+const Home = () => {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className="flex-1 flex items-center justify-center">
-        <div className="text-center py-16">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">Welcome to EV Battery Swap</h1>
-          <p className="text-lg text-neutral-500">Power your ride, anytime</p>
+    <div className="page-container">
+      <h1>Trang chủ</h1>
+      <div className="page-content">
+        <p>Chào mừng bạn đến với hệ thống quản lý trạm thay pin EV Battery Swap Station.</p>
+        <div className="info-cards">
+          <div className="info-card">
+            <h3>📊 Dashboard</h3>
+            <p>Xem tổng quan về hệ thống</p>
+          </div>
+          <div className="info-card">
+            <h3>🔋 Quản lý Cabinet</h3>
+            <p>Quản lý các tủ pin và mô hình</p>
+          </div>
+          <div className="info-card">
+            <h3>📈 Thống kê</h3>
+            <p>Xem báo cáo và phân tích dữ liệu</p>
+          </div>
         </div>
-      </main>
-      <Footer />
+      </div>
     </div>
-  )
-}
+  );
+};
+
+export default Home;
+
