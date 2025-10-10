@@ -3,6 +3,7 @@ import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Home from './components/common/home';
 import Footer from './components/common/footer';
+import { CommonHeader } from './components/common/CommonHeader';
 import AdminRouter from './routes/adminRouter';
 import StaffRouter from './routes/staffRouter';
 import DriverRouter from './routes/driverRouter';
@@ -11,6 +12,7 @@ import { ManagementMainPage } from './features/admin/pages/ManagementMainPage';
 function App() {
   return (
     <>
+        <CommonHeader />
         <Routes>
           <Route path="/" element={<Navigate to="/overview" replace />} />
           <Route path="/" element={<Home />} />

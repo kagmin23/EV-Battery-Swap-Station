@@ -1,17 +1,11 @@
 import React, { useState } from 'react';
-import { ManagementSidebar } from '../components/ManagementSidebar';
+import { StaffSidebar } from '../components/StaffSidebar';
 
-interface ManagementLayoutProps {
+interface StaffLayoutProps {
     children: React.ReactNode;
-    activeTab: string;
-    onTabChange: (tab: string) => void;
 }
 
-export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
-    children,
-    activeTab,
-    onTabChange
-}) => {
+export const StaffLayout: React.FC<StaffLayoutProps> = ({ children }) => {
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     const handleToggleCollapse = () => {
@@ -19,12 +13,10 @@ export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-indigo-50/50">
             <div className="flex" style={{ height: 'calc(100vh - 56px)' }}>
                 {/* Sidebar */}
-                <ManagementSidebar
-                    activeTab={activeTab}
-                    onTabChange={onTabChange}
+                <StaffSidebar
                     isCollapsed={isCollapsed}
                     onToggleCollapse={handleToggleCollapse}
                 />
@@ -39,3 +31,4 @@ export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
         </div>
     );
 };
+
