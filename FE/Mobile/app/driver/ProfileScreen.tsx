@@ -3,13 +3,13 @@ import {
     View,
     Text,
     StyleSheet,
-    SafeAreaView,
     TouchableOpacity,
     ScrollView,
     Dimensions,
     Pressable,
     Animated,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRouter } from 'expo-router';
@@ -20,6 +20,7 @@ const { height } = Dimensions.get('window');
 // Reuse Option type from the extracted component when needed
 
 const ProfileScreen: React.FC = () => {
+    const insets = useSafeAreaInsets();
     const navigation = useNavigation<any>();
     const router = useRouter();
     const [isAddEvOpen, setIsAddEvOpen] = useState(false);
@@ -73,7 +74,7 @@ const ProfileScreen: React.FC = () => {
         <SafeAreaView style={styles.container}>
             <ScrollView
                 style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[styles.scrollContent, { paddingTop: (insets?.top ?? 0) + 12 }]}
                 showsVerticalScrollIndicator={false}
             >
                 <LinearGradient
@@ -152,6 +153,18 @@ const ProfileScreen: React.FC = () => {
                     <View style={styles.cardContent}>
                         <Text style={styles.cardTitle}>My EVs</Text>
                         <Text style={styles.cardSubtitle}>View and manage linked vehicles</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="white" />
+                </TouchableOpacity>
+
+                {/* My Booking */}
+                <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/my_booking')}>
+                    <View style={styles.iconContainer}>
+                        <Ionicons name="calendar" size={24} color="#6d4aff" />
+                    </View>
+                    <View style={styles.cardContent}>
+                        <Text style={styles.cardTitle}>My Booking</Text>
+                        <Text style={styles.cardSubtitle}>View your swap reservations</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={20} color="white" />
                 </TouchableOpacity>

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import LinkVehicleSheet from './component/LinkVehicleSheet';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const initialVehicles = [
     { id: '1', carName: 'Abarth 500e', brand: 'Abarth', batteryModel: '42 kWh', vin: 'WAUZZZ8V0JA000111' },
@@ -39,70 +40,72 @@ export default function EVs() {
     };
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
-            <View style={styles.headerRow}>
-                <TouchableOpacity style={styles.backRow} onPress={() => router.push('/(tabs)/profile')}>
-                    <Ionicons name="chevron-back" size={22} color="#bfa8ff" />
-                    <Text style={styles.backText}>Profile</Text>
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>EVs</Text>
-                <View style={styles.headerActions}>
-                    <TouchableOpacity style={styles.headerBtn} onPress={handleDeleteAll}>
-                        <Ionicons name="trash-outline" size={18} color="#bfa8ff" />
+        <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
+            <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
+                <View style={styles.headerRow}>
+                    <TouchableOpacity style={styles.backRow} onPress={() => router.push('/(tabs)/profile')}>
+                        <Ionicons name="chevron-back" size={22} color="#bfa8ff" />
+                        <Text style={styles.backText}>Profile</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.headerBtn, { backgroundColor: '#6d4aff' }]} onPress={openAddSheet}>
-                        <Ionicons name="add" size={18} color="#fff" />
-                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>EVs</Text>
+                    <View style={styles.headerActions}>
+                        <TouchableOpacity style={styles.headerBtn} onPress={handleDeleteAll}>
+                            <Ionicons name="trash-outline" size={18} color="#bfa8ff" />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.headerBtn, { backgroundColor: '#6d4aff' }]} onPress={openAddSheet}>
+                            <Ionicons name="add" size={18} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
 
-            {vehicles.map((v, index) => (
-                <View key={v.id} style={styles.card}>
-                    {/* Header Section */}
-                    <View style={styles.headerCard}>
-                        <View style={styles.titleRow}>
-                            <Ionicons name="car-sport" size={18} color="#bfa8ff" />
-                            <Text style={styles.vehicleName}>{v.carName}</Text>
-                        </View>
-                        <View style={styles.metaRow}>
-                            <View style={styles.metaChip}>
-                                <Ionicons name="pricetag" size={14} color="#6d4aff" />
-                                <Text style={styles.metaText}>{v.brand}</Text>
+                {vehicles.map((v, index) => (
+                    <View key={v.id} style={styles.card}>
+                        {/* Header Section */}
+                        <View style={styles.headerCard}>
+                            <View style={styles.titleRow}>
+                                <Ionicons name="car-sport" size={18} color="#bfa8ff" />
+                                <Text style={styles.vehicleName}>{v.carName}</Text>
                             </View>
-                            <View style={styles.metaChip}>
-                                <Ionicons name="battery-charging-outline" size={14} color="#6d4aff" />
-                                <Text style={styles.metaText}>{v.batteryModel}</Text>
-                            </View>
-                            {!!v.vin && (
-                                <View style={[styles.metaChip, { backgroundColor: '#0b0624', borderColor: '#2a1f4e' }]}>
-                                    <Ionicons name="barcode-outline" size={14} color="#6d4aff" />
-                                    <Text style={styles.metaText}>{v.vin}</Text>
+                            <View style={styles.metaRow}>
+                                <View style={styles.metaChip}>
+                                    <Ionicons name="pricetag" size={14} color="#6d4aff" />
+                                    <Text style={styles.metaText}>{v.brand}</Text>
                                 </View>
-                            )}
+                                <View style={styles.metaChip}>
+                                    <Ionicons name="battery-charging-outline" size={14} color="#6d4aff" />
+                                    <Text style={styles.metaText}>{v.batteryModel}</Text>
+                                </View>
+                                {!!v.vin && (
+                                    <View style={[styles.metaChip, { backgroundColor: '#0b0624', borderColor: '#2a1f4e' }]}>
+                                        <Ionicons name="barcode-outline" size={14} color="#6d4aff" />
+                                        <Text style={styles.metaText}>{v.vin}</Text>
+                                    </View>
+                                )}
+                            </View>
                         </View>
-                    </View>
 
-                    {/* Vehicle Info Sections */}
-                    <View style={[styles.section, { marginTop: 12 }]}>
-                        <View style={styles.sectionHeader}>
-                            <Ionicons name="information-circle" size={16} color="#bfa8ff" />
-                            <Text style={styles.sectionTitle}>Vehicle</Text>
+                        {/* Vehicle Info Sections */}
+                        <View style={[styles.section, { marginTop: 12 }]}>
+                            <View style={styles.sectionHeader}>
+                                <Ionicons name="information-circle" size={16} color="#bfa8ff" />
+                                <Text style={styles.sectionTitle}>Vehicle</Text>
+                            </View>
+                            <View style={styles.rowBetween}><Text style={styles.key}>Brand</Text><Text style={styles.val}>{v.brand}</Text></View>
+                            <View style={styles.rowBetween}><Text style={styles.key}>Battery model</Text><Text style={styles.val}>{v.batteryModel}</Text></View>
+                            <View style={styles.rowBetween}><Text style={styles.key}>VIN</Text><Text style={styles.val}>{v.vin}</Text></View>
                         </View>
-                        <View style={styles.rowBetween}><Text style={styles.key}>Brand</Text><Text style={styles.val}>{v.brand}</Text></View>
-                        <View style={styles.rowBetween}><Text style={styles.key}>Battery model</Text><Text style={styles.val}>{v.batteryModel}</Text></View>
-                        <View style={styles.rowBetween}><Text style={styles.key}>VIN</Text><Text style={styles.val}>{v.vin}</Text></View>
+
+                        {index < vehicles.length - 1 && <View style={styles.divider} />}
                     </View>
+                ))}
 
-                    {index < vehicles.length - 1 && <View style={styles.divider} />}
-                </View>
-            ))}
-
-            {/* Floating Add button */}
+                {/* Floating Add button */}
 
 
-            {/* Add EV Sheet */}
-            <LinkVehicleSheet visible={isAddEvOpen} onClose={closeAddSheet} onAdd={handleAddVehicle} />
-        </ScrollView>
+                {/* Add EV Sheet */}
+                <LinkVehicleSheet visible={isAddEvOpen} onClose={closeAddSheet} onAdd={handleAddVehicle} />
+            </ScrollView>
+        </SafeAreaView>
     );
 }
 
