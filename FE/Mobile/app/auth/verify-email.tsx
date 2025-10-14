@@ -7,7 +7,7 @@ import {
     Alert,
     Image,
     Keyboard,
-    SafeAreaView,
+
     StatusBar,
     StyleSheet,
     Text,
@@ -16,6 +16,7 @@ import {
     TouchableWithoutFeedback,
     View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 const loginPic = require('../../assets/images/loginPic2.png');
 
 export default function VerifyEmailScreen() {
@@ -224,7 +225,7 @@ export default function VerifyEmailScreen() {
                             <Text style={styles.subtitle}>
                                 We sent a verification code to
                             </Text>
-                            
+
                             <View style={styles.emailInputContainer}>
                                 <TextInput
                                     style={styles.emailInput}
@@ -235,7 +236,7 @@ export default function VerifyEmailScreen() {
                                 />
                                 <Ionicons name="lock-closed" size={16} color="#a0a0a0" style={styles.lockIcon} />
                             </View>
-                            
+
                             <Text style={styles.description}>
                                 Enter the 6-digit code to verify your email
                             </Text>

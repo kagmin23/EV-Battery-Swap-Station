@@ -6,7 +6,6 @@ import {
     ActivityIndicator,
     Alert,
     Image,
-    SafeAreaView,
     StatusBar,
     StyleSheet,
     Text,
@@ -14,7 +13,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 const loginPic = require('../../assets/images/loginPic2.png');
 
 const LoginScreen: React.FC = () => {
@@ -37,8 +36,8 @@ const LoginScreen: React.FC = () => {
             setError(null);
             await login(email, password);
             router.replace('/' as any);
-                } catch (e: any) {
-            
+        } catch (e: any) {
+
             // Get clean error message from backend
             const errorMessage = e?.message || 'Login failed';
             const isEmailVerificationError = errorMessage.includes('Account not verified') ||
@@ -48,7 +47,7 @@ const LoginScreen: React.FC = () => {
 
             if (isEmailVerificationError) {
                 router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
-                
+
                 // Then show alert after navigation
                 setTimeout(() => {
                     Alert.alert(
@@ -57,7 +56,7 @@ const LoginScreen: React.FC = () => {
                         [
                             {
                                 text: 'Verify Email',
-                                onPress: () => {}
+                                onPress: () => { }
                             }
                         ]
                     );
