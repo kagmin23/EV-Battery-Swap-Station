@@ -7,4 +7,5 @@ export * from './UserData';
 export * from './SupportRequestData';
 export * from './BatterySwapData';
 export * from './RevenueData';
+export * from './ReportData';
 

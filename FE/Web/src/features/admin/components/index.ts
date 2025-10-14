@@ -17,3 +17,7 @@ export { StationRevenueChart } from './StationRevenueChart';
 export { PaymentMethodChart } from './PaymentMethodChart';
 export { RevenueSourceChart } from './RevenueSourceChart';
 
+// Report Management Components
+export { ReportCard } from './ReportCard';
+export { ReportGeneratorModal } from './ReportGeneratorModal';
+
