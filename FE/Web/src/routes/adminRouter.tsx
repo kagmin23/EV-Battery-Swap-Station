@@ -3,6 +3,7 @@ import Dashboard from '../features/admin/page/Dashboard';
 import BatteryChanges from '../features/admin/page/BatteryChanges';
 import RevenueReport from '../features/admin/page/RevenueReport';
 import ReportManagement from '../features/admin/page/ReportManagement';
+import AIForecast from '@/features/admin/page/AIForecast';
 
 export default function AdminRouter() {
   return (
@@ -11,6 +12,7 @@ export default function AdminRouter() {
       <Route path="battery-changes" element={<BatteryChanges />} />
       <Route path="revenue-report" element={<RevenueReport />} />
       <Route path="report-management" element={<ReportManagement />} />
+      <Route path="ai-forecast" element={<AIForecast />} /> 
     </Routes>
   );
 }

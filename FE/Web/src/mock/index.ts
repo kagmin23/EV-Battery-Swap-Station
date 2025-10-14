@@ -8,4 +8,5 @@ export * from './SupportRequestData';
 export * from './BatterySwapData';
 export * from './RevenueData';
 export * from './ReportData';
+export * from './ForecastData';
 

@@ -21,3 +21,7 @@ export { RevenueSourceChart } from './RevenueSourceChart';
 export { ReportCard } from './ReportCard';
 export { ReportGeneratorModal } from './ReportGeneratorModal';
 
+// AI Forecast Components
+export { ForecastChart } from './ForecastChart';
+export { AIInsightCard } from './AIInsightCard';
+
