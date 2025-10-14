@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/select';
 import {
   Plus,
-  Search,
   Edit,
   Trash2,
   DollarSign,
@@ -100,7 +99,6 @@ const mockSubscriptions: Subscription[] = [
 
 export const SubscriptionPage: React.FC = () => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>(mockSubscriptions);
-  const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
@@ -115,10 +113,7 @@ export const SubscriptionPage: React.FC = () => {
   });
   const [newFeature, setNewFeature] = useState('');
 
-  const filteredSubscriptions = subscriptions.filter(sub =>
-    sub.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sub.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSubscriptions = subscriptions;
 
   const totalRevenue = subscriptions.reduce((sum, sub) => sum + sub.revenue, 0);
   const totalSubscribers = subscriptions.reduce((sum, sub) => sum + sub.subscriberCount, 0);
@@ -278,18 +273,6 @@ export const SubscriptionPage: React.FC = () => {
         />
       </div>
 
-      {/* Search Bar */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-          <Input
-            placeholder="Tìm kiếm gói theo tên hoặc mô tả..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 py-6 text-base bg-white border-slate-200 shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-          />
-        </div>
-      </div>
 
       {/* Subscription Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

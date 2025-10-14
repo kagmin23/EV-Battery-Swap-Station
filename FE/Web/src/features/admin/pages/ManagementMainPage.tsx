@@ -7,6 +7,15 @@ import { StaffDistributionPage } from './StaffDistributionPage';
 import { DriverListPage } from './DriverListPage';
 import { BatteryInventoryPage } from './BatteryInventoryPage';
 import { SubscriptionPage } from './SubscriptionPage';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import type { Staff } from '../types/staff';
 import type { Driver as DriverType } from '../types/driver';
 import type { Battery } from '../types/battery';
@@ -95,12 +104,6 @@ export const ManagementMainPage: React.FC = () => {
         setIsDetailModalOpen(true);
     };
 
-    const handleBatterySelect = (battery: Battery) => {
-        setSelectedBattery(battery);
-        setSelectedStaff(null);
-        setSelectedDriver(null);
-        setIsDetailModalOpen(true);
-    };
 
     const handleStaffEdit = (staff: Staff) => {
         // TODO: Implement edit functionality
@@ -137,7 +140,7 @@ export const ManagementMainPage: React.FC = () => {
             case 'driver-list':
                 return <DriverListPage onDriverSelect={handleDriverSelect} />;
             case 'battery-inventory':
-                return <BatteryInventoryPage onBatterySelect={handleBatterySelect} />;
+                return <BatteryInventoryPage />;
             case 'vehicles':
                 return (
                     <div className="p-6">
@@ -176,63 +179,64 @@ export const ManagementMainPage: React.FC = () => {
         <ManagementLayout activeTab={activeTab} onTabChange={handleTabChange}>
             {renderActiveTab()}
 
-            {/* Detail Modal - TODO: Implement */}
-            {isDetailModalOpen && (selectedStaff || selectedDriver || selectedBattery) && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                        <h3 className="text-lg font-semibold mb-4">
+            {/* Detail Modal */}
+            <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+                <DialogContent className="max-w-md bg-white">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-semibold">
                             {selectedStaff ? 'Chi tiết nhân viên' :
                                 selectedDriver ? 'Chi tiết tài xế' :
                                     'Chi tiết pin'}
-                        </h3>
-                        <div className="space-y-2">
-                            {selectedStaff ? (
-                                <>
-                                    <p><strong>Tên:</strong> {selectedStaff.name}</p>
-                                    <p><strong>Email:</strong> {selectedStaff.email}</p>
-                                    <p><strong>Vai trò:</strong> {selectedStaff.role}</p>
-                                    <p><strong>Trạm:</strong> {selectedStaff.stationName}</p>
-                                </>
-                            ) : selectedDriver ? (
-                                <>
-                                    <p><strong>Tên:</strong> {selectedDriver.name}</p>
-                                    <p><strong>Email:</strong> {selectedDriver.email}</p>
-                                    <p><strong>Bằng lái:</strong> {selectedDriver.licenseNumber}</p>
-                                    <p><strong>Xe:</strong> {selectedDriver.vehicleModel}</p>
-                                </>
-                            ) : selectedBattery ? (
-                                <>
-                                    <p><strong>Số seri:</strong> {selectedBattery.serialNumber}</p>
-                                    <p><strong>Model:</strong> {selectedBattery.model}</p>
-                                    <p><strong>Nhà SX:</strong> {selectedBattery.manufacturer}</p>
-                                    <p><strong>Dung lượng:</strong> {selectedBattery.capacity} kWh</p>
-                                    <p><strong>Sạc hiện tại:</strong> {selectedBattery.currentCharge}%</p>
-                                    <p><strong>Sức khỏe:</strong> {selectedBattery.health}%</p>
-                                </>
-                            ) : null}
-                        </div>
-                        <div className="flex space-x-2 mt-6">
-                            <button
-                                onClick={() => setIsDetailModalOpen(false)}
-                                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-                            >
-                                Đóng
-                            </button>
-                            <button
-                                onClick={() => {
-                                    if (selectedStaff) handleStaffEdit(selectedStaff);
-                                    if (selectedDriver) handleDriverEdit(selectedDriver);
-                                    if (selectedBattery) handleBatteryEdit(selectedBattery);
-                                    setIsDetailModalOpen(false);
-                                }}
-                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                            >
-                                Chỉnh sửa
-                            </button>
-                        </div>
+                        </DialogTitle>
+                        <DialogDescription>
+                            Thông tin chi tiết của {selectedStaff ? 'nhân viên' : selectedDriver ? 'tài xế' : 'pin'}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-2 py-4">
+                        {selectedStaff ? (
+                            <>
+                                <p><strong>Tên:</strong> {selectedStaff.name}</p>
+                                <p><strong>Email:</strong> {selectedStaff.email}</p>
+                                <p><strong>Vai trò:</strong> {selectedStaff.role}</p>
+                                <p><strong>Trạm:</strong> {selectedStaff.stationName}</p>
+                            </>
+                        ) : selectedDriver ? (
+                            <>
+                                <p><strong>Tên:</strong> {selectedDriver.name}</p>
+                                <p><strong>Email:</strong> {selectedDriver.email}</p>
+                                <p><strong>Bằng lái:</strong> {selectedDriver.licenseNumber}</p>
+                                <p><strong>Xe:</strong> {selectedDriver.vehicleModel}</p>
+                            </>
+                        ) : selectedBattery ? (
+                            <>
+                                <p><strong>Số seri:</strong> {selectedBattery.serialNumber}</p>
+                                <p><strong>Model:</strong> {selectedBattery.model}</p>
+                                <p><strong>Nhà SX:</strong> {selectedBattery.manufacturer}</p>
+                                <p><strong>Dung lượng:</strong> {selectedBattery.capacity} kWh</p>
+                                <p><strong>Sạc hiện tại:</strong> {selectedBattery.currentCharge}%</p>
+                                <p><strong>Sức khỏe:</strong> {selectedBattery.health}%</p>
+                            </>
+                        ) : null}
                     </div>
-                </div>
-            )}
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>
+                            Đóng
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                if (selectedStaff) handleStaffEdit(selectedStaff);
+                                if (selectedDriver) handleDriverEdit(selectedDriver);
+                                if (selectedBattery) handleBatteryEdit(selectedBattery);
+                                setIsDetailModalOpen(false);
+                            }}
+                        >
+                            Chỉnh sửa
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </ManagementLayout>
     );
 };

@@ -7,5 +7,4 @@ export { default as BatterySwapStats } from './BatterySwapStats';
 export { default as BatterySwapFilters } from './BatterySwapFilters';
 export { default as BatterySwapTable } from './BatterySwapTable';
 export { default as BatterySwapCharts } from './BatterySwapCharts';
-export { default as BatteryDetailsModal } from './BatteryDetailsModal';
 
