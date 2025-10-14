@@ -107,19 +107,14 @@ export default function TabLayout() {
           headerShown: false,
         }}
       />
-      {/* <Tabs.Screen
-        name="login"
+      <Tabs.Screen
+        name="my_booking"
         options={{
-          title: 'Login',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              size={focused ? 28 : 24}
-              name={focused ? "person" : "person-outline"}
-              color={color}
-            />
-          ),
+          href: null,
+          tabBarStyle: { display: 'none' },
+          headerShown: false,
         }}
-      /> */}
+      />
     </Tabs>
 
   );
