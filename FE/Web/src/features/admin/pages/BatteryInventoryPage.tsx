@@ -228,36 +228,36 @@ export const BatteryInventoryPage: React.FC<BatteryInventoryPageProps> = ({ onBa
                     title="Tổng số pin"
                     value={mockStats.totalBatteries.toLocaleString()}
                     icon={BatteryIcon}
-                    gradientFrom="from-blue-500"
-                    gradientTo="to-blue-600"
-                    textColor="text-white"
+                    gradientFrom="from-blue-50"
+                    gradientTo="to-blue-100/50"
+                    textColor="text-blue-900"
                     iconBg="bg-blue-500"
                 />
                 <StatsCard
                     title="Pin có sẵn"
                     value={mockStats.availableBatteries.toLocaleString()}
                     icon={Zap}
-                    gradientFrom="from-green-500"
-                    gradientTo="to-green-600"
-                    textColor="text-white"
+                    gradientFrom="from-green-50"
+                    gradientTo="to-green-100/50"
+                    textColor="text-green-900"
                     iconBg="bg-green-500"
                 />
                 <StatsCard
                     title="Đang sạc"
                     value={mockStats.chargingBatteries.toLocaleString()}
                     icon={TrendingUp}
-                    gradientFrom="from-yellow-500"
-                    gradientTo="to-yellow-600"
-                    textColor="text-white"
-                    iconBg="bg-yellow-500"
+                    gradientFrom="from-orange-50"
+                    gradientTo="to-orange-100/50"
+                    textColor="text-orange-900"
+                    iconBg="bg-orange-500"
                 />
                 <StatsCard
                     title="Sức khỏe TB"
                     value={`${mockStats.averageHealth.toFixed(1)}%`}
                     icon={AlertTriangle}
-                    gradientFrom="from-purple-500"
-                    gradientTo="to-purple-600"
-                    textColor="text-white"
+                    gradientFrom="from-purple-50"
+                    gradientTo="to-purple-100/50"
+                    textColor="text-purple-900"
                     iconBg="bg-purple-500"
                 />
             </div>

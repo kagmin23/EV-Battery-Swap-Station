@@ -11,11 +11,18 @@ import { ManagementMainPage } from './features/admin/pages/ManagementMainPage';
 
 function App() {
   return (
-    <>
-      <CommonHeader />
+    <div className="h-screen">
       <Routes>
         <Route path="/" element={<Navigate to="/overview" replace />} />
-        <Route path="/" element={<Home />} />
+        <Route path="/home" element={
+          <>
+            <CommonHeader />
+            <div className="flex-1 overflow-hidden">
+              <Home />
+            </div>
+            <Footer />
+          </>
+        } />
         <Route path="/admin/*" element={<AdminRouter />} />
         <Route path="/staff/*" element={<StaffRouter />} />
         <Route path="/driver/*" element={<DriverRouter />} />
@@ -30,8 +37,7 @@ function App() {
         <Route path="/transactions" element={<ManagementMainPage />} />
         <Route path="/settings" element={<ManagementMainPage />} />
       </Routes>
-      <Footer />
-    </>
+    </div>
   );
 }
 

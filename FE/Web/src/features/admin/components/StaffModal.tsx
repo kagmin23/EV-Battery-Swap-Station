@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import type { Staff, AddStaffRequest, UpdateStaffRequest, StaffRole, Station, StaffPermission } from '../types/staff';
 
 interface StaffModalProps {
@@ -142,10 +142,7 @@ export const StaffModal: React.FC<StaffModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Thông tin cơ bản</CardTitle>
-            </CardHeader>
+          <Card className="border-0 shadow-none">
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -226,10 +223,7 @@ export const StaffModal: React.FC<StaffModalProps> = ({
           </Card>
 
           {/* Permissions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Quyền hạn</CardTitle>
-            </CardHeader>
+          <Card className="border-0 shadow-none">
             <CardContent>
               <div className="space-y-4">
                 {permissions.map((permission) => (

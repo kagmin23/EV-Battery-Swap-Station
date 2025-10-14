@@ -4,35 +4,69 @@
 @source "./node_modules/preline/dist/*.js";
 @import "preline/variants.css";
 
+/* Custom Scrollbar Styles */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(107, 114, 128, 0.7);
+}
+
+/* Hide scrollbar for Firefox */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+/* Ensure no double scrollbars - only for main layout containers */
+
 @theme {
-    /* Text Colors - Electroverse Theme */
-    --color-text-primary: rgb(255, 255, 255);
-    --color-text-secondary: rgb(200, 200, 220);
-    --color-text-focus: rgb(240, 80, 248);
-    --color-text-hover: rgb(177, 3, 186);
+    /* Text Colors - Modern Minimal */
+    --color-text-primary: rgb(15, 23, 42);
+    --color-text-secondary: rgb(71, 85, 105);
+    --color-text-focus: rgb(59, 130, 246);
+    --color-text-hover: rgb(30, 64, 175);
 
-    /* Button Colors - Electroverse Purple/Blue */
-    --color-button-primary: rgb(91, 76, 255);
-    --color-button-hover: rgb(124, 58, 237);
-    --color-button-secondary: rgb(39, 5, 100);
-    --color-button-secondary-hover: rgb(30, 4, 83);
+    /* Button Colors - Modern Blue */
+    --color-button-primary: rgb(59, 130, 246);
+    --color-button-hover: rgb(37, 99, 235);
+    --color-button-secondary: rgb(241, 245, 249);
+    --color-button-secondary-hover: rgb(226, 232, 240);
 
-    /* Background Colors - Deep Purple Gradient */
-    --color-bg-primary: rgb(26, 11, 63);
-    --color-bg-secondary: rgb(45, 27, 105);
-    --color-bg-tertiary: rgb(31, 14, 74);
-    --color-bg-darker: rgb(20, 8, 48);
+    /* Background Colors - Clean & Modern */
+    --color-bg-primary: rgb(255, 255, 255);
+    --color-bg-secondary: rgb(248, 250, 252);
+    --color-bg-tertiary: rgb(241, 245, 249);
+    --color-bg-darker: rgb(226, 232, 240);
 
     /* Table & UI Elements */
-    --color-table-header: rgb(91, 76, 255);
-    --color-table-row: rgb(42, 26, 94);
-    --color-table-row-hover: rgb(50, 32, 110);
+    --color-table-header: rgb(248, 250, 252);
+    --color-table-row: rgb(255, 255, 255);
+    --color-table-row-hover: rgb(248, 250, 252);
 
-    /* Borders - Lighter Purple */
-    --color-border: rgb(74, 58, 138);
-    --color-border-light: rgb(90, 75, 160);
+    /* Borders - Subtle Gray */
+    --color-border: rgb(226, 232, 240);
+    --color-border-light: rgb(241, 245, 249);
 
-    /* Accent Colors */
-    --color-accent-pink: rgb(233, 30, 140);
-    --color-accent-blue: rgb(91, 76, 255);
+    /* Accent Colors - Modern Palette */
+    --color-accent-blue: rgb(59, 130, 246);
+    --color-accent-green: rgb(34, 197, 94);
+    --color-accent-orange: rgb(249, 115, 22);
+    --color-accent-purple: rgb(147, 51, 234);
 }

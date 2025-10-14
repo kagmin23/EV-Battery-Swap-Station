@@ -22,7 +22,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   iconBg
 }) => {
   return (
-    <Card className={`bg-gradient-to-r ${gradientFrom} ${gradientTo} shadow-lg`}>
+    <Card className={`bg-gradient-to-r ${gradientFrom} ${gradientTo} shadow-lg border-0`}>
       <CardContent className="p-6">
         <div className="flex items-center space-x-4">
           <div className={`p-3 ${iconBg} rounded-xl`}>

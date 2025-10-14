@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { StatsCard } from '../components/StatsCard';
 import {
   Dialog,
   DialogContent,
@@ -197,15 +198,15 @@ export const SubscriptionPage: React.FC = () => {
       const updatedSubscriptions = subscriptions.map(sub =>
         sub.id === editingSubscription.id
           ? {
-              ...sub,
-              name: formData.name || sub.name,
-              description: formData.description || sub.description,
-              price: formData.price || sub.price,
-              duration: formData.duration || sub.duration,
-              swapLimit: formData.swapLimit || sub.swapLimit,
-              features: formData.features || sub.features,
-              status: formData.status || sub.status
-            }
+            ...sub,
+            name: formData.name || sub.name,
+            description: formData.description || sub.description,
+            price: formData.price || sub.price,
+            duration: formData.duration || sub.duration,
+            swapLimit: formData.swapLimit || sub.swapLimit,
+            features: formData.features || sub.features,
+            status: formData.status || sub.status
+          }
           : sub
       );
       setSubscriptions(updatedSubscriptions);
@@ -238,56 +239,43 @@ export const SubscriptionPage: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-6 bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium">Tổng doanh thu</p>
-              <p className="text-2xl font-bold text-blue-900 mt-1">{formatCurrency(totalRevenue)}</p>
-            </div>
-            <div className="p-3 bg-blue-600 rounded-lg">
-              <DollarSign className="h-6 w-6 text-white" />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-green-600 font-medium">Người đăng ký</p>
-              <p className="text-2xl font-bold text-green-900 mt-1">{totalSubscribers.toLocaleString()}</p>
-            </div>
-            <div className="p-3 bg-green-600 rounded-lg">
-              <Users className="h-6 w-6 text-white" />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-purple-600 font-medium">Gói đang hoạt động</p>
-              <p className="text-2xl font-bold text-purple-900 mt-1">{activePackages}</p>
-            </div>
-            <div className="p-3 bg-purple-600 rounded-lg">
-              <Zap className="h-6 w-6 text-white" />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-orange-600 font-medium">TB doanh thu/gói</p>
-              <p className="text-2xl font-bold text-orange-900 mt-1">
-                {formatCurrency(totalRevenue / subscriptions.length)}
-              </p>
-            </div>
-            <div className="p-3 bg-orange-600 rounded-lg">
-              <TrendingUp className="h-6 w-6 text-white" />
-            </div>
-          </div>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <StatsCard
+          title="Tổng doanh thu"
+          value={formatCurrency(totalRevenue)}
+          icon={DollarSign}
+          gradientFrom="from-blue-50"
+          gradientTo="to-blue-100/50"
+          textColor="text-blue-900"
+          iconBg="bg-blue-500"
+        />
+        <StatsCard
+          title="Người đăng ký"
+          value={totalSubscribers.toLocaleString()}
+          icon={Users}
+          gradientFrom="from-green-50"
+          gradientTo="to-green-100/50"
+          textColor="text-green-900"
+          iconBg="bg-green-500"
+        />
+        <StatsCard
+          title="Gói đang hoạt động"
+          value={activePackages}
+          icon={Zap}
+          gradientFrom="from-purple-50"
+          gradientTo="to-purple-100/50"
+          textColor="text-purple-900"
+          iconBg="bg-purple-500"
+        />
+        <StatsCard
+          title="TB doanh thu/gói"
+          value={formatCurrency(totalRevenue / subscriptions.length)}
+          icon={TrendingUp}
+          gradientFrom="from-orange-50"
+          gradientTo="to-orange-100/50"
+          textColor="text-orange-900"
+          iconBg="bg-orange-500"
+        />
       </div>
 
       {/* Search Bar */}
@@ -308,7 +296,7 @@ export const SubscriptionPage: React.FC = () => {
         {filteredSubscriptions.map((subscription) => (
           <Card
             key={subscription.id}
-            className="p-6 bg-white hover:shadow-xl transition-all duration-300 border-2 border-slate-200 hover:border-blue-400 relative overflow-hidden"
+            className="p-6 bg-white hover:shadow-xl transition-all duration-300 border-0 shadow-lg relative overflow-hidden flex flex-col h-full"
           >
             {/* Badge for status */}
             <div className="absolute top-4 right-4">
@@ -338,25 +326,25 @@ export const SubscriptionPage: React.FC = () => {
             </div>
 
             {/* Features */}
-            <div className="mb-4 space-y-2">
+            <div className="mb-4 space-y-2 flex-grow">
               <div className="flex items-center text-sm">
                 <Zap className="h-4 w-4 mr-2 text-yellow-500" />
                 <span className="font-medium">
-                  {subscription.swapLimit === -1 
-                    ? 'Không giới hạn' 
+                  {subscription.swapLimit === -1
+                    ? 'Không giới hạn'
                     : `${subscription.swapLimit} lần đổi pin`}
                 </span>
               </div>
               {subscription.features.map((feature, index) => (
                 <div key={index} className="flex items-start text-sm text-slate-600">
-                  <span className="mr-2">•</span>
+                  <Zap className="h-4 w-4 mr-2 text-yellow-500 flex-shrink-0 mt-0.5" />
                   <span>{feature}</span>
                 </div>
               ))}
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-2 mb-4 pt-4 border-t">
+            <div className="grid grid-cols-2 gap-4 mb-4 pt-4 border-t border-gray-200">
               <div className="text-center">
                 <Users className="h-4 w-4 mx-auto mb-1 text-slate-500" />
                 <p className="text-xs text-slate-500">Người dùng</p>
@@ -369,8 +357,8 @@ export const SubscriptionPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-2">
+            {/* Actions - This will be pushed to the bottom */}
+            <div className="flex gap-2 mt-auto">
               <Button
                 variant="outline"
                 size="sm"
@@ -412,7 +400,7 @@ export const SubscriptionPage: React.FC = () => {
             <DialogTitle className="text-2xl font-bold text-slate-800">Thêm gói mới</DialogTitle>
             <DialogDescription>Điền thông tin để tạo gói thuê pin mới</DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -425,11 +413,11 @@ export const SubscriptionPage: React.FC = () => {
                   className="bg-white"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="status">Trạng thái</Label>
-                <Select 
-                  value={formData.status} 
+                <Select
+                  value={formData.status}
                   onValueChange={(value: 'active' | 'inactive') => setFormData({ ...formData, status: value })}
                 >
                   <SelectTrigger className="bg-white">
@@ -540,7 +528,7 @@ export const SubscriptionPage: React.FC = () => {
             <DialogTitle className="text-2xl font-bold text-slate-800">Chỉnh sửa gói</DialogTitle>
             <DialogDescription>Cập nhật thông tin gói thuê pin</DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -553,11 +541,11 @@ export const SubscriptionPage: React.FC = () => {
                   className="bg-white"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="edit-status">Trạng thái</Label>
-                <Select 
-                  value={formData.status} 
+                <Select
+                  value={formData.status}
                   onValueChange={(value: 'active' | 'inactive') => setFormData({ ...formData, status: value })}
                 >
                   <SelectTrigger className="bg-white">

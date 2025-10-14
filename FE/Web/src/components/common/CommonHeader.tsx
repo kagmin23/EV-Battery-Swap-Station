@@ -33,7 +33,7 @@ export const CommonHeader: React.FC<CommonHeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-purple-900 via-purple-800 to-indigo-900 shadow-lg">
+    <header className="sticky top-0 z-40 w-full bg-gradient-to-r from-purple-900 via-purple-800 to-indigo-900 shadow-lg">
       <div className="container mx-auto px-6 py-2">
         <div className="relative flex items-center justify-center">
           {/* Logo/Title - Center */}
