@@ -46,12 +46,6 @@ const ProfileScreen: React.FC = () => {
         });
     };
 
-    const handleAddVehicle = (_data: { vin: string; brand: string; carName: string; batteryModel: string }) => {
-        closeSheet();
-        // Navigate within Tabs to keep BottomTab visible
-        router.push('/(tabs)/evs');
-    };
-
     // Hide/restore BottomTab when sheet opens/closes
     useEffect(() => {
         if (isAddEvOpen) {
@@ -82,7 +76,7 @@ const ProfileScreen: React.FC = () => {
         <SafeAreaView style={styles.container}>
             <ScrollView
                 style={styles.scrollView}
-                contentContainerStyle={[styles.scrollContent, { paddingTop: (insets?.top ?? 0) + 12 }]}
+                contentContainerStyle={[styles.scrollContent, { paddingTop: (insets?.top ?? 0) }]}
                 showsVerticalScrollIndicator={false}
             >
                 <LinearGradient
@@ -123,10 +117,17 @@ const ProfileScreen: React.FC = () => {
                 {/* Add EV Card */}
                 <TouchableOpacity style={styles.actionCard} onPress={vehicles.length === 0 ? openSheet : () => router.push('/(tabs)/evs')}>
                     <View style={styles.dashedIconContainer}>
-                        <Ionicons name="car" size={24} color="#6d4aff" />
-                        <View style={styles.plusIcon}>
-                            <Ionicons name="add" size={12} color="#6d4aff" />
-                        </View>
+                        {vehicles.length === 0 ? (
+                            <>
+                                <Ionicons name="car" size={24} color="#6d4aff" />
+                                <View style={styles.plusIcon}>
+                                    <Ionicons name="add" size={12} color="#6d4aff" />
+                                </View>
+                            </>
+                        ) : (
+                            <Ionicons name="car-outline" size={24} color="#6d4aff" />
+                        )}
+
                     </View>
                     {vehicles.length === 0 ? (
                         <>
@@ -258,7 +259,6 @@ const ProfileScreen: React.FC = () => {
             <LinkVehicleSheet
                 visible={isAddEvOpen}
                 onClose={closeSheet}
-                onAdd={handleAddVehicle}
             />
         </SafeAreaView>
     );
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: 20,
-        paddingTop: 20,
+        paddingTop: 10,
         paddingBottom: 100,
     },
     greetingCard: {

@@ -1,6 +1,9 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, TextInput, TouchableOpacity, Pressable, Animated, ScrollView } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Dimensions, TextInput, TouchableOpacity, Pressable, Animated, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { getAllBattery, useBatteries } from '@/store/baterry';
+import { router, useFocusEffect } from 'expo-router';
+import { creatVehicle } from '@/store/vehicle';
 
 const { height } = Dimensions.get('window');
 
@@ -9,7 +12,6 @@ type Option = { label: string; value: string };
 type Props = {
     visible: boolean;
     onClose: () => void;
-    onAdd: (data: { vin: string; brand: string; carName: string; batteryModel: string }) => void;
 };
 
 const SearchableDropdown: React.FC<{
@@ -82,13 +84,29 @@ const SearchableDropdown: React.FC<{
     );
 };
 
-export default function LinkVehicleSheet({ visible, onClose, onAdd }: Props) {
+export default function LinkVehicleSheet({ visible, onClose }: Props) {
     const sheetY = useRef(new Animated.Value(height)).current;
 
     const [vin, setVin] = useState('');
     const [brand, setBrand] = useState('');
     const [carName, setCarName] = useState('');
     const [batteryModel, setBatteryModel] = useState('');
+    const [modelYear, setModelYear] = useState('');
+    const [licensePlate, setLicensePlate] = useState('');
+    const batteries = useBatteries();
+
+    useFocusEffect((
+        useCallback(() => {
+            getAllBattery();
+        }, [])
+    ));
+
+    const batteryOptionsFromStore: Option[] = useMemo(() => {
+        return (batteries || []).map(b => ({ label: b.name, value: b.name }));
+    }, [batteries]);
+
+
+
 
     const brandOptions: Option[] = useMemo(() => [
         { label: 'VinFast', value: 'VinFast' },
@@ -107,12 +125,17 @@ export default function LinkVehicleSheet({ visible, onClose, onAdd }: Props) {
         { label: 'Model Y', value: 'Model Y' },
     ], []);
 
-    const batteryOptions: Option[] = useMemo(() => [
-        { label: 'LFP-42', value: 'LFP-42' },
-        { label: 'LFP-60', value: 'LFP-60' },
-        { label: 'NMC-75', value: 'NMC-75' },
-        { label: 'NCA-82', value: 'NCA-82' },
-    ], []);
+
+
+    const yearOptions: Option[] = useMemo(() => {
+        const current = new Date().getFullYear();
+        const years: Option[] = [];
+        for (let y = current; y >= 1990; y--) {
+            const s = String(y);
+            years.push({ label: s, value: s });
+        }
+        return years;
+    }, []);
 
     React.useEffect(() => {
         if (visible) {
@@ -123,44 +146,79 @@ export default function LinkVehicleSheet({ visible, onClose, onAdd }: Props) {
         }
     }, [visible, sheetY]);
 
-    const handleAdd = () => {
-        onAdd({ vin, brand, carName, batteryModel });
+    const handleAdd = async () => {
+        const payload = {
+            vin,
+            brand,
+            carName,
+            batteryModel,
+            modelYear: modelYear ? parseInt(modelYear, 10) : undefined,
+            licensePlate,
+        };
+        await creatVehicle(payload)
+        onClose()
+        router.push('/(tabs)/evs');
     };
 
     return (
         <>
-            {visible && <Pressable style={styles.scrim} onPress={onClose} />}
-            <Animated.View
-                pointerEvents={visible ? 'auto' : 'none'}
-                style={[styles.sheetContainer, { transform: [{ translateY: sheetY }] }]}
-            >
-                <View style={styles.sheetHeader}>
-                    <Text style={styles.sheetTitle}>Add your EV</Text>
-                    <TouchableOpacity onPress={onClose}>
-                        <Ionicons name="close" size={22} color="#bfa8ff" />
-                    </TouchableOpacity>
-                </View>
+            {visible ? (
+                <>
+                    <Pressable style={styles.scrim} onPress={onClose} />
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}
+                        style={{ flex: 1 }}
+                    >
+                        <Animated.View
+                            pointerEvents="auto"
+                            style={[styles.sheetContainer, { transform: [{ translateY: sheetY }] }, { minHeight: Math.floor(height * 0.82) }]}
+                        >
+                            <View style={styles.sheetHeader}>
+                                <Text style={styles.sheetTitle}>Add your EV</Text>
+                                <TouchableOpacity onPress={onClose}>
+                                    <Ionicons name="close" size={22} color="#bfa8ff" />
+                                </TouchableOpacity>
+                            </View>
 
-                <View style={styles.formRow}>
-                    <Text style={styles.inputLabel}>VIN</Text>
-                    <TextInput
-                        placeholder="1HGCM82633A004352"
-                        placeholderTextColor="#7f6fb1"
-                        value={vin}
-                        onChangeText={setVin}
-                        style={styles.input}
-                    />
-                </View>
-                <SearchableDropdown label="Brand" value={brand} options={brandOptions} placeholder="Tesla, VinFast..." onSelect={setBrand} />
-                <SearchableDropdown label="Car Name" value={carName} options={carOptions} placeholder="Model 3, VF 6..." onSelect={setCarName} />
-                <SearchableDropdown label="Battery Model" value={batteryModel} options={batteryOptions} placeholder="LFP-60, NMC-75..." onSelect={setBatteryModel} />
+                            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }} style={{ maxHeight: height * 0.72 }}>
+                                <View style={styles.formRow}>
+                                    <Text style={styles.inputLabel}>VIN</Text>
+                                    <TextInput
+                                        placeholder="1HGCM82633A004352"
+                                        placeholderTextColor="#7f6fb1"
+                                        value={vin}
+                                        onChangeText={setVin}
+                                        style={styles.input}
+                                    />
+                                </View>
+                                <View style={styles.formRow}>
+                                    <Text style={styles.inputLabel}>License Plate</Text>
+                                    <TextInput
+                                        placeholder="ABC-1234"
+                                        placeholderTextColor="#7f6fb1"
+                                        value={licensePlate}
+                                        onChangeText={setLicensePlate}
+                                        style={styles.input}
+                                        autoCapitalize="characters"
+                                    />
+                                </View>
+                                <SearchableDropdown label="Brand" value={brand} options={brandOptions} placeholder="Tesla, VinFast..." onSelect={setBrand} />
+                                <SearchableDropdown label="Car Name" value={carName} options={carOptions} placeholder="Model 3, VF 6..." onSelect={setCarName} />
+                                <SearchableDropdown label="Battery Model" value={batteryModel} options={batteryOptionsFromStore} placeholder="LFP-60, NMC-75..." onSelect={setBatteryModel} />
+                                <SearchableDropdown label="Model Year" value={modelYear} options={yearOptions} placeholder="Select year" onSelect={setModelYear} />
 
-                <View style={styles.actionsRow}>
-                    <TouchableOpacity style={[styles.button, styles.buttonPrimary]} onPress={handleAdd}>
-                        <Text style={styles.buttonPrimaryText}>Add Vehicle</Text>
-                    </TouchableOpacity>
-                </View>
-            </Animated.View>
+                            </ScrollView>
+
+                            <View style={styles.actionsRow}>
+                                <TouchableOpacity style={[styles.button, styles.buttonPrimary]} onPress={handleAdd}>
+                                    <Text style={styles.buttonPrimaryText}>Add Vehicle</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </Animated.View>
+                    </KeyboardAvoidingView>
+                </>
+            ) : null}
         </>
     );
 }

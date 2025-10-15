@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import LinkVehicleSheet from './component/LinkVehicleSheet';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getAllVehicle, sVehicles, useVehicles } from '@/store/vehicle';
+import { getAllVehicle, useVehicles } from '@/store/vehicle';
 
 
 
@@ -24,18 +24,6 @@ export default function EVs() {
 
     const openAddSheet = () => setIsAddEvOpen(true);
     const closeAddSheet = () => setIsAddEvOpen(false);
-
-    const handleAddVehicle = (data: { vin: string; brand: string; carName: string; batteryModel: string }) => {
-        const next = {
-            id: Math.random().toString(36).slice(2),
-            carName: data.carName || 'New EV',
-            brand: data.brand || 'Unknown',
-            batteryModel: data.batteryModel || '—',
-            vin: data.vin || '—',
-        };
-        sVehicles.set(prev => [next, ...prev.value]);
-        closeAddSheet();
-    };
 
     return (
         <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
@@ -99,10 +87,9 @@ export default function EVs() {
 
                 {/* Floating Add button */}
 
-
-                {/* Add EV Sheet */}
-                <LinkVehicleSheet visible={isAddEvOpen} onClose={closeAddSheet} onAdd={handleAddVehicle} />
             </ScrollView>
+            {/* Add EV Sheet outside ScrollView to overlay full screen */}
+            <LinkVehicleSheet visible={isAddEvOpen} onClose={closeAddSheet} />
         </SafeAreaView>
     );
 }
