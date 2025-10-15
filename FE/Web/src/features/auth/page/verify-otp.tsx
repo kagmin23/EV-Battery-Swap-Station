@@ -15,14 +15,14 @@ const VerifyOTPPage: React.FC = () => {
   const [canResend, setCanResend] = useState(false);
   const [resendCount, setResendCount] = useState(0);
 
-  // Redirect if no email
+
   useEffect(() => {
     if (!email) {
       navigate('/register');
     }
   }, [email, navigate]);
 
-  // Countdown timer
+
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -32,7 +32,6 @@ const VerifyOTPPage: React.FC = () => {
     }
   }, [countdown]);
 
-  // Load resend count from localStorage (for 24h limit)
   useEffect(() => {
     if (email) {
       const storageKey = `resend_count_${email}`;
@@ -45,7 +44,7 @@ const VerifyOTPPage: React.FC = () => {
         if (hoursPassed < 24) {
           setResendCount(count);
         } else {
-          // Reset after 24 hours
+
           localStorage.removeItem(storageKey);
           setResendCount(0);
         }
@@ -54,7 +53,7 @@ const VerifyOTPPage: React.FC = () => {
   }, [email]);
 
   const handleOtpChange = (index: number, value: string) => {
-    // Only allow numbers
+
     if (value && !/^\d$/.test(value)) return;
 
     const newOtp = [...otp];
@@ -62,7 +61,7 @@ const VerifyOTPPage: React.FC = () => {
     setOtp(newOtp);
     setError('');
 
-    // Auto-focus next input
+
     if (value && index < 5) {
       const nextInput = document.getElementById(`otp-${index + 1}`);
       nextInput?.focus();
@@ -152,11 +151,11 @@ const VerifyOTPPage: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Update resend count
+
         const newCount = resendCount + 1;
         setResendCount(newCount);
         
-        // Save to localStorage
+
         const storageKey = `resend_count_${email}`;
         localStorage.setItem(storageKey, JSON.stringify({
           count: newCount,
@@ -199,7 +198,7 @@ const VerifyOTPPage: React.FC = () => {
         </div>
 
         <div className="mt-8 space-y-6">
-          {/* OTP Input */}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
               Nhập mã OTP (6 số)
@@ -221,21 +220,21 @@ const VerifyOTPPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Error Message */}
+
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
               <span className="block sm:inline">{error}</span>
             </div>
           )}
 
-          {/* Success Message */}
+
           {success && (
             <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded relative">
               <span className="block sm:inline">{success}</span>
             </div>
           )}
 
-          {/* Verify Button */}
+
           <div>
             <button
               onClick={handleVerify}
@@ -253,7 +252,7 @@ const VerifyOTPPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Resend OTP */}
+
           <div className="text-center">
             <div className="text-sm text-gray-600 mb-2">
               {canResend ? (
@@ -285,7 +284,7 @@ const VerifyOTPPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Back to Login */}
+
           <div className="text-center">
             <button
               onClick={() => navigate('/login')}
