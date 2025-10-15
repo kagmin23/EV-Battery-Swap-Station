@@ -14,7 +14,7 @@ export const StaffLayout: React.FC<StaffLayoutProps> = ({ children }) => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-indigo-50/50">
-            <div className="flex" style={{ height: 'calc(100vh - 56px)' }}>
+            <div className="flex min-h-screen">
                 {/* Sidebar */}
                 <StaffSidebar
                     isCollapsed={isCollapsed}
