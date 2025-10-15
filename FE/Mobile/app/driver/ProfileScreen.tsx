@@ -1,23 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
-    Dimensions,
-    Pressable,
-    Animated,
-} from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@/features/auth/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+    Animated,
+    Dimensions,
+    Image,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinkVehicleSheet from './component/LinkVehicleSheet';
 
 const { height } = Dimensions.get('window');
-
-// Reuse Option type from the extracted component when needed
 
 const ProfileScreen: React.FC = () => {
     const insets = useSafeAreaInsets();
@@ -25,6 +25,7 @@ const ProfileScreen: React.FC = () => {
     const router = useRouter();
     const [isAddEvOpen, setIsAddEvOpen] = useState(false);
     const sheetY = useRef(new Animated.Value(height)).current;
+    const { user } = useAuth();
 
     const openSheet = () => {
         setIsAddEvOpen(true);
@@ -40,11 +41,9 @@ const ProfileScreen: React.FC = () => {
 
     const handleAddVehicle = (_data: { vin: string; brand: string; carName: string; batteryModel: string }) => {
         closeSheet();
-        // Navigate within Tabs to keep BottomTab visible
         router.push('/(tabs)/evs');
     };
 
-    // Hide/restore BottomTab when sheet opens/closes
     useEffect(() => {
         if (isAddEvOpen) {
             navigation.setOptions({ tabBarStyle: { display: 'none' } });
@@ -69,7 +68,6 @@ const ProfileScreen: React.FC = () => {
         }
     }, [isAddEvOpen, navigation]);
 
-    // Kept for type reuse in this file
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView
@@ -77,6 +75,12 @@ const ProfileScreen: React.FC = () => {
                 contentContainerStyle={[styles.scrollContent, { paddingTop: (insets?.top ?? 0) + 12 }]}
                 showsVerticalScrollIndicator={false}
             >
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => router.push('/(tabs)/home')}
+                >
+                    <Ionicons name="arrow-back" size={24} color="white" />
+                </TouchableOpacity>
                 <LinearGradient
                     colors={['#6d4aff', '#ff74e2']}
                     start={{ x: 0, y: 0 }}
@@ -85,14 +89,24 @@ const ProfileScreen: React.FC = () => {
                 >
                     <View style={styles.avatarContainer}>
                         <View style={styles.avatar}>
-                            <Ionicons name="person" size={40} color="#d6d6d6" />
+                            {user?.avatar ? (
+                                <Image
+                                    source={{ uri: user.avatar }}
+                                    style={{ width: 70, height: 70, borderRadius: 35 }}
+                                    resizeMode="cover"
+                                />
+                            ) : (
+                                <Ionicons name="person" size={40} color="#d6d6d6" />
+                            )}
                         </View>
                     </View>
-                    <Text style={styles.greeting}>Hi John!</Text>
+                    <View style={{ flexDirection: 'column', gap: 5 }}>
+                        <Text style={styles.greeting}>Hi, Driver {user?.fullName}!</Text>
+                        <Text style={styles.greeting2}>Have a nice day. Good luck on your trip!</Text>
+                    </View>
                 </LinearGradient>
-
                 {/* Account Card */}
-                <TouchableOpacity style={styles.actionCard}>
+                <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/profile')}>
                     <View style={styles.iconContainer}>
                         <Ionicons name="person" size={24} color="#6d4aff" />
                         <View style={styles.iconBadge}>
@@ -257,16 +271,23 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: 20,
-        paddingTop: 20,
         paddingBottom: 100,
     },
     greetingCard: {
-
         borderRadius: 20,
         padding: 20,
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 20,
+    },
+    backButton: {
+        position: 'absolute',
+        top: 10,
+        left: 16,
+        zIndex: 10,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 20,
+        padding: 6,
     },
     avatarContainer: {
         marginRight: 16,
@@ -280,9 +301,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     greeting: {
-        fontSize: 28,
+        fontSize: 18,
         fontWeight: 'bold',
         color: 'white',
+    },
+    greeting2: {
+        fontSize: 12,
+        fontWeight: '200',
+        color: 'white',
+        fontStyle: 'italic'
     },
     actionCard: {
         backgroundColor: '#1a0f3e',

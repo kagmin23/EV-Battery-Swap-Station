@@ -81,6 +81,8 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
+          // Hide tab bar when this screen is focused
+          tabBarStyle: { display: 'none' },
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               size={focused ? 28 : 24}

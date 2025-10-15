@@ -66,6 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           ...userInfo,
           _id: userInfo.id, // Map id to _id for consistency
           refreshToken,
+          avatar: (userInfo as any).avatar ?? '',
           refreshTokenExpiresAt: null, // Will be set by BE if needed
           isVerified: true, // If login succeeds, user must be verified
           emailOTP: '',

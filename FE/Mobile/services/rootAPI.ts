@@ -15,23 +15,12 @@ const axiosInstance = axios.create({
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor (sync) - ensure headers object exists
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Automatically add auth token if available
-    AsyncStorage.getItem(TOKEN_KEY).then((token) => {
-      if (token && config.headers && !config.headers.Authorization) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    }).catch(() => {
-      // Silently handle token retrieval errors
-    });
-
-    // Ensure headers exist
     if (!config.headers) {
-      config.headers = {};
+      config.headers = {} as any;
     }
-
     return config;
   },
   (error) => {
@@ -94,13 +83,23 @@ const httpClient = {
     } = {}
   ): Promise<T> {
     const { method = 'GET', data, headers = {}, params } = options;
+    // Inject Authorization header with token (awaited) before request is sent
+    let mergedHeaders: { [key: string]: string } = { ...headers };
+    try {
+      const token = await AsyncStorage.getItem(TOKEN_KEY);
+      if (token && !mergedHeaders.Authorization) {
+        mergedHeaders.Authorization = `Bearer ${token}`;
+      }
+    } catch {
+      // ignore token retrieval errors
+    }
     
     const config: any = {
       method,
       url: endpoint,
       data,
       params,
-      headers,
+      headers: mergedHeaders,
     };
 
     try {
