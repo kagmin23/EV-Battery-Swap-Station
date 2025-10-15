@@ -32,11 +32,11 @@ const menuItems = [
     path: '/staff/confirm-exchange'
   },
   {
-    id: 'history',
+    id: 'payment-history',
     label: 'Lịch sử',
     icon: ClipboardCheck,
     description: 'Lịch sử giao dịch',
-    path: '/staff/history'
+    path: '/staff/payment-history'
   },
   {
     id: 'statistics',

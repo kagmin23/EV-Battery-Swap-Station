@@ -3,7 +3,7 @@ import { StaffLayout } from '../features/staff/layout/StaffLayout';
 import Dashboard from '../features/staff/page/Dashboard';
 import ConfirmExchange from '../features/staff/page/confirmExchange';
 import BatteryLog from '../features/staff/page/BatteryLog';
-
+import PaymentHistory from '../features/staff/page/PaymentHistory';
 export default function StaffRouter() {
   return (
     <StaffLayout>
@@ -11,6 +11,7 @@ export default function StaffRouter() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="confirm-exchange" element={<ConfirmExchange />} />
         <Route path="battery/:batteryId" element={<BatteryLog />} />
+        <Route path="payment-history" element={<PaymentHistory />} />
       </Routes>
     </StaffLayout>
   );
