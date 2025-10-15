@@ -1,4 +1,5 @@
 import { LoginRequest, LoginResponse, LogoutResponse, RegisterRequest, RegisterResponse, ResendOtpRequest, ResendOtpResponse, VerifyEmailRequest, VerifyEmailResponse } from "@/features/auth/types/auth.types";
+import { ChangePasswordRequest, ChangePasswordResponse } from "@/features/driver/types/change-password.types";
 import httpClient from "../rootAPI";
 
 export const authAPI = {
@@ -32,5 +33,9 @@ export const authAPI = {
 
   async resendOtp(data: ResendOtpRequest): Promise<ResendOtpResponse> {
     return httpClient.post<ResendOtpResponse>('/auth/resend-otp', data);
+  },
+
+  async changePassword(data: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+    return httpClient.post<ChangePasswordResponse>('/auth/change-password', data);
   },
 };

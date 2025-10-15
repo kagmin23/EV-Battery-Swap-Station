@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MoreVertical, Phone, MapPin } from 'lucide-react';
+import { MoreVertical, Phone, MapPin, Loader2 } from 'lucide-react';
 import type { Staff, StaffRole, StaffStatus } from '../types/staff';
 
 interface StaffCardProps {
@@ -11,13 +11,17 @@ interface StaffCardProps {
   onSelect: (staff: Staff) => void;
   onEdit: (staff: Staff) => void;
   onSuspend: (staff: Staff) => void;
+  isSuspending?: boolean;
+  isSaving?: boolean;
 }
 
 export const StaffCard: React.FC<StaffCardProps> = ({
   staff,
   onSelect,
   onEdit,
-  onSuspend
+  onSuspend,
+  isSuspending = false,
+  isSaving = false
 }) => {
   const getStatusBadge = (status: StaffStatus) => {
     switch (status) {
@@ -130,9 +134,17 @@ export const StaffCard: React.FC<StaffCardProps> = ({
               e.stopPropagation();
               onEdit(staff);
             }}
-            className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors"
+            disabled={isSaving || isSuspending}
+            className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Chỉnh sửa
+            {isSaving ? (
+              <>
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Đang lưu...
+              </>
+            ) : (
+              'Chỉnh sửa'
+            )}
           </Button>
           {staff.status !== 'SUSPENDED' && (
             <Button
@@ -142,9 +154,17 @@ export const StaffCard: React.FC<StaffCardProps> = ({
                 e.stopPropagation();
                 onSuspend(staff);
               }}
-              className="hover:bg-red-600 transition-colors"
+              disabled={isSuspending || isSaving}
+              className="hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Tạm khóa
+              {isSuspending ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  Đang xử lý...
+                </>
+              ) : (
+                'Tạm khóa'
+              )}
             </Button>
           )}
         </div>
