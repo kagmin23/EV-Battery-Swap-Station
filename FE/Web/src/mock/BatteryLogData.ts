@@ -57,9 +57,14 @@ export interface BatteryDetailInfo {
   performance_history: BatteryPerformanceMetric[];
 }
 
+import { BatteryLocationService } from '../services/batteryLocationService';
+
 // Generate mock data for a battery
 export const generateBatteryLogData = (batteryId: string): BatteryDetailInfo => {
   const now = new Date();
+  
+  // Check if battery has been transferred to a different station
+  const storedLocation = BatteryLocationService.getBatteryLocation(batteryId);
   
   // Generate activities
   const activities: BatteryLogActivity[] = [
@@ -150,9 +155,18 @@ export const generateBatteryLogData = (batteryId: string): BatteryDetailInfo => 
 
   // Generate location history
   const location_history: BatteryLocationHistory[] = [
-    {
+    // Current location (from transfer or default)
+    storedLocation ? {
       id: 'loc-1',
-      location_type: 'station',
+      location_type: 'station' as const,
+      location_name: storedLocation.stationName,
+      location_id: storedLocation.stationId,
+      from_date: storedLocation.timestamp,
+      to_date: null,
+      duration_hours: Math.round((now.getTime() - storedLocation.timestamp.getTime()) / (1000 * 60 * 60) * 10) / 10
+    } : {
+      id: 'loc-1',
+      location_type: 'station' as const,
       location_name: 'Downtown Swap Station',
       location_id: 'ST001',
       from_date: new Date(now.getTime() - 2 * 60 * 60 * 1000),
@@ -219,8 +233,13 @@ export const generateBatteryLogData = (batteryId: string): BatteryDetailInfo => 
     soh_percent: 95,
     current_charge_percent: 85,
     status: 'available',
-    current_location: {
-      type: 'station',
+    current_location: storedLocation ? {
+      type: 'station' as const,
+      location_id: storedLocation.stationId,
+      location_name: storedLocation.stationName,
+      slot_number: 'A-15'
+    } : {
+      type: 'station' as const,
       location_id: 'ST001',
       location_name: 'Downtown Swap Station',
       slot_number: 'A-15'

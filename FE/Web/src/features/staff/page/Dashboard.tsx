@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { mockBatteries } from "../../../mock/BatteryData";
 import SearchBar from "../components/SearchBar";
 import ActionMenu from "../components/ActionMenu";
-import { Plus } from "lucide-react";
+import TransferBatteryModal from "../components/TransferBatteryModal";
+import { Plus, ArrowRightLeft } from "lucide-react";
 import Pagination from "../components/Pagination";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const itemsPerPage = 10;
 
   // Calculate pagination
@@ -47,13 +49,22 @@ export default function Dashboard() {
       <div className="w-full max-w-7xl px-4">
         <div className="flex justify-between items-center mb-6">
           <SearchBar />
-          <button
-            onClick={handleAddBattery}
-            className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg bg-button-primary text-white hover:bg-button-hover active:bg-button-secondary dark:bg-button-secondary dark:hover:bg-button-secondary-hover dark:active:bg-button-secondary-hover"
-          >
-            <Plus className="w-5 h-5" />
-            Add Battery
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setIsTransferModalOpen(true)}
+              className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 dark:active:bg-blue-800"
+            >
+              <ArrowRightLeft className="w-5 h-5" />
+              Transfer to Station
+            </button>
+            <button
+              onClick={handleAddBattery}
+              className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg bg-button-primary text-white hover:bg-button-hover active:bg-button-secondary dark:bg-button-secondary dark:hover:bg-button-secondary-hover dark:active:bg-button-secondary-hover"
+            >
+              <Plus className="w-5 h-5" />
+              Add Battery
+            </button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <div className="border border-border rounded-lg shadow-xs overflow-hidden dark:border-border dark:shadow-gray-900">
@@ -129,6 +140,14 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+
+    {/* Transfer Battery Modal */}
+    <TransferBatteryModal
+      isOpen={isTransferModalOpen}
+      onClose={() => setIsTransferModalOpen(false)}
+      batteries={mockBatteries}
+      currentStation="ST001"
+    />
     </>
   );
 }
