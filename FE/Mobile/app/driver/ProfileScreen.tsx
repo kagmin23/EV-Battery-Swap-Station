@@ -1,8 +1,5 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/features/auth/context/AuthContext';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation, useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
 import {
     Animated,
     Dimensions,
@@ -15,7 +12,12 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import LinkVehicleSheet from './component/LinkVehicleSheet';
+import { getAllVehicle, useVehicles } from '@/store/vehicle';
+
 
 const { height } = Dimensions.get('window');
 
@@ -25,8 +27,14 @@ const ProfileScreen: React.FC = () => {
     const router = useRouter();
     const [isAddEvOpen, setIsAddEvOpen] = useState(false);
     const sheetY = useRef(new Animated.Value(height)).current;
+    const vehicles = useVehicles();
     const { user } = useAuth();
 
+    useFocusEffect(
+        useCallback(() => {
+            getAllVehicle();
+        }, [])
+    )
     const openSheet = () => {
         setIsAddEvOpen(true);
         sheetY.setValue(height);
@@ -37,11 +45,6 @@ const ProfileScreen: React.FC = () => {
         Animated.spring(sheetY, { toValue: height, useNativeDriver: true, bounciness: 0, speed: 18 }).start(() => {
             setIsAddEvOpen(false);
         });
-    };
-
-    const handleAddVehicle = (_data: { vin: string; brand: string; carName: string; batteryModel: string }) => {
-        closeSheet();
-        router.push('/(tabs)/evs');
     };
 
     useEffect(() => {
@@ -72,7 +75,7 @@ const ProfileScreen: React.FC = () => {
         <SafeAreaView style={styles.container}>
             <ScrollView
                 style={styles.scrollView}
-                contentContainerStyle={[styles.scrollContent, { paddingTop: (insets?.top ?? 0) + 12 }]}
+                contentContainerStyle={[styles.scrollContent, { paddingTop: (insets?.top ?? 0) }]}
                 showsVerticalScrollIndicator={false}
             >
                 <TouchableOpacity
@@ -127,19 +130,39 @@ const ProfileScreen: React.FC = () => {
                 </TouchableOpacity>
 
                 {/* Add EV Card */}
-                <TouchableOpacity style={styles.actionCard} onPress={openSheet}>
+                <TouchableOpacity style={styles.actionCard} onPress={vehicles.length === 0 ? openSheet : () => router.push('/(tabs)/evs')}>
                     <View style={styles.dashedIconContainer}>
-                        <Ionicons name="car" size={24} color="#6d4aff" />
-                        <View style={styles.plusIcon}>
-                            <Ionicons name="add" size={12} color="#6d4aff" />
-                        </View>
+                        {vehicles.length === 0 ? (
+                            <>
+                                <Ionicons name="car" size={24} color="#6d4aff" />
+                                <View style={styles.plusIcon}>
+                                    <Ionicons name="add" size={12} color="#6d4aff" />
+                                </View>
+                            </>
+                        ) : (
+                            <Ionicons name="car-outline" size={24} color="#6d4aff" />
+                        )}
+
                     </View>
-                    <View style={styles.cardContent}>
-                        <Text style={styles.cardTitle}>Add your EV</Text>
-                        <Text style={styles.cardSubtitle}>Personalise your app by adding</Text>
-                        <Text style={styles.cardSubtitle}>your EV!</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="white" />
+                    {vehicles.length === 0 ? (
+                        <>
+                            <View style={styles.cardContent}>
+                                <Text style={styles.cardTitle}>Add your EV</Text>
+                                <Text style={styles.cardSubtitle}>Personalise your app by adding</Text>
+                                <Text style={styles.cardSubtitle}>your EV!</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="white" />
+                        </>
+                    ) : (
+                        <>
+                            <View style={styles.cardContent}>
+                                <Text style={styles.cardTitle}>My EVs</Text>
+                                <Text style={styles.cardSubtitle}>View and manage linked vehicles</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="white" />
+                        </>
+                    )}
+
                 </TouchableOpacity>
 
                 {/* Electrocard Card */}
@@ -160,16 +183,12 @@ const ProfileScreen: React.FC = () => {
                 </TouchableOpacity>
 
                 {/* My EVs */}
-                <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/evs')}>
+                {/* <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/evs')}>
                     <View style={styles.iconContainer}>
                         <Ionicons name="car" size={24} color="#6d4aff" />
                     </View>
-                    <View style={styles.cardContent}>
-                        <Text style={styles.cardTitle}>My EVs</Text>
-                        <Text style={styles.cardSubtitle}>View and manage linked vehicles</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="white" />
-                </TouchableOpacity>
+
+                </TouchableOpacity> */}
 
                 {/* My Booking */}
                 <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/my_booking')}>
@@ -255,7 +274,6 @@ const ProfileScreen: React.FC = () => {
             <LinkVehicleSheet
                 visible={isAddEvOpen}
                 onClose={closeSheet}
-                onAdd={handleAddVehicle}
             />
         </SafeAreaView>
     );
@@ -271,6 +289,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: 20,
+        paddingTop: 10,
         paddingBottom: 100,
     },
     greetingCard: {

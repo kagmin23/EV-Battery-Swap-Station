@@ -6,7 +6,6 @@ import {
     ActivityIndicator,
     Alert,
     Image,
-    SafeAreaView,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -15,7 +14,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 const loginPic = require('../../assets/images/loginPic2.png');
 
 export default function RegisterScreen() {
@@ -113,7 +112,7 @@ export default function RegisterScreen() {
                 const errorMessages = Object.values(error.errors).join('\n');
                 errorMessage = errorMessages;
             }
-            
+
             Alert.alert('Registration Failed', errorMessage);
         } finally {
             setSubmitting(false);
@@ -123,7 +122,7 @@ export default function RegisterScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="#0a0520" />
-            
+
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {/* Header */}
                 <View style={styles.header}>
@@ -171,135 +170,135 @@ export default function RegisterScreen() {
 
                     {/* Form */}
                     <View style={styles.form}>
-                    {/* Full Name */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Full Name</Text>
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="person-outline" size={20} color="#a0a0a0" />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Enter your full name"
-                                placeholderTextColor="#a0a0a0"
-                                value={formData.fullName}
-                                onChangeText={(value) => updateField('fullName', value)}
-                                autoCapitalize="words"
-                            />
-                        </View>
-                        {errors.fullName && <Text style={styles.errorText}>{errors.fullName}</Text>}
-                    </View>
-
-                    {/* Email */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Email</Text>
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="mail-outline" size={20} color="#a0a0a0" />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Enter your email"
-                                placeholderTextColor="#a0a0a0"
-                                value={formData.email}
-                                onChangeText={(value) => updateField('email', value)}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                            />
-                        </View>
-                        {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-                    </View>
-
-                    {/* Phone Number */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Phone Number</Text>
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="call-outline" size={20} color="#a0a0a0" />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Enter your phone number"
-                                placeholderTextColor="#a0a0a0"
-                                value={formData.phoneNumber}
-                                onChangeText={(value) => updateField('phoneNumber', value)}
-                                keyboardType="phone-pad"
-                            />
-                        </View>
-                        {errors.phoneNumber && <Text style={styles.errorText}>{errors.phoneNumber}</Text>}
-                    </View>
-
-                    {/* Password */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Password</Text>
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="lock-closed-outline" size={20} color="#a0a0a0" />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Enter your password"
-                                placeholderTextColor="#a0a0a0"
-                                value={formData.password}
-                                onChangeText={(value) => updateField('password', value)}
-                                secureTextEntry={!showPassword}
-                            />
-                            <TouchableOpacity
-                                onPress={() => setShowPassword(!showPassword)}
-                                style={styles.eyeButton}
-                            >
-                                <Ionicons
-                                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                                    size={20}
-                                    color="#a0a0a0"
+                        {/* Full Name */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Full Name</Text>
+                            <View style={styles.inputContainer}>
+                                <Ionicons name="person-outline" size={20} color="#a0a0a0" />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Enter your full name"
+                                    placeholderTextColor="#a0a0a0"
+                                    value={formData.fullName}
+                                    onChangeText={(value) => updateField('fullName', value)}
+                                    autoCapitalize="words"
                                 />
-                            </TouchableOpacity>
+                            </View>
+                            {errors.fullName && <Text style={styles.errorText}>{errors.fullName}</Text>}
                         </View>
-                        {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-                    </View>
 
-                    {/* Confirm Password */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Confirm Password</Text>
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="lock-closed-outline" size={20} color="#a0a0a0" />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Confirm your password"
-                                placeholderTextColor="#a0a0a0"
-                                value={formData.confirmPassword}
-                                onChangeText={(value) => updateField('confirmPassword', value)}
-                                secureTextEntry={!showConfirmPassword}
-                            />
-                            <TouchableOpacity
-                                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                                style={styles.eyeButton}
-                            >
-                                <Ionicons
-                                    name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
-                                    size={20}
-                                    color="#a0a0a0"
+                        {/* Email */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Email</Text>
+                            <View style={styles.inputContainer}>
+                                <Ionicons name="mail-outline" size={20} color="#a0a0a0" />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Enter your email"
+                                    placeholderTextColor="#a0a0a0"
+                                    value={formData.email}
+                                    onChangeText={(value) => updateField('email', value)}
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
                                 />
-                            </TouchableOpacity>
+                            </View>
+                            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
                         </View>
-                        {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+
+                        {/* Phone Number */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Phone Number</Text>
+                            <View style={styles.inputContainer}>
+                                <Ionicons name="call-outline" size={20} color="#a0a0a0" />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Enter your phone number"
+                                    placeholderTextColor="#a0a0a0"
+                                    value={formData.phoneNumber}
+                                    onChangeText={(value) => updateField('phoneNumber', value)}
+                                    keyboardType="phone-pad"
+                                />
+                            </View>
+                            {errors.phoneNumber && <Text style={styles.errorText}>{errors.phoneNumber}</Text>}
+                        </View>
+
+                        {/* Password */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Password</Text>
+                            <View style={styles.inputContainer}>
+                                <Ionicons name="lock-closed-outline" size={20} color="#a0a0a0" />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Enter your password"
+                                    placeholderTextColor="#a0a0a0"
+                                    value={formData.password}
+                                    onChangeText={(value) => updateField('password', value)}
+                                    secureTextEntry={!showPassword}
+                                />
+                                <TouchableOpacity
+                                    onPress={() => setShowPassword(!showPassword)}
+                                    style={styles.eyeButton}
+                                >
+                                    <Ionicons
+                                        name={showPassword ? "eye-off-outline" : "eye-outline"}
+                                        size={20}
+                                        color="#a0a0a0"
+                                    />
+                                </TouchableOpacity>
+                            </View>
+                            {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+                        </View>
+
+                        {/* Confirm Password */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Confirm Password</Text>
+                            <View style={styles.inputContainer}>
+                                <Ionicons name="lock-closed-outline" size={20} color="#a0a0a0" />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Confirm your password"
+                                    placeholderTextColor="#a0a0a0"
+                                    value={formData.confirmPassword}
+                                    onChangeText={(value) => updateField('confirmPassword', value)}
+                                    secureTextEntry={!showConfirmPassword}
+                                />
+                                <TouchableOpacity
+                                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    style={styles.eyeButton}
+                                >
+                                    <Ionicons
+                                        name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                                        size={20}
+                                        color="#a0a0a0"
+                                    />
+                                </TouchableOpacity>
+                            </View>
+                            {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+                        </View>
+
+                        {/* Submit Button */}
+                        <TouchableOpacity
+                            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+                            onPress={handleSubmit}
+                            disabled={submitting}
+                        >
+                            {submitting ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.submitButtonText}>Sign Up</Text>
+                            )}
+                        </TouchableOpacity>
+
+                        {/* Login Link */}
+                        <TouchableOpacity
+                            style={styles.loginLink}
+                            onPress={() => router.replace('/auth/login')}
+                        >
+                            <Text style={styles.loginText}>
+                                Already have an account? <Text style={styles.loginLinkText}>Sign In</Text>
+                            </Text>
+                        </TouchableOpacity>
                     </View>
-
-                    {/* Submit Button */}
-                    <TouchableOpacity
-                        style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-                        onPress={handleSubmit}
-                        disabled={submitting}
-                    >
-                        {submitting ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            <Text style={styles.submitButtonText}>Sign Up</Text>
-                        )}
-                    </TouchableOpacity>
-
-                    {/* Login Link */}
-                    <TouchableOpacity
-                        style={styles.loginLink}
-                        onPress={() => router.replace('/auth/login')}
-                    >
-                        <Text style={styles.loginText}>
-                            Already have an account? <Text style={styles.loginLinkText}>Sign In</Text>
-                        </Text>
-                    </TouchableOpacity>
-                </View>
                 </View>
             </ScrollView>
         </SafeAreaView>
