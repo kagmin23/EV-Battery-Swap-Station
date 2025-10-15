@@ -20,12 +20,12 @@ export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
     };
 
     return (
-        <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
             {/* Header */}
             <CommonHeader />
 
             {/* Main Layout */}
-            <div className="flex-1 flex" style={{ height: 'calc(100vh - 56px)' }}>
+            <div className="flex-1 flex">
                 {/* Sidebar */}
                 <ManagementSidebar
                     activeTab={activeTab}
