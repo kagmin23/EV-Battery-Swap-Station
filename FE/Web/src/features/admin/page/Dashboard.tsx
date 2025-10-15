@@ -15,10 +15,10 @@ export default function Dashboard() {
   const totalBatteries = mockBatteries.length;
   const activeDrivers = getUsersByRole('driver').filter(u => u.status === 'active').length;
   const activeStaff = getUsersByRole('staff').filter(u => u.status === 'active').length;
-  
+
   const todayRevenue = mockRevenueData[mockRevenueData.length - 1]?.revenue || 0;
   const totalRevenue = mockRevenueData.reduce((sum, day) => sum + day.revenue, 0);
-  
+
   const batteryByStatus = {
     available: mockBatteries.filter(b => b.status === 'available').length,
     in_use: mockBatteries.filter(b => b.status === 'in_use').length,
@@ -26,7 +26,7 @@ export default function Dashboard() {
     maintenance: mockBatteries.filter(b => b.status === 'maintenance').length,
     retired: mockBatteries.filter(b => b.status === 'retired').length,
   };
-  
+
   const pendingSupport = getPendingSupportRequestsCount();
   const lowHealthBatteries = mockBatteries.filter(b => b.soh_percent < 85).length;
   const recentTransactions = mockTransactions.slice(0, 5);
@@ -85,7 +85,7 @@ export default function Dashboard() {
       {/* Battery Status & Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
         <BatteryStatusChart batteryByStatus={batteryByStatus} />
-        <AlertsPanel 
+        <AlertsPanel
           lowHealthBatteries={lowHealthBatteries}
           pendingSupport={pendingSupport}
         />

@@ -1,7 +1,24 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Plus, Grid, List, Users, Activity, Car, Star } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Plus, Grid, List, Users, Activity, Car, Star, Calendar, User } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
 import type { Driver, DriverFilters, SubscriptionPlan } from '../types/driver';
@@ -176,8 +193,19 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
         licenseType: 'ALL',
         city: 'ALL'
     });
-    // const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    // const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        licenseNumber: '',
+        licenseType: '',
+        address: '',
+        city: '',
+        subscriptionPlan: '',
+        vehicleModel: '',
+        vehiclePlate: ''
+    });
 
     const filteredDrivers = mockDrivers.filter(driver => {
         const matchesSearch = driver.name.toLowerCase().includes(filters.search.toLowerCase()) ||
@@ -196,6 +224,32 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
     const handleDriverSelect = (driver: Driver) => {
         // setSelectedDriver(driver);
         onDriverSelect?.(driver);
+    };
+
+    const handleAddDriver = () => {
+        setIsAddModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsAddModalOpen(false);
+        setFormData({
+            name: '',
+            email: '',
+            phone: '',
+            licenseNumber: '',
+            licenseType: '',
+            address: '',
+            city: '',
+            subscriptionPlan: '',
+            vehicleModel: '',
+            vehiclePlate: ''
+        });
+    };
+
+    const handleSubmit = () => {
+        // TODO: Implement add driver API call
+        console.log('Add driver:', formData);
+        handleCloseModal();
     };
 
     // const handleAddDriver = (data: AddDriverRequest) => {
@@ -258,36 +312,36 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                     title="Tổng số tài xế"
                     value={mockDrivers.length.toLocaleString()}
                     icon={Users}
-                    gradientFrom="from-blue-500"
-                    gradientTo="to-blue-600"
-                    textColor="text-white"
+                    gradientFrom="from-blue-50"
+                    gradientTo="to-blue-100/50"
+                    textColor="text-blue-900"
                     iconBg="bg-blue-500"
                 />
                 <StatsCard
                     title="Tài xế hoạt động"
                     value={mockDrivers.filter(d => d.status === 'ACTIVE').length.toLocaleString()}
                     icon={Activity}
-                    gradientFrom="from-green-500"
-                    gradientTo="to-green-600"
-                    textColor="text-white"
+                    gradientFrom="from-green-50"
+                    gradientTo="to-green-100/50"
+                    textColor="text-green-900"
                     iconBg="bg-green-500"
                 />
                 <StatsCard
                     title="Tổng lượt đổi pin"
                     value={mockDrivers.reduce((sum, d) => sum + d.totalSwaps, 0).toLocaleString()}
                     icon={Car}
-                    gradientFrom="from-purple-500"
-                    gradientTo="to-purple-600"
-                    textColor="text-white"
+                    gradientFrom="from-purple-50"
+                    gradientTo="to-purple-100/50"
+                    textColor="text-purple-900"
                     iconBg="bg-purple-500"
                 />
                 <StatsCard
                     title="Đánh giá trung bình"
                     value={`${(mockDrivers.reduce((sum, d) => sum + d.rating, 0) / mockDrivers.length).toFixed(1)}/5`}
                     icon={Star}
-                    gradientFrom="from-orange-500"
-                    gradientTo="to-orange-600"
-                    textColor="text-white"
+                    gradientFrom="from-orange-50"
+                    gradientTo="to-orange-100/50"
+                    textColor="text-orange-900"
                     iconBg="bg-orange-500"
                 />
             </div>
@@ -315,8 +369,8 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                             </div>
                         </div>
                         <Button
-                            onClick={() => console.log('Add driver modal')}
-                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                            onClick={handleAddDriver}
+                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
                         >
                             <Plus className="h-4 w-4 mr-2" />
                             Thêm tài xế
@@ -574,6 +628,184 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                     </CardContent>
                 </Card>
             )}
+
+            {/* Add Driver Modal */}
+            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                            <Plus className="h-6 w-6" />
+                            Thêm tài xế mới
+                        </DialogTitle>
+                        <DialogDescription>
+                            Nhập thông tin tài xế để thêm vào hệ thống
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-4 space-y-6">
+                        {/* Personal Information */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                                <User className="h-5 w-5" />
+                                Thông tin cá nhân
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <Label htmlFor="name">Họ và tên *</Label>
+                                    <Input
+                                        id="name"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                                        placeholder="Nhập họ và tên"
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="email">Email *</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                                        placeholder="Nhập email"
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="phone">Số điện thoại *</Label>
+                                    <Input
+                                        id="phone"
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                                        placeholder="Nhập số điện thoại"
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="address">Địa chỉ</Label>
+                                    <Input
+                                        id="address"
+                                        value={formData.address}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                                        placeholder="Nhập địa chỉ"
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="city">Thành phố</Label>
+                                    <Select value={formData.city} onValueChange={(value) => setFormData(prev => ({ ...prev, city: value }))}>
+                                        <SelectTrigger className="mt-1">
+                                            <SelectValue placeholder="Chọn thành phố" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Hà Nội">Hà Nội</SelectItem>
+                                            <SelectItem value="TP.HCM">TP.HCM</SelectItem>
+                                            <SelectItem value="Đà Nẵng">Đà Nẵng</SelectItem>
+                                            <SelectItem value="Hải Phòng">Hải Phòng</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* License Information */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                                <Car className="h-5 w-5" />
+                                Thông tin bằng lái
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <Label htmlFor="licenseNumber">Số bằng lái *</Label>
+                                    <Input
+                                        id="licenseNumber"
+                                        value={formData.licenseNumber}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, licenseNumber: e.target.value }))}
+                                        placeholder="Nhập số bằng lái"
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="licenseType">Loại bằng lái *</Label>
+                                    <Select value={formData.licenseType} onValueChange={(value) => setFormData(prev => ({ ...prev, licenseType: value }))}>
+                                        <SelectTrigger className="mt-1">
+                                            <SelectValue placeholder="Chọn loại bằng lái" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="A1">A1 - Xe máy dưới 175cc</SelectItem>
+                                            <SelectItem value="A2">A2 - Xe máy trên 175cc</SelectItem>
+                                            <SelectItem value="B1">B1 - Ô tô số tự động</SelectItem>
+                                            <SelectItem value="B2">B2 - Ô tô số sàn</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Vehicle Information */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                                <Car className="h-5 w-5" />
+                                Thông tin phương tiện
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <Label htmlFor="vehicleModel">Model xe</Label>
+                                    <Input
+                                        id="vehicleModel"
+                                        value={formData.vehicleModel}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, vehicleModel: e.target.value }))}
+                                        placeholder="Nhập model xe"
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="vehiclePlate">Biển số xe</Label>
+                                    <Input
+                                        id="vehiclePlate"
+                                        value={formData.vehiclePlate}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, vehiclePlate: e.target.value }))}
+                                        placeholder="Nhập biển số xe"
+                                        className="mt-1"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Subscription Plan */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                                <Calendar className="h-5 w-5" />
+                                Gói thuê
+                            </h3>
+                            <div>
+                                <Label htmlFor="subscriptionPlan">Chọn gói thuê *</Label>
+                                <Select value={formData.subscriptionPlan} onValueChange={(value) => setFormData(prev => ({ ...prev, subscriptionPlan: value }))}>
+                                    <SelectTrigger className="mt-1">
+                                        <SelectValue placeholder="Chọn gói thuê" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {mockSubscriptionPlans.map(plan => (
+                                            <SelectItem key={plan.id} value={plan.id}>
+                                                {plan.name} - {plan.price.toLocaleString('vi-VN')} VND
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={handleCloseModal}>
+                            Hủy
+                        </Button>
+                        <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white">
+                            Thêm tài xế
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

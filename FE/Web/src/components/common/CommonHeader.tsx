@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogIn, LogOut, User } from 'lucide-react';
 import {
@@ -14,26 +16,36 @@ interface CommonHeaderProps {
   title?: string;
 }
 
-export const CommonHeader: React.FC<CommonHeaderProps> = ({ 
-  title = 'EV Battery Swap Station' 
+export const CommonHeader: React.FC<CommonHeaderProps> = ({
+  title = 'EV Battery Swap Station'
 }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<'admin' | 'staff' | 'driver' | null>(null);
+  const { isAuthenticated, user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogin = () => {
-    // TODO: Implement actual login logic
-    setIsAuthenticated(true);
-    setUserRole('admin');
+    navigate('/login');
   };
 
-  const handleLogout = () => {
-    // TODO: Implement actual logout logic
-    setIsAuthenticated(false);
-    setUserRole(null);
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'Quản trị viên';
+      case 'staff':
+        return 'Nhân viên';
+      case 'driver':
+        return 'Tài xế';
+      default:
+        return 'User';
+    }
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-purple-900 via-purple-800 to-indigo-900 shadow-lg">
+    <header className="sticky top-0 z-40 w-full bg-gradient-to-r from-purple-900 via-purple-800 to-indigo-900 shadow-lg">
       <div className="container mx-auto px-6 py-2">
         <div className="relative flex items-center justify-center">
           {/* Logo/Title - Center */}
@@ -78,19 +90,17 @@ export const CommonHeader: React.FC<CommonHeaderProps> = ({
                     className="bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm transition-all duration-200"
                   >
                     <User className="h-4 w-4 mr-2" />
-                    <span className="capitalize">{userRole || 'User'}</span>
+                    <span className="capitalize">{user?.role || 'User'}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-white">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        {userRole === 'admin' && 'Quản trị viên'}
-                        {userRole === 'staff' && 'Nhân viên'}
-                        {userRole === 'driver' && 'Tài xế'}
+                        {user?.role && getRoleLabel(user.role)}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        admin@evbattery.com
+                        {user?.email || 'user@evbattery.com'}
                       </p>
                     </div>
                   </DropdownMenuLabel>
