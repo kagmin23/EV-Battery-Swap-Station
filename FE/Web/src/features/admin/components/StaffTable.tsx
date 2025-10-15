@@ -2,7 +2,7 @@ import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, MapPin } from 'lucide-react';
+import { Phone, MapPin, Loader2 } from 'lucide-react';
 import type { Staff, StaffRole, StaffStatus } from '../types/staff';
 
 interface StaffTableProps {
@@ -10,13 +10,17 @@ interface StaffTableProps {
   onSelect: (staff: Staff) => void;
   onEdit: (staff: Staff) => void;
   onSuspend: (staff: Staff) => void;
+  suspendingStaffId?: string | null;
+  savingStaffId?: string | null;
 }
 
 export const StaffTable: React.FC<StaffTableProps> = ({
   staff,
   onSelect,
   onEdit,
-  onSuspend
+  onSuspend,
+  suspendingStaffId = null,
+  savingStaffId = null
 }) => {
   const getStatusBadge = (status: StaffStatus) => {
     switch (status) {
@@ -125,8 +129,17 @@ export const StaffTable: React.FC<StaffTableProps> = ({
                       e.stopPropagation();
                       onEdit(staffMember);
                     }}
+                    disabled={savingStaffId === staffMember.id || suspendingStaffId === staffMember.id}
+                    className="disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Sửa
+                    {savingStaffId === staffMember.id ? (
+                      <>
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        Đang lưu...
+                      </>
+                    ) : (
+                      'Sửa'
+                    )}
                   </Button>
                   {staffMember.status !== 'SUSPENDED' && (
                     <Button
@@ -136,8 +149,17 @@ export const StaffTable: React.FC<StaffTableProps> = ({
                         e.stopPropagation();
                         onSuspend(staffMember);
                       }}
+                      disabled={suspendingStaffId === staffMember.id || savingStaffId === staffMember.id}
+                      className="disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Khóa
+                      {suspendingStaffId === staffMember.id ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          Đang xử lý...
+                        </>
+                      ) : (
+                        'Khóa'
+                      )}
                     </Button>
                   )}
                 </div>

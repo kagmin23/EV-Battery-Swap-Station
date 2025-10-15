@@ -7,26 +7,10 @@ import { StaffDistributionPage } from './StaffDistributionPage';
 import { DriverListPage } from './DriverListPage';
 import { BatteryInventoryPage } from './BatteryInventoryPage';
 import { SubscriptionPage } from './SubscriptionPage';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import type { Staff } from '../types/staff';
-import type { Driver as DriverType } from '../types/driver';
-import type { Battery } from '../types/battery';
 
 export const ManagementMainPage: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
-    const [selectedDriver, setSelectedDriver] = useState<DriverType | null>(null);
-    const [selectedBattery, setSelectedBattery] = useState<Battery | null>(null);
-    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
     // Xác định tab hiện tại từ URL
     const getCurrentTab = () => {
@@ -90,42 +74,15 @@ export const ManagementMainPage: React.FC = () => {
         }
     };
 
-    const handleStaffSelect = (staff: Staff) => {
-        setSelectedStaff(staff);
-        setSelectedDriver(null);
-        setSelectedBattery(null);
-        setIsDetailModalOpen(true);
-    };
-
-    const handleDriverSelect = (driver: DriverType) => {
-        setSelectedDriver(driver);
-        setSelectedStaff(null);
-        setSelectedBattery(null);
-        setIsDetailModalOpen(true);
-    };
 
 
-    const handleStaffEdit = (staff: Staff) => {
-        // TODO: Implement edit functionality
-        console.log('Edit staff:', staff);
-    };
-
-    const handleDriverEdit = (driver: DriverType) => {
-        // TODO: Implement edit functionality
-        console.log('Edit driver:', driver);
-    };
-
-    const handleBatteryEdit = (battery: Battery) => {
-        // TODO: Implement edit functionality
-        console.log('Edit battery:', battery);
-    };
 
     const renderActiveTab = () => {
         switch (activeTab) {
             case 'overview':
                 return <OverviewPage />;
             case 'staff-list':
-                return <StaffListPage onStaffSelect={handleStaffSelect} />;
+                return <StaffListPage />;
             case 'staff-distribution':
                 return <StaffDistributionPage />;
             case 'staff-activities':
@@ -138,7 +95,7 @@ export const ManagementMainPage: React.FC = () => {
                     </div>
                 );
             case 'driver-list':
-                return <DriverListPage onDriverSelect={handleDriverSelect} />;
+                return <DriverListPage />;
             case 'battery-inventory':
                 return <BatteryInventoryPage />;
             case 'vehicles':
@@ -179,64 +136,6 @@ export const ManagementMainPage: React.FC = () => {
         <ManagementLayout activeTab={activeTab} onTabChange={handleTabChange}>
             {renderActiveTab()}
 
-            {/* Detail Modal */}
-            <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
-                <DialogContent className="max-w-md bg-white">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-semibold">
-                            {selectedStaff ? 'Chi tiết nhân viên' :
-                                selectedDriver ? 'Chi tiết tài xế' :
-                                    'Chi tiết pin'}
-                        </DialogTitle>
-                        <DialogDescription>
-                            Thông tin chi tiết của {selectedStaff ? 'nhân viên' : selectedDriver ? 'tài xế' : 'pin'}
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="space-y-2 py-4">
-                        {selectedStaff ? (
-                            <>
-                                <p><strong>Tên:</strong> {selectedStaff.name}</p>
-                                <p><strong>Email:</strong> {selectedStaff.email}</p>
-                                <p><strong>Vai trò:</strong> {selectedStaff.role}</p>
-                                <p><strong>Trạm:</strong> {selectedStaff.stationName}</p>
-                            </>
-                        ) : selectedDriver ? (
-                            <>
-                                <p><strong>Tên:</strong> {selectedDriver.name}</p>
-                                <p><strong>Email:</strong> {selectedDriver.email}</p>
-                                <p><strong>Bằng lái:</strong> {selectedDriver.licenseNumber}</p>
-                                <p><strong>Xe:</strong> {selectedDriver.vehicleModel}</p>
-                            </>
-                        ) : selectedBattery ? (
-                            <>
-                                <p><strong>Số seri:</strong> {selectedBattery.serialNumber}</p>
-                                <p><strong>Model:</strong> {selectedBattery.model}</p>
-                                <p><strong>Nhà SX:</strong> {selectedBattery.manufacturer}</p>
-                                <p><strong>Dung lượng:</strong> {selectedBattery.capacity} kWh</p>
-                                <p><strong>Sạc hiện tại:</strong> {selectedBattery.currentCharge}%</p>
-                                <p><strong>Sức khỏe:</strong> {selectedBattery.health}%</p>
-                            </>
-                        ) : null}
-                    </div>
-
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>
-                            Đóng
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                if (selectedStaff) handleStaffEdit(selectedStaff);
-                                if (selectedDriver) handleDriverEdit(selectedDriver);
-                                if (selectedBattery) handleBatteryEdit(selectedBattery);
-                                setIsDetailModalOpen(false);
-                            }}
-                        >
-                            Chỉnh sửa
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </ManagementLayout>
     );
 };

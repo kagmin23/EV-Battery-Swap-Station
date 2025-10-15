@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Grid, List, Users, Clock, Activity, AlertCircle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { StaffSearchBar } from '../components/StaffSearchBar';
 import { StaffCard } from '../components/StaffCard';
 import { StaffTable } from '../components/StaffTable';
@@ -45,7 +46,8 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
     });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [suspendingStaffId, setSuspendingStaffId] = useState<string | null>(null);
+    const [savingStaffId, setSavingStaffId] = useState<string | null>(null);
 
     // Load staff data from API
     const loadStaff = async () => {
@@ -71,9 +73,11 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
             }));
 
             setStaff(convertedStaff);
+            toast.success('Tải danh sách nhân viên thành công');
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tải danh sách nhân viên';
             setError(errorMessage);
+            toast.error(errorMessage);
             console.error('Error loading staff:', err);
         } finally {
             setIsLoading(false);
@@ -105,7 +109,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
     const handleStaffSuspend = async (staffMember: Staff) => {
         if (window.confirm(`Bạn có chắc chắn muốn tạm khóa nhân viên ${staffMember.name}?`)) {
             try {
-                setIsSubmitting(true);
+                setSuspendingStaffId(staffMember.id);
                 const newStatus = staffMember.status === 'ONLINE' ? 'locked' : 'active';
                 await StaffService.changeStaffStatus(staffMember.id, newStatus);
 
@@ -119,12 +123,19 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                         }
                         : s
                 ));
+
+                toast.success(
+                    newStatus === 'active'
+                        ? `Đã kích hoạt nhân viên ${staffMember.name}`
+                        : `Đã tạm khóa nhân viên ${staffMember.name}`
+                );
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi thay đổi trạng thái nhân viên';
                 setError(errorMessage);
+                toast.error(errorMessage);
                 console.error('Error changing staff status:', err);
             } finally {
-                setIsSubmitting(false);
+                setSuspendingStaffId(null);
             }
         }
     };
@@ -136,7 +147,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
 
     const handleSaveStaff = async (data: AddStaffRequest | UpdateStaffRequest): Promise<void> => {
         try {
-            setIsSubmitting(true);
+            setSavingStaffId('id' in data ? data.id as string : 'new');
             setError(null);
 
             if ('id' in data) {
@@ -167,6 +178,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                 };
 
                 setStaff(prev => prev.map(s => s.id === data.id ? convertedStaff : s));
+                toast.success(`Đã cập nhật thông tin nhân viên ${convertedStaff.name}`);
             } else {
                 // Add new staff
                 const createData: CreateStaffRequest = {
@@ -195,6 +207,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                 };
 
                 setStaff(prev => [...prev, convertedStaff]);
+                toast.success(`Đã thêm nhân viên ${convertedStaff.name} thành công`);
             }
 
             setIsModalOpen(false);
@@ -202,9 +215,10 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi lưu thông tin nhân viên';
             setError(errorMessage);
+            toast.error(errorMessage);
             console.error('Error saving staff:', err);
         } finally {
-            setIsSubmitting(false);
+            setSavingStaffId(null);
         }
     };
 
@@ -312,15 +326,15 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                             </Button>
                             <Button
                                 onClick={handleAddStaff}
-                                disabled={isSubmitting}
+                                disabled={savingStaffId === 'new'}
                                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {isSubmitting ? (
+                                {savingStaffId === 'new' ? (
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                 ) : (
                                     <Plus className="h-4 w-4 mr-2" />
                                 )}
-                                Thêm nhân viên
+                                {savingStaffId === 'new' ? 'Đang thêm...' : 'Thêm nhân viên'}
                             </Button>
                         </div>
                     </div>
@@ -361,6 +375,8 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                                     onSelect={onStaffSelect || (() => { })}
                                     onEdit={handleStaffEdit}
                                     onSuspend={handleStaffSuspend}
+                                    isSuspending={suspendingStaffId === staffMember.id}
+                                    isSaving={savingStaffId === staffMember.id}
                                 />
                             ))}
                         </div>
@@ -371,6 +387,8 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                                 onSelect={onStaffSelect || (() => { })}
                                 onEdit={handleStaffEdit}
                                 onSuspend={handleStaffSuspend}
+                                suspendingStaffId={suspendingStaffId}
+                                savingStaffId={savingStaffId}
                             />
                         </div>
                     )}
