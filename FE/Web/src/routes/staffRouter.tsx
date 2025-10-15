@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import { StaffLayout } from '../features/staff/layout/StaffLayout';
 import Dashboard from '../features/staff/page/Dashboard';
 import ConfirmExchange from '../features/staff/page/confirmExchange';
+import BatteryLog from '../features/staff/page/BatteryLog';
 
 export default function StaffRouter() {
   return (
@@ -9,6 +10,7 @@ export default function StaffRouter() {
       <Routes>
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="confirm-exchange" element={<ConfirmExchange />} />
+        <Route path="battery/:batteryId" element={<BatteryLog />} />
       </Routes>
     </StaffLayout>
   );

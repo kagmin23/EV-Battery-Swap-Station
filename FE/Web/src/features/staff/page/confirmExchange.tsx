@@ -200,14 +200,14 @@ export default function ConfirmExchange() {
         <div className="flex gap-4 justify-end">
           <button
             onClick={() => window.history.back()}
-            className="px-6 py-3 rounded-lg border-2 border-border text-text-secondary hover:bg-bg-tertiary transition-colors"
+            className="px-6 py-3 rounded-lg border-2 bg-button-secondary text-text-primary hover:bg-button-secondary-hover transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirmExchange}
             disabled={!selectedBattery || isConfirming}
-            className="px-8 py-3 rounded-lg bg-button-primary text-text-primary hover:bg-button-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold flex items-center gap-2"
+            className="px-8 py-3 rounded-lg bg-button-primary text-text-primary hover:bg-button-hover  disabled:cursor-not-allowed transition-colors font-semibold flex items-center gap-2"
           >
             {isConfirming ? (
               <>

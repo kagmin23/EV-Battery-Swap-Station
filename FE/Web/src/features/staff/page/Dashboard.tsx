@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { mockBatteries } from "../../../mock/BatteryData";
 import SearchBar from "../components/SearchBar";
 import ActionMenu from "../components/ActionMenu";
@@ -6,6 +7,7 @@ import { Plus } from "lucide-react";
 import Pagination from "../components/Pagination";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -31,7 +33,8 @@ export default function Dashboard() {
   };
 
   const handleView = (id: string) => {
-    console.log("View battery:", id);
+    // Navigate to Battery Log page
+    navigate(`/staff/battery/${id}`);
   };
 
   const handleAddBattery = () => {
@@ -40,7 +43,7 @@ export default function Dashboard() {
 
   return (
     <>
-    <div className="flex flex-col items-center justify-center min-h-screen py-8 ">
+    <div className="flex flex-col items-center py-8">
       <div className="w-full max-w-7xl px-4">
         <div className="flex justify-between items-center mb-6">
           <SearchBar />
