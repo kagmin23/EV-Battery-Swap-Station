@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Grid, List, Users, Clock, Activity } from 'lucide-react';
+import { Plus, Grid, List, Users, Clock, Activity, AlertCircle, Loader2 } from 'lucide-react';
 import { StaffSearchBar } from '../components/StaffSearchBar';
 import { StaffCard } from '../components/StaffCard';
 import { StaffTable } from '../components/StaffTable';
 import { StaffModal } from '../components/StaffModal';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
+import { StaffService, type CreateStaffRequest, type UpdateStaffRequest as ApiUpdateStaffRequest } from '@/services/api/staffService';
 import type { Staff, StaffFilters, AddStaffRequest, UpdateStaffRequest, StaffPermission, Station } from '../types/staff';
 
 // Mock data - trong thực tế sẽ lấy từ API
@@ -17,64 +18,7 @@ const mockStations: Station[] = [
     { id: '3', name: 'Trạm Đà Nẵng', address: '789 Đường DEF, Đà Nẵng', city: 'Đà Nẵng', coordinates: { lat: 16.0544, lng: 108.2022 }, totalSlots: 15, availableSlots: 12, status: 'ACTIVE' },
 ];
 
-const mockStaff: Staff[] = [
-    {
-        id: '1',
-        name: 'Nguyễn Văn A',
-        email: 'nguyenvana@example.com',
-        phone: '0123456789',
-        role: 'MANAGER',
-        stationId: '1',
-        stationName: 'Trạm Hà Nội',
-        status: 'ONLINE',
-        permissions: [
-            { id: '1', name: 'Quản lý nhân viên', description: 'Có thể thêm, sửa, xóa nhân viên', enabled: true },
-            { id: '2', name: 'Xem báo cáo', description: 'Có thể xem các báo cáo thống kê', enabled: true },
-            { id: '3', name: 'Quản lý trạm', description: 'Có thể quản lý thông tin trạm', enabled: true },
-        ],
-        lastActive: new Date(Date.now() - 5 * 60 * 1000),
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-15'),
-    },
-    {
-        id: '2',
-        name: 'Trần Thị B',
-        email: 'tranthib@example.com',
-        phone: '0987654321',
-        role: 'SUPERVISOR',
-        stationId: '1',
-        stationName: 'Trạm Hà Nội',
-        status: 'SHIFT_ACTIVE',
-        permissions: [
-            { id: '1', name: 'Quản lý nhân viên', description: 'Có thể thêm, sửa, xóa nhân viên', enabled: false },
-            { id: '2', name: 'Xem báo cáo', description: 'Có thể xem các báo cáo thống kê', enabled: true },
-            { id: '3', name: 'Quản lý trạm', description: 'Có thể quản lý thông tin trạm', enabled: false },
-        ],
-        lastActive: new Date(Date.now() - 2 * 60 * 1000),
-        shiftStart: new Date(Date.now() - 8 * 60 * 60 * 1000),
-        shiftEnd: new Date(Date.now() + 4 * 60 * 60 * 1000),
-        createdAt: new Date('2024-01-05'),
-        updatedAt: new Date('2024-01-10'),
-    },
-    {
-        id: '3',
-        name: 'Lê Văn C',
-        email: 'levanc@example.com',
-        phone: '0369258147',
-        role: 'STAFF',
-        stationId: '2',
-        stationName: 'Trạm TP.HCM',
-        status: 'OFFLINE',
-        permissions: [
-            { id: '1', name: 'Quản lý nhân viên', description: 'Có thể thêm, sửa, xóa nhân viên', enabled: false },
-            { id: '2', name: 'Xem báo cáo', description: 'Có thể xem các báo cáo thống kê', enabled: false },
-            { id: '3', name: 'Quản lý trạm', description: 'Có thể quản lý thông tin trạm', enabled: false },
-        ],
-        lastActive: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        createdAt: new Date('2024-01-10'),
-        updatedAt: new Date('2024-01-12'),
-    },
-];
+// Mock data removed - now using API data
 
 const mockPermissions: StaffPermission[] = [
     { id: '1', name: 'Quản lý nhân viên', description: 'Có thể thêm, sửa, xóa nhân viên', enabled: false },
@@ -89,7 +33,7 @@ interface StaffListPageProps {
 }
 
 export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) => {
-    const [staff, setStaff] = useState<Staff[]>(mockStaff);
+    const [staff, setStaff] = useState<Staff[]>([]);
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
@@ -99,6 +43,47 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
         role: 'ALL',
         status: 'ALL',
     });
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Load staff data from API
+    const loadStaff = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            const apiStaff = await StaffService.getAllStaff();
+
+            // Convert API staff to UI staff format
+            const convertedStaff: Staff[] = apiStaff.map((apiStaffMember) => ({
+                id: apiStaffMember._id,
+                name: apiStaffMember.fullName || 'N/A',
+                email: apiStaffMember.email || 'N/A',
+                phone: apiStaffMember.phoneNumber || 'N/A',
+                role: 'STAFF' as const,
+                stationId: '1', // Default station - you might want to add station assignment
+                stationName: 'Trạm Hà Nội', // Default station name
+                status: apiStaffMember.status === 'active' ? 'ONLINE' : 'OFFLINE',
+                permissions: mockPermissions.filter(p => p.enabled),
+                lastActive: new Date(apiStaffMember.updatedAt),
+                createdAt: new Date(apiStaffMember.createdAt),
+                updatedAt: new Date(apiStaffMember.updatedAt),
+            }));
+
+            setStaff(convertedStaff);
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tải danh sách nhân viên';
+            setError(errorMessage);
+            console.error('Error loading staff:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Load data on component mount
+    useEffect(() => {
+        loadStaff();
+    }, []);
 
     const filteredStaff = staff.filter((staffMember) => {
         const matchesSearch = filters.search === '' ||
@@ -117,13 +102,30 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
         setIsModalOpen(true);
     };
 
-    const handleStaffSuspend = (staffMember: Staff) => {
+    const handleStaffSuspend = async (staffMember: Staff) => {
         if (window.confirm(`Bạn có chắc chắn muốn tạm khóa nhân viên ${staffMember.name}?`)) {
-            setStaff(prev => prev.map(s =>
-                s.id === staffMember.id
-                    ? { ...s, status: 'SUSPENDED' as const, updatedAt: new Date() }
-                    : s
-            ));
+            try {
+                setIsSubmitting(true);
+                const newStatus = staffMember.status === 'ONLINE' ? 'locked' : 'active';
+                await StaffService.changeStaffStatus(staffMember.id, newStatus);
+
+                // Update local state
+                setStaff(prev => prev.map(s =>
+                    s.id === staffMember.id
+                        ? {
+                            ...s,
+                            status: newStatus === 'active' ? 'ONLINE' : 'OFFLINE' as const,
+                            updatedAt: new Date()
+                        }
+                        : s
+                ));
+            } catch (err) {
+                const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi thay đổi trạng thái nhân viên';
+                setError(errorMessage);
+                console.error('Error changing staff status:', err);
+            } finally {
+                setIsSubmitting(false);
+            }
         }
     };
 
@@ -132,35 +134,78 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
         setIsModalOpen(true);
     };
 
-    const handleSaveStaff = (data: AddStaffRequest | UpdateStaffRequest) => {
-        if ('id' in data) {
-            // Update existing staff
-            setStaff(prev => prev.map(s =>
-                s.id === data.id
-                    ? {
-                        ...s,
-                        ...data,
-                        permissions: mockPermissions.filter(p => data.permissions?.includes(p.id)),
-                        updatedAt: new Date()
-                    }
-                    : s
-            ));
-        } else {
-            // Add new staff
-            const newStaff: Staff = {
-                id: Date.now().toString(),
-                ...data,
-                stationName: mockStations.find(s => s.id === data.stationId)?.name || '',
-                status: 'OFFLINE',
-                permissions: mockPermissions.filter(p => data.permissions?.includes(p.id)),
-                lastActive: new Date(),
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            };
-            setStaff(prev => [...prev, newStaff]);
+    const handleSaveStaff = async (data: AddStaffRequest | UpdateStaffRequest): Promise<void> => {
+        try {
+            setIsSubmitting(true);
+            setError(null);
+
+            if ('id' in data) {
+                // Update existing staff
+                const updateData: ApiUpdateStaffRequest = {
+                    fullName: data.name || '',
+                    email: data.email || '',
+                    phoneNumber: data.phone || '',
+                    password: (data as any).password,
+                };
+
+                const updatedStaff = await StaffService.updateStaff(data.id as string, updateData);
+
+                // Convert API response to UI format
+                const convertedStaff: Staff = {
+                    id: updatedStaff._id,
+                    name: updatedStaff.fullName || 'N/A',
+                    email: updatedStaff.email || 'N/A',
+                    phone: updatedStaff.phoneNumber || 'N/A',
+                    role: 'STAFF' as const,
+                    stationId: (data as UpdateStaffRequest).stationId || '1',
+                    stationName: mockStations.find(s => s.id === (data as UpdateStaffRequest).stationId)?.name || '',
+                    status: updatedStaff.status === 'active' ? 'ONLINE' : 'OFFLINE',
+                    permissions: mockPermissions.filter(p => (data as UpdateStaffRequest).permissions?.includes(p.id)),
+                    lastActive: new Date(updatedStaff.updatedAt),
+                    createdAt: new Date(updatedStaff.createdAt),
+                    updatedAt: new Date(updatedStaff.updatedAt),
+                };
+
+                setStaff(prev => prev.map(s => s.id === data.id ? convertedStaff : s));
+            } else {
+                // Add new staff
+                const createData: CreateStaffRequest = {
+                    fullName: data.name || '',
+                    email: data.email || '',
+                    phoneNumber: data.phone || '',
+                    password: (data as any).password,
+                };
+
+                const newStaff = await StaffService.createStaff(createData);
+
+                // Convert API response to UI format
+                const convertedStaff: Staff = {
+                    id: newStaff._id,
+                    name: newStaff.fullName || 'N/A',
+                    email: newStaff.email || 'N/A',
+                    phone: newStaff.phoneNumber || 'N/A',
+                    role: 'STAFF' as const,
+                    stationId: (data as AddStaffRequest).stationId,
+                    stationName: mockStations.find(s => s.id === (data as AddStaffRequest).stationId)?.name || '',
+                    status: newStaff.status === 'active' ? 'ONLINE' : 'OFFLINE',
+                    permissions: mockPermissions.filter(p => (data as AddStaffRequest).permissions?.includes(p.id)),
+                    lastActive: new Date(newStaff.createdAt),
+                    createdAt: new Date(newStaff.createdAt),
+                    updatedAt: new Date(newStaff.updatedAt),
+                };
+
+                setStaff(prev => [...prev, convertedStaff]);
+            }
+
+            setIsModalOpen(false);
+            setEditingStaff(null);
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi lưu thông tin nhân viên';
+            setError(errorMessage);
+            console.error('Error saving staff:', err);
+        } finally {
+            setIsSubmitting(false);
         }
-        setIsModalOpen(false);
-        setEditingStaff(null);
     };
 
     return (
@@ -171,11 +216,29 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                 description="Quản lý thông tin nhân viên trạm đổi pin"
             />
 
+            {/* Error Alert */}
+            {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center space-x-3">
+                    <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+                    <div className="flex-1">
+                        <p className="text-sm text-red-800">{error}</p>
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setError(null)}
+                        className="text-red-600 hover:text-red-700"
+                    >
+                        Đóng
+                    </Button>
+                </div>
+            )}
+
             {/* Quick Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatsCard
                     title="Tổng nhân viên"
-                    value={mockStaff.length}
+                    value={staff.length}
                     icon={Users}
                     gradientFrom="from-blue-50"
                     gradientTo="to-blue-100/50"
@@ -184,7 +247,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                 />
                 <StatsCard
                     title="Đang online"
-                    value={mockStaff.filter(s => s.status === 'ONLINE').length}
+                    value={staff.filter(s => s.status === 'ONLINE').length}
                     icon={Clock}
                     gradientFrom="from-green-50"
                     gradientTo="to-green-100/50"
@@ -193,7 +256,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                 />
                 <StatsCard
                     title="Đang ca làm"
-                    value={mockStaff.filter(s => s.status === 'SHIFT_ACTIVE').length}
+                    value={staff.filter(s => s.status === 'SHIFT_ACTIVE').length}
                     icon={Activity}
                     gradientFrom="from-orange-50"
                     gradientTo="to-orange-100/50"
@@ -249,16 +312,47 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                             </Button>
                             <Button
                                 onClick={handleAddStaff}
-                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg"
+                                disabled={isSubmitting}
+                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Plus className="h-4 w-4 mr-2" />
+                                {isSubmitting ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                    <Plus className="h-4 w-4 mr-2" />
+                                )}
                                 Thêm nhân viên
                             </Button>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-6">
-                    {viewMode === 'grid' ? (
+                    {isLoading ? (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="flex flex-col items-center space-y-4">
+                                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                                <p className="text-slate-600">Đang tải danh sách nhân viên...</p>
+                            </div>
+                        </div>
+                    ) : filteredStaff.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <Users className="h-12 w-12 text-slate-400 mb-4" />
+                            <h3 className="text-lg font-medium text-slate-900 mb-2">Không có nhân viên nào</h3>
+                            <p className="text-slate-600 text-center mb-6">
+                                {filters.search || filters.stationId !== 'ALL' || filters.role !== 'ALL' || filters.status !== 'ALL'
+                                    ? 'Không tìm thấy nhân viên phù hợp với bộ lọc hiện tại.'
+                                    : 'Chưa có nhân viên nào được thêm vào hệ thống.'}
+                            </p>
+                            {(!filters.search && filters.stationId === 'ALL' && filters.role === 'ALL' && filters.status === 'ALL') && (
+                                <Button
+                                    onClick={handleAddStaff}
+                                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                                >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Thêm nhân viên đầu tiên
+                                </Button>
+                            )}
+                        </div>
+                    ) : viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredStaff.map((staffMember) => (
                                 <StaffCard
