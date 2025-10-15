@@ -1,27 +1,25 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import LinkVehicleSheet from './component/LinkVehicleSheet';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getAllVehicle, sVehicles, useVehicles } from '@/store/vehicle';
 
-const initialVehicles = [
-    { id: '1', carName: 'Abarth 500e', brand: 'Abarth', batteryModel: '42 kWh', vin: 'WAUZZZ8V0JA000111' },
-    { id: '2', carName: 'Model 3', brand: 'Tesla', batteryModel: '60 kWh LFP', vin: '5YJ3E1EA7JF000222' },
-    { id: '3', carName: 'VF 6 Plus', brand: 'VinFast', batteryModel: '59 kWh', vin: 'RLGHMF70XNM000333' },
-];
+
 
 export default function EVs() {
     const router = useRouter();
-    const [vehicles, setVehicles] = useState(initialVehicles);
+    const vehicles = useVehicles();
     const [isAddEvOpen, setIsAddEvOpen] = useState(false);
 
+    useFocusEffect(
+        useCallback(() => {
+            getAllVehicle();
+        }, [])
+    )
     const handleDeleteAll = () => {
-        if (vehicles.length === 0) return;
-        Alert.alert('Delete vehicles', 'Remove all linked vehicles?', [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Delete', style: 'destructive', onPress: () => setVehicles([]) },
-        ]);
+
     };
 
     const openAddSheet = () => setIsAddEvOpen(true);
@@ -35,7 +33,7 @@ export default function EVs() {
             batteryModel: data.batteryModel || '—',
             vin: data.vin || '—',
         };
-        setVehicles(prev => [next, ...prev]);
+        sVehicles.set(prev => [next, ...prev.value]);
         closeAddSheet();
     };
 
@@ -59,7 +57,7 @@ export default function EVs() {
                 </View>
 
                 {vehicles.map((v, index) => (
-                    <View key={v.id} style={styles.card}>
+                    <View key={index} style={styles.card}>
                         {/* Header Section */}
                         <View style={styles.headerCard}>
                             <View style={styles.titleRow}>

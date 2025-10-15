@@ -6,7 +6,16 @@ import BatterySwapStats from '../components/BatterySwapStats';
 import BatterySwapFilters from '../components/BatterySwapFilters';
 import BatterySwapTable from '../components/BatterySwapTable';
 import BatterySwapCharts from '../components/BatterySwapCharts';
-import BatteryDetailsModal from '../components/BatteryDetailsModal';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { FileText, Download } from 'lucide-react';
 
 type ViewMode = 'table' | 'analytics';
 
@@ -136,7 +145,7 @@ export default function BatteryChanges() {
       'Cost',
       'Status'
     ];
-    
+
     const csvData = filteredTransactions.map(t => [
       t.transaction_id,
       t.timestamp,
@@ -161,10 +170,10 @@ export default function BatteryChanges() {
   };
 
   return (
-    <div 
-      className="p-6 min-h-screen" 
-      style={{ 
-        background: 'linear-gradient(to bottom right, var(--color-bg-primary), var(--color-bg-secondary), var(--color-bg-tertiary))' 
+    <div
+      className="p-6 min-h-screen"
+      style={{
+        background: 'linear-gradient(to bottom right, var(--color-bg-primary), var(--color-bg-secondary), var(--color-bg-tertiary))'
       }}
     >
       {/* Header */}
@@ -197,21 +206,19 @@ export default function BatteryChanges() {
         <div className="bg-white rounded-lg shadow-md p-1 inline-flex">
           <button
             onClick={() => setViewMode('table')}
-            className={`px-6 py-2 rounded-lg transition-colors ${
-              viewMode === 'table'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className={`px-6 py-2 rounded-lg transition-colors ${viewMode === 'table'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-600 hover:bg-gray-100'
+              }`}
           >
             📋 Table View
           </button>
           <button
             onClick={() => setViewMode('analytics')}
-            className={`px-6 py-2 rounded-lg transition-colors ${
-              viewMode === 'analytics'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className={`px-6 py-2 rounded-lg transition-colors ${viewMode === 'analytics'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-600 hover:bg-gray-100'
+              }`}
           >
             📊 Analytics View
           </button>
@@ -263,13 +270,201 @@ export default function BatteryChanges() {
         <BatterySwapCharts transactions={filteredTransactions} />
       )}
 
-      {/* Battery Details Modal */}
-      <BatteryDetailsModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        batteryId={selectedBatteryId || ''}
-        batteryHistory={selectedBatteryHistory}
-      />
+      {/* Battery Logs Modal */}
+      <Dialog open={isModalOpen} onOpenChange={handleCloseModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] bg-white flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+              <FileText className="h-6 w-6" />
+              Logs pin - {selectedBatteryId}
+            </DialogTitle>
+            <DialogDescription>
+              Lịch sử hoạt động và sự kiện của pin
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto py-4">
+            {/* Logs Content */}
+            <div className="space-y-4">
+              {/* Mock log entries */}
+              {[
+                {
+                  timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được trả về trạm',
+                  details: 'Tài xế: Nguyễn Văn Minh (ID: DRV-001) - Trạm Hà Nội - SOH: 89% - Thời gian sử dụng: 3h 45m'
+                },
+                {
+                  timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được sạc đầy 100%',
+                  details: 'Thời gian sạc: 2h 30m - Nhiệt độ: 25°C'
+                },
+                {
+                  timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được thuê bởi tài xế',
+                  details: 'Tài xế: Trần Thị Hoa (ID: DRV-002) - Xe: VF8 - Thời gian thuê: 14:30 - SOH: 95%'
+                },
+                {
+                  timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
+                  level: 'WARNING',
+                  message: 'Nhiệt độ pin cao',
+                  details: 'Nhiệt độ: 45°C, Ngưỡng: 40°C - Đã làm mát tự động'
+                },
+                {
+                  timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được trả về trạm',
+                  details: 'Tài xế: Lê Văn Đức (ID: DRV-003) - Trạm TP.HCM - SOH: 87% - Thời gian sử dụng: 2h 15m'
+                },
+                {
+                  timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được đổi tại trạm Hà Nội',
+                  details: 'Tài xế: Nguyễn Văn A (ID: DRV-004) - Xe: VF9 - SOH: 92% - Thời gian đổi: 5 phút'
+                },
+                {
+                  timestamp: new Date(Date.now() - 7 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được thuê bởi tài xế',
+                  details: 'Tài xế: Phạm Thị Lan (ID: DRV-005) - Xe: VF8 - Thời gian thuê: 09:15 - SOH: 94%'
+                },
+                {
+                  timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000),
+                  level: 'ERROR',
+                  message: 'Lỗi kết nối với hệ thống',
+                  details: 'Mất kết nối trong 5 phút - Đã khôi phục tự động'
+                },
+                {
+                  timestamp: new Date(Date.now() - 9 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được trả về trạm',
+                  details: 'Tài xế: Hoàng Văn Nam (ID: DRV-006) - Trạm Đà Nẵng - SOH: 91% - Thời gian sử dụng: 4h 20m'
+                },
+                {
+                  timestamp: new Date(Date.now() - 10 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được thuê bởi tài xế',
+                  details: 'Tài xế: Vũ Thị Mai (ID: DRV-007) - Xe: VF9 - Thời gian thuê: 16:45 - SOH: 88%'
+                },
+                {
+                  timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được kiểm tra định kỳ',
+                  details: 'SOH: 92%, Sức khỏe: Tốt - Nhiệt độ: 22°C - Điện áp: 400V'
+                },
+                {
+                  timestamp: new Date(Date.now() - 14 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được trả về trạm',
+                  details: 'Tài xế: Đặng Văn Tùng (ID: DRV-008) - Trạm Hà Nội - SOH: 85% - Thời gian sử dụng: 6h 15m'
+                },
+                {
+                  timestamp: new Date(Date.now() - 16 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được thuê bởi tài xế',
+                  details: 'Tài xế: Bùi Thị Hương (ID: DRV-009) - Xe: VF8 - Thời gian thuê: 08:30 - SOH: 93%'
+                },
+                {
+                  timestamp: new Date(Date.now() - 18 * 60 * 60 * 1000),
+                  level: 'WARNING',
+                  message: 'Pin được trả về với cảnh báo',
+                  details: 'Tài xế: Lê Văn Đức (ID: DRV-010) - Nhiệt độ cao: 48°C - Trạm TP.HCM - Đã xử lý'
+                },
+                {
+                  timestamp: new Date(Date.now() - 20 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được thuê bởi tài xế',
+                  details: 'Tài xế: Nguyễn Thị Linh (ID: DRV-011) - Xe: VF9 - Thời gian thuê: 11:20 - SOH: 90%'
+                },
+                {
+                  timestamp: new Date(Date.now() - 22 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được trả về trạm',
+                  details: 'Tài xế: Trần Văn Hùng (ID: DRV-012) - Trạm Đà Nẵng - SOH: 86% - Thời gian sử dụng: 5h 30m'
+                },
+                {
+                  timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được thuê bởi tài xế',
+                  details: 'Tài xế: Phạm Văn Tuấn (ID: DRV-013) - Xe: VF8 - Thời gian thuê: 13:15 - SOH: 89%'
+                },
+                {
+                  timestamp: new Date(Date.now() - 26 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được trả về trạm',
+                  details: 'Tài xế: Hoàng Thị Lan (ID: DRV-014) - Trạm Hà Nội - SOH: 84% - Thời gian sử dụng: 7h 45m'
+                },
+                {
+                  timestamp: new Date(Date.now() - 28 * 60 * 60 * 1000),
+                  level: 'ERROR',
+                  message: 'Lỗi khi tài xế trả pin',
+                  details: 'Tài xế: Vũ Văn Nam (ID: DRV-015) - Lỗi kết nối - Trạm TP.HCM - Đã xử lý thủ công'
+                },
+                {
+                  timestamp: new Date(Date.now() - 30 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được thuê bởi tài xế',
+                  details: 'Tài xế: Đặng Thị Hoa (ID: DRV-016) - Xe: VF9 - Thời gian thuê: 15:40 - SOH: 91%'
+                },
+                {
+                  timestamp: new Date(Date.now() - 32 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được trả về trạm',
+                  details: 'Tài xế: Bùi Văn Minh (ID: DRV-017) - Trạm Đà Nẵng - SOH: 88% - Thời gian sử dụng: 3h 20m'
+                },
+                {
+                  timestamp: new Date(Date.now() - 36 * 60 * 60 * 1000),
+                  level: 'INFO',
+                  message: 'Pin được kiểm tra bảo trì',
+                  details: 'SOH: 89%, Sức khỏe: Tốt - Nhiệt độ: 24°C - Điện áp: 398V - Chu kỳ: 150/2000'
+                }
+              ].map((log, index) => (
+                <div
+                  key={index}
+                  className={`p-4 rounded-lg border-l-4 ${log.level === 'ERROR' ? 'border-red-500 bg-red-50' :
+                    log.level === 'WARNING' ? 'border-yellow-500 bg-yellow-50' :
+                      'border-blue-500 bg-blue-50'
+                    }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${log.level === 'ERROR' ? 'bg-red-100 text-red-800' :
+                          log.level === 'WARNING' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                          {log.level}
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {log.timestamp.toLocaleString('vi-VN')}
+                        </span>
+                      </div>
+                      <p className="font-medium text-gray-800 mb-1">{log.message}</p>
+                      <p className="text-sm text-gray-600">{log.details}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <DialogFooter className="flex-shrink-0 pt-4">
+            <Button variant="outline" onClick={handleCloseModal}>
+              Đóng
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => console.log('Download logs')}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Tải xuống logs
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

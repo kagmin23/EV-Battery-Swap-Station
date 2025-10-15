@@ -109,11 +109,10 @@ export default function ConfirmExchange() {
               </div>
               <div className="flex justify-between items-center py-2">
                 <span className="text-text-secondary">State of Health</span>
-                <span className={`font-bold text-lg ${
-                  oldBattery.soh >= 90 ? 'text-green-400' : 
-                  oldBattery.soh >= 70 ? 'text-yellow-400' : 
-                  'text-red-400'
-                }`}>
+                <span className={`font-bold text-lg ${oldBattery.soh >= 90 ? 'text-green-400' :
+                  oldBattery.soh >= 70 ? 'text-yellow-400' :
+                    'text-red-400'
+                  }`}>
                   {oldBattery.soh}%
                 </span>
               </div>
@@ -135,11 +134,10 @@ export default function ConfirmExchange() {
               <div
                 key={battery.id}
                 onClick={() => setSelectedBattery(battery.id)}
-                className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${
-                  selectedBattery === battery.id
-                    ? 'border-button-primary bg-button-primary/20'
-                    : 'border-border hover:border-border-light'
-                }`}
+                className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${selectedBattery === battery.id
+                  ? 'border-button-primary bg-button-primary/20'
+                  : 'border-border hover:border-border-light'
+                  }`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-text-primary font-semibold">{battery.id}</span>
@@ -158,11 +156,10 @@ export default function ConfirmExchange() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-text-secondary">SOH:</span>
-                    <span className={`font-bold ${
-                      battery.soh >= 95 ? 'text-green-400' : 
-                      battery.soh >= 90 ? 'text-yellow-400' : 
-                      'text-orange-400'
-                    }`}>
+                    <span className={`font-bold ${battery.soh >= 95 ? 'text-green-400' :
+                      battery.soh >= 90 ? 'text-yellow-400' :
+                        'text-orange-400'
+                      }`}>
                       {battery.soh}%
                     </span>
                   </div>
@@ -203,14 +200,14 @@ export default function ConfirmExchange() {
         <div className="flex gap-4 justify-end">
           <button
             onClick={() => window.history.back()}
-            className="px-6 py-3 rounded-lg border-2 border-border text-text-secondary hover:bg-bg-tertiary transition-colors"
+            className="px-6 py-3 rounded-lg border-2 bg-button-secondary text-text-primary hover:bg-button-secondary-hover transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirmExchange}
             disabled={!selectedBattery || isConfirming}
-            className="px-8 py-3 rounded-lg bg-button-primary text-text-primary hover:bg-button-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold flex items-center gap-2"
+            className="px-8 py-3 rounded-lg bg-button-primary text-text-primary hover:bg-button-hover  disabled:cursor-not-allowed transition-colors font-semibold flex items-center gap-2"
           >
             {isConfirming ? (
               <>

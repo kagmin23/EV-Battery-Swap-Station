@@ -1,9 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { StaffDistributionChart } from '../components/StaffDistributionChart';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
-import { BarChart3, MapPin, Users, TrendingUp } from 'lucide-react';
+import { BarChart3, MapPin, Users, TrendingUp, UserPlus, Search, Check } from 'lucide-react';
 import type { Staff, StaffStats } from '../types/staff';
 
 // Mock data - trong thực tế sẽ lấy từ API
@@ -96,11 +107,58 @@ const mockStats: StaffStats = {
 };
 
 export const StaffDistributionPage: React.FC = () => {
+    // State for staff assignment modal
+    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+    const [selectedStation, setSelectedStation] = useState<{ id: string; name: string } | null>(null);
+    const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+
     // Tính toán thống kê phân bố
     const staffByRole = mockStaff.reduce((acc, staff) => {
         acc[staff.role] = (acc[staff.role] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
+
+    // Filter staff based on search term
+    const filteredStaff = mockStaff.filter(staff =>
+        staff.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        staff.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Handle station click
+    const handleStationClick = (stationId: string, stationName: string) => {
+        setSelectedStation({ id: stationId, name: stationName });
+        setSelectedStaffIds([]);
+        setSearchTerm('');
+        setIsAssignModalOpen(true);
+    };
+
+    // Handle staff selection
+    const handleStaffToggle = (staffId: string) => {
+        const staff = mockStaff.find(s => s.id === staffId);
+        if (staff && staff.stationId === selectedStation?.id) {
+            // Don't allow selection of already assigned staff
+            return;
+        }
+
+        setSelectedStaffIds(prev =>
+            prev.includes(staffId)
+                ? prev.filter(id => id !== staffId)
+                : [...prev, staffId]
+        );
+    };
+
+    // Handle assign staff to station
+    const handleAssignStaff = () => {
+        if (selectedStation && selectedStaffIds.length > 0) {
+            // Here you would typically make an API call to assign staff to station
+            console.log(`Assigning staff ${selectedStaffIds.join(', ')} to station ${selectedStation.name}`);
+            // Update the mock data or make API call
+            setIsAssignModalOpen(false);
+            setSelectedStation(null);
+            setSelectedStaffIds([]);
+        }
+    };
 
     // const staffByStatus = mockStaff.reduce((acc, staff) => {
     //     acc[staff.status] = (acc[staff.status] || 0) + 1;
@@ -219,11 +277,29 @@ export const StaffDistributionPage: React.FC = () => {
                             const shiftActiveCount = stationStaff.filter(s => s.status === 'SHIFT_ACTIVE').length;
 
                             return (
-                                <div key={station.stationId} className="bg-gradient-to-br from-slate-50 to-blue-50/30 rounded-xl p-6 border border-slate-200/50">
+                                <div
+                                    key={station.stationId}
+                                    className="group bg-gradient-to-br from-slate-50 to-blue-50/30 rounded-xl p-6 border border-slate-200/50 cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-blue-300"
+                                    onClick={() => handleStationClick(station.stationId, station.stationName)}
+                                >
                                     <div className="space-y-4">
-                                        <div>
-                                            <h4 className="text-lg font-bold text-slate-800">{station.stationName}</h4>
-                                            <p className="text-sm text-slate-500">ID: {station.stationId}</p>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h4 className="text-lg font-bold text-slate-800">{station.stationName}</h4>
+                                                <p className="text-sm text-slate-500">ID: {station.stationId}</p>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleStationClick(station.stationId, station.stationName);
+                                                }}
+                                            >
+                                                <UserPlus className="h-4 w-4 mr-1" />
+                                                Gán nhân viên
+                                            </Button>
                                         </div>
 
                                         <div className="space-y-3">
@@ -253,6 +329,117 @@ export const StaffDistributionPage: React.FC = () => {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Staff Assignment Modal */}
+            <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-white">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                            <UserPlus className="h-6 w-6" />
+                            Gán nhân viên cho {selectedStation?.name}
+                        </DialogTitle>
+                        <DialogDescription>
+                            Chọn nhân viên để gán vào trạm {selectedStation?.name}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-4">
+                        {/* Search */}
+                        <div className="relative mb-6">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                            <Input
+                                placeholder="Tìm kiếm nhân viên theo tên hoặc email..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10 bg-white"
+                            />
+                        </div>
+
+                        {/* Staff List */}
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                            {filteredStaff.map((staff) => {
+                                const isSelected = selectedStaffIds.includes(staff.id);
+                                const isAlreadyAssigned = staff.stationId === selectedStation?.id;
+
+                                return (
+                                    <div
+                                        key={staff.id}
+                                        className={`flex items-center space-x-3 p-4 rounded-lg border transition-all duration-200 ${isSelected
+                                            ? 'border-blue-500 bg-blue-50'
+                                            : isAlreadyAssigned
+                                                ? 'border-green-500 bg-green-50'
+                                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        {!isAlreadyAssigned && (
+                                            <Checkbox
+                                                id={staff.id}
+                                                checked={isSelected}
+                                                onCheckedChange={() => handleStaffToggle(staff.id)}
+                                            />
+                                        )}
+                                        {isAlreadyAssigned && (
+                                            <div className="w-4 h-4 flex items-center justify-center">
+                                                <div className="w-4 h-4 rounded-sm border-2 border-green-500 bg-green-100 flex items-center justify-center">
+                                                    <Check className="h-3 w-3 text-green-600" />
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="flex-1">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <h4 className="font-semibold text-slate-800">{staff.name}</h4>
+                                                    <p className="text-sm text-slate-500">{staff.email}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className={`text-sm font-medium ${staff.status === 'ONLINE' ? 'text-green-600' :
+                                                        staff.status === 'SHIFT_ACTIVE' ? 'text-orange-600' :
+                                                            'text-gray-500'
+                                                        }`}>
+                                                        {staff.status === 'ONLINE' ? 'Online' :
+                                                            staff.status === 'SHIFT_ACTIVE' ? 'Đang ca' :
+                                                                'Offline'}
+                                                    </div>
+                                                    <div className="text-xs text-slate-500">
+                                                        {staff.role === 'MANAGER' ? 'Quản lý' :
+                                                            staff.role === 'SUPERVISOR' ? 'Giám sát' :
+                                                                'Nhân viên'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {isAlreadyAssigned && (
+                                                <div className="mt-2 text-xs text-green-600 font-medium flex items-center gap-1">
+                                                    <Check className="h-3 w-3" />
+                                                    Đã được gán vào trạm này
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {filteredStaff.length === 0 && (
+                            <div className="text-center py-8 text-slate-500">
+                                Không tìm thấy nhân viên nào
+                            </div>
+                        )}
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAssignModalOpen(false)}>
+                            Hủy
+                        </Button>
+                        <Button
+                            onClick={handleAssignStaff}
+                            disabled={selectedStaffIds.length === 0}
+                            className="bg-blue-600 hover:bg-blue-700"
+                        >
+                            Gán {selectedStaffIds.length} nhân viên
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

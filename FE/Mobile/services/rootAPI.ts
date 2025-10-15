@@ -15,24 +15,13 @@ const axiosInstance = axios.create({
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor (sync) to ensure headers object exists
 axiosInstance.interceptors.request.use(
-  (config) => {
-    // Automatically add auth token if available
-    AsyncStorage.getItem(TOKEN_KEY).then((token) => {
-      if (token && config.headers && !config.headers.Authorization) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    }).catch(() => {
-      // Silently handle token retrieval errors
-    });
-
-    // Ensure headers exist
-    if (!config.headers) {
-      config.headers = {};
+  (cfg) => {
+    if (!cfg.headers) {
+      cfg.headers = {} as any;
     }
-
-    return config;
+    return cfg;
   },
   (error) => {
     return Promise.reject(error);
@@ -48,9 +37,9 @@ axiosInstance.interceptors.response.use(
     // Check if this is an email verification error (403 status with specific data)
     const isEmailVerificationError = error?.response?.status === 403 &&
       (error?.response?.data?.data?.requireEmailVerification === true ||
-       error?.response?.data?.message?.includes('Account not verified') ||
-       error?.response?.data?.message?.includes('verify') ||
-       error?.response?.data?.message?.includes('OTP'));
+        error?.response?.data?.message?.includes('Account not verified') ||
+        error?.response?.data?.message?.includes('verify') ||
+        error?.response?.data?.message?.includes('OTP'));
 
     // Transform axios error to our ApiError format
     const apiError: ApiError = {
@@ -64,7 +53,7 @@ axiosInstance.interceptors.response.use(
       const responseData = error.response.data as any;
       apiError.message = responseData?.message || `HTTP Error ${error.response.status}`;
       apiError.errors = responseData?.errors || {};
-      
+
       // Preserve email verification flag and data
       if (isEmailVerificationError) {
         (apiError as any).requireEmailVerification = true;
@@ -93,9 +82,24 @@ const httpClient = {
       params?: { [key: string]: any };
     } = {}
   ): Promise<T> {
-    const { method = 'GET', data, headers = {}, params } = options;
-    
-    const config: any = {
+    const { method = 'GET', data, params } = options;
+
+    // Start from caller-provided headers (if any)
+    const headers: any = { ...(options.headers || {}) };
+
+    // Attach Authorization from AsyncStorage if not already set
+    try {
+      if (!headers.Authorization) {
+        const token = await AsyncStorage.getItem(TOKEN_KEY);
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+      }
+    } catch {
+      // ignore token retrieval failures
+    }
+
+    const cfg: any = {
       method,
       url: endpoint,
       data,
@@ -104,7 +108,7 @@ const httpClient = {
     };
 
     try {
-      const response = await axiosInstance.request<T>(config);
+      const response = await axiosInstance.request<T>(cfg);
       return response.data;
     } catch (error) {
       throw error; // Error is already transformed by interceptor

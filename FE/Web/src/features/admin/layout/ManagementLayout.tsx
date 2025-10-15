@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ManagementSidebar } from '../components/ManagementSidebar';
+import { CommonHeader } from '@/components/common/CommonHeader';
 
 interface ManagementLayoutProps {
     children: React.ReactNode;
@@ -19,8 +20,12 @@ export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-            <div className="flex" style={{ height: 'calc(100vh - 56px)' }}>
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+            {/* Header */}
+            <CommonHeader />
+
+            {/* Main Layout */}
+            <div className="flex-1 flex">
                 {/* Sidebar */}
                 <ManagementSidebar
                     activeTab={activeTab}
@@ -30,8 +35,8 @@ export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
                 />
 
                 {/* Main Content */}
-                <div className="flex-1 flex flex-col overflow-hidden">
-                    <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 flex flex-col">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
                         {children}
                     </div>
                 </div>

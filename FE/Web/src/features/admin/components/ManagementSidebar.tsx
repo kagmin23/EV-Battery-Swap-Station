@@ -95,25 +95,25 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
 }) => {
   return (
     <div className={cn(
-      "bg-white/90 backdrop-blur-xl border-r border-slate-200/60 shadow-xl transition-all duration-300 ease-in-out",
+      "h-full bg-white border-r border-gray-200 shadow-sm transition-all duration-300 ease-in-out flex flex-col",
       isCollapsed ? "w-20" : "w-72"
-    )}>
+    )} style={{ height: '100%' }}>
       {/* Header */}
-      <div className="p-6 border-b border-slate-200/60">
+      <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div className="space-y-1">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
+              <h2 className="text-2xl font-bold text-gray-900">
                 Quản lý
               </h2>
-              <p className="text-sm text-slate-500 font-medium">Hệ thống quản lý</p>
+              <p className="text-sm text-gray-500 font-medium">Hệ thống quản lý</p>
             </div>
           )}
           <Button
             variant="ghost"
             size="sm"
             onClick={onToggleCollapse}
-            className="p-3 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-3 hover:bg-gray-100 rounded-lg transition-colors"
           >
             {isCollapsed ? (
               <ChevronRight className="h-5 w-5" />
@@ -125,7 +125,7 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
       </div>
 
       {/* Navigation Menu */}
-      <nav className="p-4 space-y-4">
+      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar min-h-0">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -137,10 +137,10 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
               onClick={() => onTabChange(item.id)}
               className={cn(
                 "w-full justify-start transition-all duration-200 py-8",
-                isCollapsed ? "px-5" : "px-8",
+                isCollapsed ? "px-5" : "px-6",
                 isActive
-                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg"
-                  : "hover:bg-slate-100 text-slate-700 hover:text-slate-900"
+                  ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                  : "hover:bg-gray-100 text-gray-700 hover:text-gray-900"
               )}
             >
               <Icon
@@ -159,13 +159,13 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
 
       {/* Quick Actions */}
       {!isCollapsed && (
-        <div className="p-4 border-t border-slate-200/60">
+        <div className="flex-shrink-0 px-4 py-6 border-t border-gray-200">
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-slate-700 mb-3">Thao tác nhanh</h3>
+            <h3 className="text-lg font-semibold text-gray-700 mb-3">Thao tác nhanh</h3>
             <Button
               variant="outline"
               size="sm"
-              className="w-full justify-start text-slate-600 hover:text-slate-900 hover:bg-slate-50 text-base py-5 px-6"
+              className="w-full justify-start text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-base py-6 px-6"
             >
               <UserPlus
                 className="h-6 w-6 mr-2 flex-shrink-0"
