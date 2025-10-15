@@ -177,36 +177,36 @@ export const DriverOverviewPage: React.FC = () => {
                     title="Tổng số tài xế"
                     value={mockStats.totalDrivers.toLocaleString()}
                     icon={Users}
-                    gradientFrom="from-blue-500"
-                    gradientTo="to-blue-600"
-                    textColor="text-white"
+                    gradientFrom="from-blue-50"
+                    gradientTo="to-blue-100/50"
+                    textColor="text-blue-900"
                     iconBg="bg-blue-500"
                 />
                 <StatsCard
                     title="Tài xế hoạt động"
                     value={mockStats.activeDrivers.toLocaleString()}
                     icon={Activity}
-                    gradientFrom="from-green-500"
-                    gradientTo="to-green-600"
-                    textColor="text-white"
+                    gradientFrom="from-green-50"
+                    gradientTo="to-green-100/50"
+                    textColor="text-green-900"
                     iconBg="bg-green-500"
                 />
                 <StatsCard
                     title="Tổng lượt đổi pin"
                     value={mockStats.totalSwaps.toLocaleString()}
                     icon={Car}
-                    gradientFrom="from-purple-500"
-                    gradientTo="to-purple-600"
-                    textColor="text-white"
+                    gradientFrom="from-purple-50"
+                    gradientTo="to-purple-100/50"
+                    textColor="text-purple-900"
                     iconBg="bg-purple-500"
                 />
                 <StatsCard
                     title="Đánh giá trung bình"
                     value={`${mockStats.averageRating}/5`}
                     icon={Star}
-                    gradientFrom="from-orange-500"
-                    gradientTo="to-orange-600"
-                    textColor="text-white"
+                    gradientFrom="from-orange-50"
+                    gradientTo="to-orange-100/50"
+                    textColor="text-orange-900"
                     iconBg="bg-orange-500"
                 />
             </div>

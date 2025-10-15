@@ -3,6 +3,15 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { DriverLayout } from '../layout/DriverLayout';
 import { DriverOverviewPage } from './DriverOverviewPage';
 import { DriverListPage } from './DriverListPage';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import type { Driver } from '../types/driver';
 
 export const DriverManagementMainPage: React.FC = () => {
@@ -150,38 +159,39 @@ export const DriverManagementMainPage: React.FC = () => {
         <DriverLayout activeTab={activeTab} onTabChange={handleTabChange}>
             {renderActiveTab()}
 
-            {/* Driver Detail Modal - TODO: Implement */}
-            {isDetailModalOpen && selectedDriver && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                        <h3 className="text-lg font-semibold mb-4">Chi tiết tài xế</h3>
-                        <div className="space-y-2">
-                            <p><strong>Tên:</strong> {selectedDriver.name}</p>
-                            <p><strong>Email:</strong> {selectedDriver.email}</p>
-                            <p><strong>Bằng lái:</strong> {selectedDriver.licenseNumber}</p>
-                            <p><strong>Xe:</strong> {selectedDriver.vehicleModel}</p>
-                            <p><strong>Gói thuê:</strong> {selectedDriver.subscriptionPlan.name}</p>
-                        </div>
-                        <div className="flex space-x-2 mt-6">
-                            <button
-                                onClick={() => setIsDetailModalOpen(false)}
-                                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-                            >
-                                Đóng
-                            </button>
-                            <button
-                                onClick={() => {
-                                    handleDriverEdit(selectedDriver);
-                                    setIsDetailModalOpen(false);
-                                }}
-                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                            >
-                                Chỉnh sửa
-                            </button>
-                        </div>
+            {/* Driver Detail Modal */}
+            <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+                <DialogContent className="max-w-md bg-white">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-semibold">Chi tiết tài xế</DialogTitle>
+                        <DialogDescription>
+                            Thông tin chi tiết của tài xế
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-2 py-4">
+                        <p><strong>Tên:</strong> {selectedDriver?.name}</p>
+                        <p><strong>Email:</strong> {selectedDriver?.email}</p>
+                        <p><strong>Bằng lái:</strong> {selectedDriver?.licenseNumber}</p>
+                        <p><strong>Xe:</strong> {selectedDriver?.vehicleModel}</p>
+                        <p><strong>Gói thuê:</strong> {selectedDriver?.subscriptionPlan.name}</p>
                     </div>
-                </div>
-            )}
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>
+                            Đóng
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                if (selectedDriver) handleDriverEdit(selectedDriver);
+                                setIsDetailModalOpen(false);
+                            }}
+                        >
+                            Chỉnh sửa
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </DriverLayout>
     );
 };

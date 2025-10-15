@@ -11,28 +11,34 @@ import { ManagementMainPage } from './features/admin/pages/ManagementMainPage';
 
 function App() {
   return (
-    <>
-        <CommonHeader />
-        <Routes>
-          <Route path="/" element={<Navigate to="/overview" replace />} />
-          <Route path="/" element={<Home />} />
-          <Route path="/admin/*" element={<AdminRouter />} />
-          <Route path="/staff/*" element={<StaffRouter />} />
-          <Route path="/driver/*" element={<DriverRouter />} />
-          <Route path="/overview" element={<ManagementMainPage />} />
-          <Route path="/staff/list" element={<ManagementMainPage />} />
-          <Route path="/staff/distribution" element={<ManagementMainPage />} />
-          <Route path="/staff/activities" element={<ManagementMainPage />} />
-          <Route path="/driver/list" element={<ManagementMainPage />} />
-          <Route path="/battery-inventory" element={<ManagementMainPage />} />
-          <Route path="/vehicles" element={<ManagementMainPage />} />
-          <Route path="/subscriptions" element={<ManagementMainPage />} />
-          <Route path="/transactions" element={<ManagementMainPage />} />
-          <Route path="/settings" element={<ManagementMainPage />} />
-        </Routes>
-        <Footer />
-    </>
-    );
+    <div className="h-screen">
+      <Routes>
+        <Route path="/" element={<Navigate to="/overview" replace />} />
+        <Route path="/home" element={
+          <>
+            <CommonHeader />
+            <div className="flex-1 overflow-hidden">
+              <Home />
+            </div>
+            <Footer />
+          </>
+        } />
+        <Route path="/admin/*" element={<AdminRouter />} />
+        <Route path="/staff/*" element={<StaffRouter />} />
+        <Route path="/driver/*" element={<DriverRouter />} />
+        <Route path="/overview" element={<ManagementMainPage />} />
+        <Route path="/staff/list" element={<ManagementMainPage />} />
+        <Route path="/staff/distribution" element={<ManagementMainPage />} />
+        <Route path="/staff/activities" element={<ManagementMainPage />} />
+        <Route path="/driver/list" element={<ManagementMainPage />} />
+        <Route path="/battery-inventory" element={<ManagementMainPage />} />
+        <Route path="/vehicles" element={<ManagementMainPage />} />
+        <Route path="/subscriptions" element={<ManagementMainPage />} />
+        <Route path="/transactions" element={<ManagementMainPage />} />
+        <Route path="/settings" element={<ManagementMainPage />} />
+      </Routes>
+    </div>
+  );
 }
 
 

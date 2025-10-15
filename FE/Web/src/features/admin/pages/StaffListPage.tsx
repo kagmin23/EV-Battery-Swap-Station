@@ -169,15 +169,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
             <PageHeader
                 title="Danh sách nhân viên"
                 description="Quản lý thông tin nhân viên trạm đổi pin"
-            >
-                <Button
-                    onClick={handleAddStaff}
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-6 py-3 rounded-xl"
-                >
-                    <Plus className="h-5 w-5 mr-2" />
-                    Thêm nhân viên
-                </Button>
-            </PageHeader>
+            />
 
             {/* Quick Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -254,6 +246,13 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                                     }`}
                             >
                                 <List className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                onClick={handleAddStaff}
+                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg"
+                            >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Thêm nhân viên
                             </Button>
                         </div>
                     </div>
