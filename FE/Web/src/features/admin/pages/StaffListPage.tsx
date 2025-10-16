@@ -12,14 +12,10 @@ import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
 import { PageLoadingSpinner, ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
 import { StaffService, type CreateStaffRequest, type UpdateStaffRequest as ApiUpdateStaffRequest, type Staff as ApiStaff } from '@/services/api/staffService';
+import { StationService, type Station as ApiStation } from '@/services/api/stationService';
 import type { Staff, StaffFilters, AddStaffRequest, UpdateStaffRequest, StaffPermission, Station } from '../types/staff';
 
-// Mock data - trong thực tế sẽ lấy từ API
-const mockStations: Station[] = [
-    { id: '1', name: 'Trạm Hà Nội', address: '123 Đường ABC, Hà Nội', city: 'Hà Nội', coordinates: { lat: 21.0285, lng: 105.8542 }, totalSlots: 20, availableSlots: 15, status: 'ACTIVE' },
-    { id: '2', name: 'Trạm TP.HCM', address: '456 Đường XYZ, TP.HCM', city: 'TP.HCM', coordinates: { lat: 10.8231, lng: 106.6297 }, totalSlots: 30, availableSlots: 25, status: 'ACTIVE' },
-    { id: '3', name: 'Trạm Đà Nẵng', address: '789 Đường DEF, Đà Nẵng', city: 'Đà Nẵng', coordinates: { lat: 16.0544, lng: 108.2022 }, totalSlots: 15, availableSlots: 12, status: 'ACTIVE' },
-];
+// Mock data removed - now using API data
 
 // Mock data removed - now using API data
 
@@ -37,6 +33,7 @@ interface StaffListPageProps {
 
 export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) => {
     const [staff, setStaff] = useState<Staff[]>([]);
+    const [stations, setStations] = useState<Station[]>([]);
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
@@ -53,6 +50,43 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
 
+    // Load stations data from API
+    const loadStations = async () => {
+        try {
+            const apiStations = await StationService.getAllStations();
+
+            // Convert API stations to UI station format
+            const convertedStations: Station[] = apiStations.map((apiStation: ApiStation) => ({
+                id: apiStation._id,
+                name: apiStation.stationName,
+                address: apiStation.address,
+                city: apiStation.city,
+                coordinates: {
+                    lat: apiStation.location.coordinates[1],
+                    lng: apiStation.location.coordinates[0],
+                },
+                totalSlots: apiStation.capacity,
+                availableSlots: apiStation.availableBatteries,
+                status: 'ACTIVE' as const,
+            }));
+
+            setStations(convertedStations);
+        } catch (err) {
+            console.error('Error loading stations:', err);
+            // Set default station if API fails
+            setStations([{
+                id: 'default',
+                name: 'Chưa phân trạm',
+                address: 'Chưa xác định',
+                city: 'Chưa xác định',
+                coordinates: { lat: 0, lng: 0 },
+                totalSlots: 0,
+                availableSlots: 0,
+                status: 'ACTIVE' as const,
+            }]);
+        }
+    };
+
     // Load staff data from API
     const loadStaff = async () => {
         try {
@@ -62,10 +96,21 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
 
             // Convert API staff to UI staff format
             const convertedStaff: Staff[] = apiStaff.map((apiStaffMember: ApiStaff) => {
-                // Find station info from mockStations or use default
+                // Find station info from stations or use default
+                const defaultStation = {
+                    id: 'default',
+                    name: 'Chưa phân trạm',
+                    address: 'Chưa xác định',
+                    city: 'Chưa xác định',
+                    coordinates: { lat: 0, lng: 0 },
+                    totalSlots: 0,
+                    availableSlots: 0,
+                    status: 'ACTIVE' as const,
+                };
+
                 const stationInfo = apiStaffMember.station
-                    ? mockStations.find(s => s.id === apiStaffMember.station) || mockStations[0]
-                    : mockStations[0]; // Default to first station if no station assigned
+                    ? stations.find(s => s.id === apiStaffMember.station) || defaultStation
+                    : (stations.length > 0 ? stations[0] : defaultStation);
 
                 return {
                     id: apiStaffMember._id,
@@ -96,8 +141,19 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
 
     // Load data on component mount
     useEffect(() => {
-        loadStaff();
+        const loadData = async () => {
+            await loadStations();
+            // loadStaff will be called by the stations useEffect
+        };
+        loadData();
     }, []);
+
+    // Reload staff when stations change
+    useEffect(() => {
+        if (stations.length > 0) {
+            loadStaff();
+        }
+    }, [stations]);
 
     const filteredStaff = staff.filter((staffMember) => {
         const matchesSearch = filters.search === '' ||
@@ -171,6 +227,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     email: data.email || '',
                     phoneNumber: data.phone || '',
                     password: (data as any).password,
+                    stationId: (data as UpdateStaffRequest).stationId,
                 };
 
                 const updatedStaff = await StaffService.updateStaff(data.id as string, updateData);
@@ -183,7 +240,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     phone: updatedStaff.phoneNumber || 'N/A',
                     role: 'STAFF' as const,
                     stationId: (data as UpdateStaffRequest).stationId || '1',
-                    stationName: mockStations.find(s => s.id === (data as UpdateStaffRequest).stationId)?.name || '',
+                    stationName: stations.find(s => s.id === (data as UpdateStaffRequest).stationId)?.name || '',
                     status: updatedStaff.status === 'active' ? 'ONLINE' : 'OFFLINE',
                     permissions: mockPermissions.filter(p => (data as UpdateStaffRequest).permissions?.includes(p.id)),
                     lastActive: new Date(updatedStaff.updatedAt),
@@ -200,6 +257,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     email: data.email || '',
                     phoneNumber: data.phone || '',
                     password: (data as any).password,
+                    stationId: (data as AddStaffRequest).stationId,
                 };
 
                 const newStaff = await StaffService.createStaff(createData);
@@ -212,7 +270,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     phone: newStaff.phoneNumber || 'N/A',
                     role: 'STAFF' as const,
                     stationId: (data as AddStaffRequest).stationId,
-                    stationName: mockStations.find(s => s.id === (data as AddStaffRequest).stationId)?.name || '',
+                    stationName: stations.find(s => s.id === (data as AddStaffRequest).stationId)?.name || '',
                     status: newStaff.status === 'active' ? 'ONLINE' : 'OFFLINE',
                     permissions: mockPermissions.filter(p => (data as AddStaffRequest).permissions?.includes(p.id)),
                     lastActive: new Date(newStaff.createdAt),
@@ -297,7 +355,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                 <StaffSearchBar
                     filters={filters}
                     onFiltersChange={setFilters}
-                    stations={mockStations}
+                    stations={stations}
                 />
             </div>
 
@@ -415,7 +473,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                 }}
                 onSave={handleSaveStaff}
                 staff={editingStaff}
-                stations={mockStations}
+                stations={stations}
                 permissions={mockPermissions}
             />
 

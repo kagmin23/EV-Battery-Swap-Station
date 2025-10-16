@@ -35,6 +35,7 @@ export interface CreateStaffRequest {
     email: string;
     phoneNumber: string;
     password?: string;
+    stationId?: string;
 }
 
 export interface UpdateStaffRequest {
@@ -42,6 +43,7 @@ export interface UpdateStaffRequest {
     email: string;
     phoneNumber: string;
     password?: string;
+    stationId?: string;
 }
 
 export interface ChangeStatusRequest {
