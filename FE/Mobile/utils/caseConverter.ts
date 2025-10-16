@@ -18,7 +18,14 @@ export const toCamelCase = (obj: any): any => {
     } else if (obj !== null && typeof obj === "object") {
         const result: Record<string, any> = {};
         for (const key in obj) {
-            const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+            let camelKey = key;
+
+            if (key === "_id") {
+                camelKey = "id";
+            } else {
+                camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+            }
+
             result[camelKey] = toCamelCase(obj[key]);
         }
         return result;

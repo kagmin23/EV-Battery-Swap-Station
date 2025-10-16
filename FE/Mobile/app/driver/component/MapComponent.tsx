@@ -352,20 +352,6 @@ const MapComponent = forwardRef<MapComponentHandle, MapComponentProps>(({
 
 
 
-    // const handleMarkerPress = (station: BatteryStation) => {
-    //     if (onStationSelect) {
-    //         onStationSelect(station);
-    //     }
-
-    //     Alert.alert(
-    //         station.title,
-    //         `${station.description}\n\nAvailable: ${station.availableBatteries}/${station.totalBatteries} batteries\nStatus: ${station.status}\nRating: ${station.rating}/5`,
-    //         [
-    //             { text: 'Close', style: 'cancel' },
-    //             { text: 'Navigate', onPress: () => console.log('Navigate to station') },
-    //         ]
-    //     );
-    // };
 
     const getMarkerColor = (status: string) => {
         switch (status) {
