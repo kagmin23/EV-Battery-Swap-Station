@@ -8,12 +8,14 @@ export interface Battery {
     _id: string;
     batteryId: string;
     stationId: string;
+    stationName?: string; // Added for frontend display
     status: 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';
     soh: number;
     voltage: number;
     current: number;
     temperature: number;
     cycleCount: number;
+    capacity: number; // Added capacity field
     lastMaintenance: string;
     createdAt: string;
     updatedAt: string;
@@ -85,6 +87,8 @@ export class BatteryService {
         try {
             const params = new URLSearchParams();
 
+            // Add stationId as a query parameter
+            params.append('stationId', stationId);
             if (filters.status) params.append('status', filters.status);
             if (filters.sohMin !== undefined) params.append('sohMin', filters.sohMin.toString());
             if (filters.sohMax !== undefined) params.append('sohMax', filters.sohMax.toString());
@@ -93,7 +97,7 @@ export class BatteryService {
             if (filters.sort) params.append('sort', filters.sort);
             if (filters.order) params.append('order', filters.order);
 
-            const response = await api.get(`/admin/batteries?stationId=${stationId}&${params.toString()}`);
+            const response = await api.get(`/admin/batteries?${params.toString()}`);
             if (response.data.success) {
                 return {
                     success: response.data.success,
@@ -171,6 +175,51 @@ export class BatteryService {
             };
         } catch (error) {
             throw new Error('Failed to fetch batteries from all stations');
+        }
+    }
+
+    // Get faulty batteries
+    static async getFaultyBatteries(): Promise<BatteryResponse> {
+        try {
+            const response = await api.get('/admin/batteries/faulty');
+            if (response.data.success) {
+                return {
+                    success: response.data.success,
+                    data: response.data.data || [],
+                    pagination: {
+                        page: 1,
+                        limit: response.data.data?.length || 0,
+                        total: response.data.data?.length || 0,
+                        pages: 1
+                    }
+                };
+            }
+            throw new Error(response.data.message || 'Failed to fetch faulty batteries');
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    const status = error.response.status;
+                    const message = error.response.data?.message || 'Server error';
+
+                    switch (status) {
+                        case 400:
+                            throw new Error(`Bad Request: ${message}`);
+                        case 401:
+                            throw new Error('Unauthorized: Please login again');
+                        case 403:
+                            throw new Error('Forbidden: You do not have permission to access this resource');
+                        case 404:
+                            throw new Error('Not Found: Faulty batteries not found');
+                        case 500:
+                            throw new Error('Internal Server Error: Please try again later');
+                        default:
+                            throw new Error(`Error ${status}: ${message}`);
+                    }
+                } else if (error.request) {
+                    throw new Error('Network Error: Please check your connection');
+                }
+            }
+            throw new Error('An unexpected error occurred');
         }
     }
 

@@ -14,7 +14,8 @@ import {
   FileText,
   UserCheck,
   Battery,
-  MapPin
+  MapPin,
+  AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -67,6 +68,12 @@ const menuItems = [
     label: 'Kho pin',
     icon: Battery,
     description: 'Quản lý kho pin'
+  },
+  {
+    id: 'faulty-batteries',
+    label: 'Pin lỗi',
+    icon: AlertTriangle,
+    description: 'Quản lý pin lỗi'
   },
   {
     id: 'vehicles',
