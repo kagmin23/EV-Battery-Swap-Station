@@ -17,15 +17,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapComponent, { MapComponentHandle } from '../driver/component/MapComponent';
 import { Ionicons } from '@expo/vector-icons';
+import StationListView, { mockStations } from '../driver/component/StationListView'
 
 const { width, height } = Dimensions.get('window');
 
+
 const SearchAndFilterBar: React.FC = () => {
-  const filterChips = [
-    { label: '0—350+', icon: 'flash', color: '#6d4aff' },
-    { label: 'Rapid', icon: 'flash', color: '#6d4aff' },
-    { label: 'Ultra', icon: 'flash', color: '#6d4aff' },
-  ];
+
 
   return (
     <View style={styles.searchBarContainer} pointerEvents="box-none">
@@ -38,7 +36,7 @@ const SearchAndFilterBar: React.FC = () => {
         />
       </View>
 
-      <View style={styles.filterChipsContainer}>
+      {/* <View style={styles.filterChipsContainer}>
         <TouchableOpacity style={styles.filterButton}>
           <Ionicons name="options-outline" size={18} color="white" style={styles.listIcon} />
         </TouchableOpacity>
@@ -48,15 +46,18 @@ const SearchAndFilterBar: React.FC = () => {
             <Text style={styles.categoryLabel}>{chip.label}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </View> */}
     </View>
   );
 };
-const FloatingActionButtons: React.FC<{ onNavigatePress?: () => void }> = ({ onNavigatePress }) => {
-  const buttons = [
 
-    { name: 'list-sharp', bgColor: '#0e012f' },
-    { name: 'navigate-outline', bgColor: '#0e012f' },
+const FloatingActionButtons: React.FC<{
+  onNavigatePress?: () => void;
+  onListPress?: () => void;
+}> = ({ onNavigatePress, onListPress }) => {
+  const buttons = [
+    { name: 'list-sharp', bgColor: '#0e012f', onPress: onListPress },
+    { name: 'navigate-outline', bgColor: '#0e012f', onPress: onNavigatePress },
   ];
 
   return (
@@ -66,7 +67,7 @@ const FloatingActionButtons: React.FC<{ onNavigatePress?: () => void }> = ({ onN
           key={index}
           style={[styles.fabButton, { backgroundColor: btn.bgColor }]}
           accessibilityLabel={btn.name}
-          onPress={btn.name === 'navigate-outline' ? onNavigatePress : undefined}
+          onPress={btn.onPress}
         >
           <Ionicons name={btn.name as keyof typeof Ionicons.glyphMap} color="white" size={24} />
         </TouchableOpacity>
@@ -80,7 +81,9 @@ const LocationSation: React.FC = () => {
   const mapRef = useRef<MapComponentHandle>(null);
   const [selectedStation, setSelectedStation] = useState<any | null>(null);
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
+  const [showListView, setShowListView] = useState(false);
   const sheetY = useRef(new Animated.Value(height)).current; // start off-screen
+  const listY = useRef(new Animated.Value(height)).current; // list view animation
   const startOffsetRef = useRef(0);
   const navigation = useNavigation<any>();
   const router = useRouter();
@@ -108,6 +111,25 @@ const LocationSation: React.FC = () => {
     Animated.spring(sheetY, { toValue: to, useNativeDriver: true, bounciness: 0, speed: 18 }).start();
   }, [sheetY]);
 
+  const openListView = useCallback(() => {
+    setShowListView(true);
+    Animated.spring(listY, { toValue: 0, useNativeDriver: true, bounciness: 0, speed: 18 }).start();
+  }, [listY]);
+
+  const closeListView = useCallback(() => {
+    Animated.spring(listY, { toValue: height, useNativeDriver: true, bounciness: 0, speed: 18 }).start(() => {
+      setShowListView(false);
+    });
+  }, [listY]);
+
+  const handleListPress = () => {
+    if (showListView) {
+      closeListView();
+    } else {
+      openListView();
+    }
+  };
+
   useEffect(() => {
     if (selectedStation) {
       sheetY.setValue(height);
@@ -116,10 +138,10 @@ const LocationSation: React.FC = () => {
     }
   }, [selectedStation, sheetY, PEEK_OFFSET, openTo]);
 
-  // Hide bottom tab bar while sheet is visible
+  // Hide bottom tab bar while sheet or list view is visible
   useEffect(() => {
     // expo-router Tabs parent
-    if (selectedStation) {
+    if (selectedStation || showListView) {
       navigation.setOptions({ tabBarStyle: { display: 'none' } });
     } else {
       // Restore original tab bar style from _layout.tsx
@@ -141,7 +163,7 @@ const LocationSation: React.FC = () => {
         }
       });
     }
-  }, [navigation, selectedStation]);
+  }, [navigation, selectedStation, showListView]);
 
   const panResponder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
@@ -187,9 +209,12 @@ const LocationSation: React.FC = () => {
           }}
         />
 
-        <FloatingActionButtons onNavigatePress={() => mapRef.current?.centerOnUser()} />
+        <FloatingActionButtons
+          onNavigatePress={() => mapRef.current?.centerOnUser()}
+          onListPress={handleListPress}
+        />
 
-        {!selectedStation && <SearchAndFilterBar />}
+        {!selectedStation && !showListView && <SearchAndFilterBar />}
 
         {selectedStation && (
           <>
@@ -225,7 +250,7 @@ const LocationSation: React.FC = () => {
                 </View>
                 <View style={styles.statBox}>
                   <View style={[styles.statusDot, { backgroundColor: selectedStation.status === 'available' ? '#22c55e' : selectedStation.status === 'busy' ? '#facc15' : '#ef4444' }]} />
-                  <Text style={styles.statValue}>{selectedStation.status.charAt(0).toUpperCase() + selectedStation.status.slice(1)}</Text>
+                  <Text style={styles.statValue}>{selectedStation.status ? selectedStation.status.charAt(0).toUpperCase() + selectedStation.status.slice(1) : 'Unknown'}</Text>
                   <Text style={styles.statLabel}>Status</Text>
                 </View>
               </View>
@@ -267,6 +292,17 @@ const LocationSation: React.FC = () => {
             </Animated.View>
           </>
         )}
+
+        <StationListView
+          stations={mockStations}
+          onStationSelect={(station) => {
+            setSelectedStation(station);
+            closeListView();
+          }}
+          onClose={closeListView}
+          listY={listY}
+          showListView={showListView}
+        />
       </View>
     </SafeAreaView >
   );
