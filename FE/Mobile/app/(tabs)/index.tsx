@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MapComponent, { MapComponentHandle } from '../driver/component/MapComponent';
 import { Ionicons } from '@expo/vector-icons';
 import StationListView, { mockStations } from '../driver/component/StationListView'
+import { useSelectedStation, useFavorites, toggleFavorite, initFavorites, sSelectedStation } from '@/store/station';
 
 const { width, height } = Dimensions.get('window');
 
@@ -35,18 +36,6 @@ const SearchAndFilterBar: React.FC = () => {
           style={styles.searchInput}
         />
       </View>
-
-      {/* <View style={styles.filterChipsContainer}>
-        <TouchableOpacity style={styles.filterButton}>
-          <Ionicons name="options-outline" size={18} color="white" style={styles.listIcon} />
-        </TouchableOpacity>
-        {filterChips.map((chip, index) => (
-          <TouchableOpacity key={index} style={[styles.categoryChip, { backgroundColor: chip.color }]}>
-            <Ionicons name={chip.icon as any} size={14} color="white" style={styles.categoryIcon} />
-            <Text style={styles.categoryLabel}>{chip.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View> */}
     </View>
   );
 };
@@ -87,6 +76,18 @@ const LocationSation: React.FC = () => {
   const startOffsetRef = useRef(0);
   const navigation = useNavigation<any>();
   const router = useRouter();
+  const selectedStationStore = useSelectedStation();
+  const favoriteIds = useFavorites();
+
+  useEffect(() => {
+    if (selectedStationStore) {
+      setSelectedStation(selectedStationStore);
+    }
+  }, [selectedStationStore]);
+
+  useEffect(() => {
+    initFavorites();
+  }, []);
 
   const handleNavigatePress = () => {
     if (!selectedStation) return;
@@ -187,7 +188,7 @@ const LocationSation: React.FC = () => {
       if (gesture.vy > 1.0 || current > PEEK_OFFSET + 120) {
         // close
         openTo(height);
-        setTimeout(() => setSelectedStation(null), 180);
+        setTimeout(() => { setSelectedStation(null); sSelectedStation.set(null as any); }, 180);
         setIsSheetExpanded(false);
         return;
       }
@@ -219,7 +220,7 @@ const LocationSation: React.FC = () => {
         {selectedStation && (
           <>
             {isSheetExpanded && (
-              <Pressable style={styles.scrim} onPress={() => { openTo(height); setTimeout(() => setSelectedStation(null), 180); }} />
+              <Pressable style={styles.scrim} onPress={() => { openTo(height); setTimeout(() => { setSelectedStation(null); sSelectedStation.set(null as any); }, 180); }} />
             )}
             <Animated.View style={[styles.sheetContainer, { transform: [{ translateY: sheetY }] }]}>
               <View style={styles.dragHandle} {...panResponder.panHandlers}>
@@ -228,9 +229,19 @@ const LocationSation: React.FC = () => {
               <View style={styles.sheetHeader}>
                 <Text style={styles.sheetTitle}>EV Battery Swap Station</Text>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <View style={{ borderRadius: 20, padding: 4 }}>
-                    <Ionicons name="star-outline" size={20} color="#bfa8ff" />
-                  </View>
+                  <TouchableOpacity
+                    style={{ borderRadius: 20, padding: 4 }}
+                    onPress={() => {
+                      if (selectedStation?.id) toggleFavorite(selectedStation.id);
+                    }}
+                    disabled={!selectedStation?.id}
+                  >
+                    <Ionicons
+                      name={selectedStation?.id && favoriteIds.includes(selectedStation.id) ? 'star' : 'star-outline'}
+                      size={20}
+                      color={selectedStation?.id && favoriteIds.includes(selectedStation.id) ? '#FFD700' : '#bfa8ff'}
+                    />
+                  </TouchableOpacity>
                   <View style={{ backgroundColor: '#6d4aff', borderRadius: 20, padding: 4 }}>
                     <Ionicons name="ellipsis-horizontal" size={20} color="#bfa8ff" />
                   </View>
@@ -239,18 +250,36 @@ const LocationSation: React.FC = () => {
 
               <View style={styles.statRow}>
                 <View style={styles.statBox}>
-                  <Ionicons name="battery-charging-outline" size={16} color="#bfa8ff" />
+                  <Ionicons name="battery-full-outline" size={16} color="#bfa8ff" />
                   <Text style={styles.statValue}>{selectedStation.availableBatteries}</Text>
                   <Text style={styles.statLabel}>Available </Text>
                 </View>
                 <View style={styles.statBox}>
                   <Ionicons name="albums-outline" size={16} color="#bfa8ff" />
-                  <Text style={styles.statValue}>{selectedStation.totalBatteries}</Text>
-                  <Text style={styles.statLabel}>Total Slots</Text>
+                  <Text style={styles.statValue}>{selectedStation.sohAvg}</Text>
+                  <Text style={styles.statLabel}>SOH Average</Text>
                 </View>
                 <View style={styles.statBox}>
-                  <View style={[styles.statusDot, { backgroundColor: selectedStation.status === 'available' ? '#22c55e' : selectedStation.status === 'busy' ? '#facc15' : '#ef4444' }]} />
-                  <Text style={styles.statValue}>{selectedStation.status ? selectedStation.status.charAt(0).toUpperCase() + selectedStation.status.slice(1) : 'Unknown'}</Text>
+                  <View
+                    style={[
+                      styles.statusDot,
+                      {
+                        backgroundColor:
+                          selectedStation.availableBatteries > 5
+                            ? '#22c55e'
+                            : selectedStation.availableBatteries > 0
+                              ? '#facc15'
+                              : '#ef4444',
+                      },
+                    ]}
+                  />
+                  <Text style={styles.statValue}>
+                    {selectedStation.availableBatteries > 5
+                      ? 'Available'
+                      : selectedStation.availableBatteries > 0
+                        ? 'Low'
+                        : 'Out of Stock'}
+                  </Text>
                   <Text style={styles.statLabel}>Status</Text>
                 </View>
               </View>
@@ -294,11 +323,7 @@ const LocationSation: React.FC = () => {
         )}
 
         <StationListView
-          stations={mockStations}
-          onStationSelect={(station) => {
-            setSelectedStation(station);
-            closeListView();
-          }}
+          stations={mockStations as any[]}
           onClose={closeListView}
           listY={listY}
           showListView={showListView}

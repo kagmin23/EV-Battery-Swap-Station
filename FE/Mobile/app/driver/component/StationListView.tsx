@@ -8,9 +8,8 @@ import {
     Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getListStationNear, useStation } from '@/store/station';
-import { useFocusEffect } from 'expo-router';
+import { getListStationNear, sSelectedStation, useStation, useFavorites, toggleFavorite, isFavorite, initFavorites } from '@/store/station';
+import { useFocusEffect, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 
 
@@ -67,7 +66,7 @@ export const mockStations = [
     },
 ];
 
-interface Station {
+interface UIStation {
     id: string;
     stationName: string;
     address: string;
@@ -86,8 +85,7 @@ interface Station {
 }
 
 interface StationListViewProps {
-    stations: Station[];
-    onStationSelect: (station: Station) => void;
+    stations: UIStation[];
     onClose: () => void;
     listY: Animated.Value;
     showListView: boolean;
@@ -95,15 +93,17 @@ interface StationListViewProps {
 
 // Station List Component
 const StationList: React.FC<{
-    stations: Station[];
-    onStationSelect: (station: Station) => void;
+    stations: UIStation[];
     onClose: () => void;
-}> = ({ stations, onStationSelect, onClose }) => {
+}> = ({ stations, onClose }) => {
+    const router = useRouter();
     const [activeTab, setActiveTab] = React.useState<'nearby' | 'favorites'>('nearby');
-    const [favoriteStations, setFavoriteStations] = React.useState<string[]>([]);
+    const favoriteStations = useFavorites();
     const [isLoading, setIsLoading] = React.useState(false);
     const [processingFavorites, setProcessingFavorites] = React.useState<Set<string>>(new Set());
     const nearStation = useStation()
+
+
 
 
     useFocusEffect(
@@ -131,67 +131,14 @@ const StationList: React.FC<{
             })();
         }, [])
     );
-    // Load favorites from AsyncStorage on component mount
-    React.useEffect(() => {
-        loadFavorites();
-    }, []);
+    React.useEffect(() => { initFavorites(); }, []);
 
-    // Load favorites from AsyncStorage
-    // TODO: Replace with real API call
-    // Example: const favorites = await api.getUserFavorites(userId);
-    const loadFavorites = async () => {
-        try {
-
-            const favorites = await AsyncStorage.getItem('favoriteStations');
-            if (favorites) {
-                setFavoriteStations(JSON.parse(favorites));
-            }
-        } catch (error) {
-            console.error('Error loading favorites:', error);
-        }
-    };
-
-    const saveFavorites = async (favorites: string[]) => {
-        try {
-            await AsyncStorage.setItem('favoriteStations', JSON.stringify(favorites));
-        } catch (error) {
-            console.error('Error saving favorites:', error);
-        }
-    };
-
-    const toggleFavorite = async (stationId: string) => {
-        // Prevent rapid clicking and invalid IDs
+    const onToggleFavorite = async (stationId: string) => {
         if (!stationId || processingFavorites.has(stationId)) return;
-
         setProcessingFavorites(prev => new Set(prev).add(stationId));
-
-        try {
-            const isCurrentlyFavorite = favoriteStations.includes(stationId);
-
-            let newFavorites;
-
-            if (isCurrentlyFavorite) {
-                newFavorites = favoriteStations.filter(id => id !== stationId);
-                console.log('Removing from favorites');
-            } else {
-                newFavorites = [...favoriteStations, stationId];
-            }
-
-            setFavoriteStations(newFavorites);
-            await saveFavorites(newFavorites);
-        } finally {
-            // Remove from processing
-            setProcessingFavorites(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(stationId);
-                return newSet;
-            });
+        try { await toggleFavorite(stationId); } finally {
+            setProcessingFavorites(prev => { const s = new Set(prev); s.delete(stationId); return s; });
         }
-    };
-
-    const isFavorite = (stationId: string) => {
-        const result = favoriteStations.includes(stationId);
-        return result;
     };
 
     const availableStations = nearStation.length > 0 ? nearStation : stations;
@@ -200,10 +147,19 @@ const StationList: React.FC<{
     const filteredStations = activeTab === 'favorites'
         ? availableStations.filter(station => isFavorite(station.id))
         : availableStations;
-    const renderStationCard = ({ item }: { item: Station }) => (
+    const renderStationCard = ({ item }: { item: any }) => (
         <TouchableOpacity
             style={styles.stationCard}
-            onPress={() => onStationSelect(item)}
+            onPress={() => {
+                const selected = {
+                    ...item,
+                    title: item.stationName,
+                    description: item.address,
+                };
+                sSelectedStation.set(selected as any);
+                router.push('/(tabs)');
+                onClose();
+            }}
         >
             <View style={styles.stationCardHeader}>
                 <View style={styles.brandLogo}>
@@ -211,7 +167,7 @@ const StationList: React.FC<{
                 </View>
                 <TouchableOpacity
                     style={styles.favoriteButton}
-                    onPress={() => toggleFavorite(item.id)}
+                    onPress={() => onToggleFavorite(item.id)}
                     disabled={processingFavorites.has(item.id)}
                 >
                     <Ionicons
@@ -320,7 +276,6 @@ const StationList: React.FC<{
 
 const StationListView: React.FC<StationListViewProps> = ({
     stations,
-    onStationSelect,
     onClose,
     listY,
     showListView,
@@ -331,7 +286,6 @@ const StationListView: React.FC<StationListViewProps> = ({
         <Animated.View style={[styles.listViewContainer, { transform: [{ translateY: listY }] }]}>
             <StationList
                 stations={stations}
-                onStationSelect={onStationSelect}
                 onClose={onClose}
             />
         </Animated.View>
@@ -339,7 +293,6 @@ const StationListView: React.FC<StationListViewProps> = ({
 };
 
 const styles = StyleSheet.create({
-    // List View Styles
     listViewContainer: {
         position: 'absolute',
         top: 0,
