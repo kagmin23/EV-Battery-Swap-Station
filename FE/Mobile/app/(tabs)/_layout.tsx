@@ -82,12 +82,6 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          // Override tab press to navigate to driver profile screen
-          tabBarButton: ({ children }) => (
-            <TouchableOpacity onPress={() => router.push('/driver/ProfileScreen')}>
-              {children}
-            </TouchableOpacity>
-          ),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               size={focused ? 28 : 24}

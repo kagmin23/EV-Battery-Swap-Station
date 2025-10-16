@@ -1,6 +1,7 @@
 import httpClient from "@/services/rootAPI";
 import { toCamelCase } from "@/utils/caseConverter";
 import { signify } from "react-signify"
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
 
@@ -24,10 +25,66 @@ interface Location {
 }
 export const sStation = signify<Station[]>([]);
 export const sSelectedStation = signify<Station | null>(null);
+export const sFavorites = signify<string[]>([]);
+let favoritesCache: string[] = [];
 
 
 export const useStation = () => sStation.use();
-export const useSelectedVehicle = () => sSelectedStation.use();
+export const useSelectedStation = () => sSelectedStation.use();
+export const useFavorites = () => sFavorites.use();
+
+const FAVORITES_KEY = "favoriteStations";
+
+const loadFavorites = async (): Promise<string[]> => {
+    try {
+        const raw = await AsyncStorage.getItem(FAVORITES_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
+
+const saveFavorites = async (favorites: string[]): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+    } catch {
+        // ignore persist errors
+    }
+};
+
+export const initFavorites = async (): Promise<void> => {
+    const stored = await loadFavorites();
+    favoritesCache = stored;
+    sFavorites.set(stored);
+};
+
+export const isFavorite = (stationId: string | undefined | null): boolean => {
+    if (!stationId) return false;
+    return favoritesCache.includes(stationId);
+};
+
+export const toggleFavorite = async (stationId: string | undefined | null): Promise<void> => {
+    if (!stationId) return;
+    const current = favoritesCache;
+    const next = current.includes(stationId)
+        ? current.filter((id: string) => id !== stationId)
+        : [...current, stationId];
+    favoritesCache = next;
+    sFavorites.set(next);
+    await saveFavorites(next);
+};
+
+export const clearFavorites = async (): Promise<void> => {
+    favoritesCache = [];
+    sFavorites.set([]);
+    try {
+        await AsyncStorage.removeItem(FAVORITES_KEY);
+    } catch {
+        // ignore
+    }
+};
 
 export const getListStationNear = async (payload: Location): Promise<Station[]> => {
     try {

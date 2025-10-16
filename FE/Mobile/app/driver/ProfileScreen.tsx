@@ -75,15 +75,10 @@ const ProfileScreen: React.FC = () => {
         <SafeAreaView style={styles.container}>
             <ScrollView
                 style={styles.scrollView}
-                contentContainerStyle={[styles.scrollContent, { paddingTop: (insets?.top ?? 0) }]}
+                contentContainerStyle={[styles.scrollContent, { paddingTop: Math.max(0, (insets?.top ?? 0) - 40) }]}
                 showsVerticalScrollIndicator={false}
             >
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => router.push('/(tabs)/home')}
-                >
-                    <Ionicons name="arrow-back" size={24} color="white" />
-                </TouchableOpacity>
+
                 <LinearGradient
                     colors={['#6d4aff', '#ff74e2']}
                     start={{ x: 0, y: 0 }}
@@ -109,7 +104,7 @@ const ProfileScreen: React.FC = () => {
                     </View>
                 </LinearGradient>
                 {/* Account Card */}
-                <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/profile')}>
+                <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/driver/component/ProfileDetails')}>
                     <View style={styles.iconContainer}>
                         <Ionicons name="person" size={24} color="#6d4aff" />
                         <View style={styles.iconBadge}>
