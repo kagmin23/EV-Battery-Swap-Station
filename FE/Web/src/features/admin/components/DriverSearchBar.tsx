@@ -1,0 +1,136 @@
+import React from 'react';
+import { Search, Filter } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { DriverFilters, DriverLicenseType } from '../types/driver';
+
+interface DriverSearchBarProps {
+    filters: DriverFilters;
+    onFiltersChange: (filters: DriverFilters) => void;
+    subscriptionPlans: { id: string; name: string }[];
+}
+
+export const DriverSearchBar: React.FC<DriverSearchBarProps> = ({
+    filters,
+    onFiltersChange,
+    subscriptionPlans
+}) => {
+    const handleSearchChange = (value: string) => {
+        onFiltersChange({ ...filters, search: value });
+    };
+
+    const handleStatusChange = (value: string) => {
+        onFiltersChange({ ...filters, status: value as any });
+    };
+
+    const handleSubscriptionPlanChange = (value: string) => {
+        onFiltersChange({ ...filters, subscriptionPlan: value });
+    };
+
+    const handleLicenseTypeChange = (value: string) => {
+        onFiltersChange({ ...filters, licenseType: value as DriverLicenseType | 'ALL' });
+    };
+
+    const handleCityChange = (value: string) => {
+        onFiltersChange({ ...filters, city: value });
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-4">
+                <div className="p-2 bg-blue-100 rounded-xl">
+                    <Search className="h-5 w-5 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-800">Tìm kiếm & Lọc</h3>
+            </div>
+
+            <div className="flex flex-col lg:flex-row gap-4">
+                {/* Search Input */}
+                <div className="flex-1 relative">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
+                    <Input
+                        placeholder="Tìm kiếm tài xế theo tên, email, SĐT, bằng lái..."
+                        value={filters.search}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="pl-12 h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl text-slate-700 placeholder:text-slate-400"
+                    />
+                </div>
+
+                {/* Filters */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                    {/* Status Filter */}
+                    <Select value={filters.status} onValueChange={handleStatusChange}>
+                        <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl">
+                            <SelectValue placeholder="Trạng thái" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                            <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
+                            <SelectItem value="ACTIVE">Hoạt động</SelectItem>
+                            <SelectItem value="INACTIVE">Không hoạt động</SelectItem>
+                            <SelectItem value="SUSPENDED">Tạm khóa</SelectItem>
+                            <SelectItem value="PENDING_VERIFICATION">Chờ xác thực</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    {/* Subscription Plan Filter */}
+                    <Select value={filters.subscriptionPlan} onValueChange={handleSubscriptionPlanChange}>
+                        <SelectTrigger className="w-full sm:w-[180px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl">
+                            <SelectValue placeholder="Gói thuê" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                            <SelectItem value="ALL">Tất cả gói thuê</SelectItem>
+                            {subscriptionPlans.map((plan) => (
+                                <SelectItem key={plan.id} value={plan.id}>
+                                    {plan.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    {/* License Type Filter */}
+                    <Select value={filters.licenseType} onValueChange={handleLicenseTypeChange}>
+                        <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl">
+                            <SelectValue placeholder="Loại bằng" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                            <SelectItem value="ALL">Tất cả loại bằng</SelectItem>
+                            <SelectItem value="A1">A1</SelectItem>
+                            <SelectItem value="A2">A2</SelectItem>
+                            <SelectItem value="A3">A3</SelectItem>
+                            <SelectItem value="B1">B1</SelectItem>
+                            <SelectItem value="B2">B2</SelectItem>
+                            <SelectItem value="C">C</SelectItem>
+                            <SelectItem value="D">D</SelectItem>
+                            <SelectItem value="E">E</SelectItem>
+                            <SelectItem value="F">F</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    {/* City Filter */}
+                    <Select value={filters.city} onValueChange={handleCityChange}>
+                        <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl">
+                            <SelectValue placeholder="Thành phố" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                            <SelectItem value="ALL">Tất cả thành phố</SelectItem>
+                            <SelectItem value="TP.HCM">TP.HCM</SelectItem>
+                            <SelectItem value="Hà Nội">Hà Nội</SelectItem>
+                            <SelectItem value="Đà Nẵng">Đà Nẵng</SelectItem>
+                            <SelectItem value="Hải Phòng">Hải Phòng</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    {/* Filter Button */}
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-12 w-12 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl"
+                    >
+                        <Filter className="h-5 w-5" />
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+};

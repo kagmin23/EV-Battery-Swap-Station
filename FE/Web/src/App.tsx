@@ -1,4 +1,3 @@
-
 import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -24,7 +23,7 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-otp" element={<VerifyOTPPage />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
-          
+
           {/* Public Home Route */}
           <Route path="/home" element={
             <>
@@ -37,44 +36,44 @@ function App() {
           } />
 
           {/* Protected Routes */}
-          
+
           {/* Admin Routes */}
           <Route path="/admin/*" element={
             <ProtectedRoute requiredRole="admin">
               <AdminRouter />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/overview" element={
             <ProtectedRoute requiredRole="admin">
               <ManagementMainPage />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/battery-inventory" element={
             <ProtectedRoute requiredRole="admin">
               <ManagementMainPage />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/vehicles" element={
             <ProtectedRoute requiredRole="admin">
               <ManagementMainPage />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/subscriptions" element={
             <ProtectedRoute requiredRole="admin">
               <ManagementMainPage />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/transactions" element={
             <ProtectedRoute requiredRole="admin">
               <ManagementMainPage />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/settings" element={
             <ProtectedRoute requiredRole="admin">
               <ManagementMainPage />
@@ -87,20 +86,32 @@ function App() {
               <StaffRouter />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/staff/list" element={
             <ProtectedRoute requiredRole="admin">
               <ManagementMainPage />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/staff/distribution" element={
             <ProtectedRoute requiredRole="admin">
               <ManagementMainPage />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/staff/activities" element={
+            <ProtectedRoute requiredRole="admin">
+              <ManagementMainPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/staff/station-list" element={
+            <ProtectedRoute requiredRole="admin">
+              <ManagementMainPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/staff/settings" element={
             <ProtectedRoute requiredRole="admin">
               <ManagementMainPage />
             </ProtectedRoute>
@@ -112,7 +123,7 @@ function App() {
               <DriverRouter />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/driver/list" element={
             <ProtectedRoute requiredRole="admin">
               <ManagementMainPage />
@@ -127,6 +138,9 @@ function App() {
   );
 }
 
-
-
 export default App;
+
+
+
+
+

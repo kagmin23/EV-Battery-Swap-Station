@@ -2,7 +2,8 @@ import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, MapPin, Loader2 } from 'lucide-react';
+import { ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
+import { Phone, MapPin } from 'lucide-react';
 import type { Staff, StaffRole, StaffStatus } from '../types/staff';
 
 interface StaffTableProps {
@@ -130,33 +131,27 @@ export const StaffTable: React.FC<StaffTableProps> = ({
                       onEdit(staffMember);
                     }}
                     disabled={savingStaffId === staffMember.id || suspendingStaffId === staffMember.id}
-                    className="disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 border-slate-200 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {savingStaffId === staffMember.id ? (
-                      <>
-                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                        Đang lưu...
-                      </>
+                      <ButtonLoadingSpinner size="sm" variant="default" text="Đang lưu..." />
                     ) : (
                       'Sửa'
                     )}
                   </Button>
                   {staffMember.status !== 'SUSPENDED' && (
                     <Button
-                      variant="destructive"
+                      variant="outline"
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         onSuspend(staffMember);
                       }}
                       disabled={suspendingStaffId === staffMember.id || savingStaffId === staffMember.id}
-                      className="disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
                     >
                       {suspendingStaffId === staffMember.id ? (
-                        <>
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                          Đang xử lý...
-                        </>
+                        <ButtonLoadingSpinner size="sm" variant="white" text="Đang xử lý..." />
                       ) : (
                         'Khóa'
                       )}

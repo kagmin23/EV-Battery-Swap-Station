@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Grid, List, Users, Clock, Activity, AlertCircle, Loader2 } from 'lucide-react';
+import { Plus, Grid, List, Users, Clock, Activity, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { StaffSearchBar } from '../components/StaffSearchBar';
 import { StaffCard } from '../components/StaffCard';
 import { StaffTable } from '../components/StaffTable';
 import { StaffModal } from '../components/StaffModal';
+import { StaffDetailModal } from '../components/StaffDetailModal';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
-import { StaffService, type CreateStaffRequest, type UpdateStaffRequest as ApiUpdateStaffRequest } from '@/services/api/staffService';
+import { PageLoadingSpinner, ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
+import { StaffService, type CreateStaffRequest, type UpdateStaffRequest as ApiUpdateStaffRequest, type Staff as ApiStaff } from '@/services/api/staffService';
 import type { Staff, StaffFilters, AddStaffRequest, UpdateStaffRequest, StaffPermission, Station } from '../types/staff';
 
 // Mock data - trong thực tế sẽ lấy từ API
@@ -48,6 +50,8 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
     const [error, setError] = useState<string | null>(null);
     const [suspendingStaffId, setSuspendingStaffId] = useState<string | null>(null);
     const [savingStaffId, setSavingStaffId] = useState<string | null>(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
 
     // Load staff data from API
     const loadStaff = async () => {
@@ -57,27 +61,33 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
             const apiStaff = await StaffService.getAllStaff();
 
             // Convert API staff to UI staff format
-            const convertedStaff: Staff[] = apiStaff.map((apiStaffMember) => ({
-                id: apiStaffMember._id,
-                name: apiStaffMember.fullName || 'N/A',
-                email: apiStaffMember.email || 'N/A',
-                phone: apiStaffMember.phoneNumber || 'N/A',
-                role: 'STAFF' as const,
-                stationId: '1', // Default station - you might want to add station assignment
-                stationName: 'Trạm Hà Nội', // Default station name
-                status: apiStaffMember.status === 'active' ? 'ONLINE' : 'OFFLINE',
-                permissions: mockPermissions.filter(p => p.enabled),
-                lastActive: new Date(apiStaffMember.updatedAt),
-                createdAt: new Date(apiStaffMember.createdAt),
-                updatedAt: new Date(apiStaffMember.updatedAt),
-            }));
+            const convertedStaff: Staff[] = apiStaff.map((apiStaffMember: ApiStaff) => {
+                // Find station info from mockStations or use default
+                const stationInfo = apiStaffMember.station
+                    ? mockStations.find(s => s.id === apiStaffMember.station) || mockStations[0]
+                    : mockStations[0]; // Default to first station if no station assigned
+
+                return {
+                    id: apiStaffMember._id,
+                    name: apiStaffMember.fullName || 'N/A',
+                    email: apiStaffMember.email || 'N/A',
+                    phone: apiStaffMember.phoneNumber || 'N/A',
+                    role: 'STAFF' as const,
+                    stationId: stationInfo.id,
+                    stationName: stationInfo.name,
+                    status: apiStaffMember.status === 'active' ? 'ONLINE' : 'OFFLINE',
+                    permissions: mockPermissions.filter(p => p.enabled),
+                    lastActive: new Date(apiStaffMember.updatedAt),
+                    createdAt: new Date(apiStaffMember.createdAt),
+                    updatedAt: new Date(apiStaffMember.updatedAt),
+                };
+            });
 
             setStaff(convertedStaff);
             toast.success('Tải danh sách nhân viên thành công');
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tải danh sách nhân viên';
             setError(errorMessage);
-            toast.error(errorMessage);
             console.error('Error loading staff:', err);
         } finally {
             setIsLoading(false);
@@ -132,7 +142,6 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi thay đổi trạng thái nhân viên';
                 setError(errorMessage);
-                toast.error(errorMessage);
                 console.error('Error changing staff status:', err);
             } finally {
                 setSuspendingStaffId(null);
@@ -143,6 +152,11 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
     const handleAddStaff = () => {
         setEditingStaff(null);
         setIsModalOpen(true);
+    };
+
+    const handleViewStaffDetails = (staffMember: Staff) => {
+        setSelectedStaff(staffMember);
+        setIsDetailModalOpen(true);
     };
 
     const handleSaveStaff = async (data: AddStaffRequest | UpdateStaffRequest): Promise<void> => {
@@ -215,7 +229,6 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi lưu thông tin nhân viên';
             setError(errorMessage);
-            toast.error(errorMessage);
             console.error('Error saving staff:', err);
         } finally {
             setSavingStaffId(null);
@@ -241,7 +254,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                         variant="outline"
                         size="sm"
                         onClick={() => setError(null)}
-                        className="text-red-600 hover:text-red-700"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 hover:shadow-sm"
                     >
                         Đóng
                     </Button>
@@ -307,8 +320,8 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                                 size="sm"
                                 onClick={() => setViewMode('grid')}
                                 className={`rounded-lg transition-all duration-200 ${viewMode === 'grid'
-                                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
-                                    : 'hover:bg-slate-100'
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl border-blue-600 hover:border-blue-700'
+                                    : 'hover:bg-slate-100 border-slate-200 hover:border-slate-300 hover:shadow-sm'
                                     }`}
                             >
                                 <Grid className="h-4 w-4" />
@@ -318,8 +331,8 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                                 size="sm"
                                 onClick={() => setViewMode('table')}
                                 className={`rounded-lg transition-all duration-200 ${viewMode === 'table'
-                                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
-                                    : 'hover:bg-slate-100'
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl border-blue-600 hover:border-blue-700'
+                                    : 'hover:bg-slate-100 border-slate-200 hover:border-slate-300 hover:shadow-sm'
                                     }`}
                             >
                                 <List className="h-4 w-4" />
@@ -327,26 +340,23 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                             <Button
                                 onClick={handleAddStaff}
                                 disabled={savingStaffId === 'new'}
-                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed border border-blue-600 hover:border-blue-700"
                             >
                                 {savingStaffId === 'new' ? (
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    <ButtonLoadingSpinner size="sm" variant="white" text="Đang thêm..." />
                                 ) : (
-                                    <Plus className="h-4 w-4 mr-2" />
+                                    <>
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Thêm nhân viên
+                                    </>
                                 )}
-                                {savingStaffId === 'new' ? 'Đang thêm...' : 'Thêm nhân viên'}
                             </Button>
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="m-0 p-6 max-h-[600px] overflow-y-auto custom-scrollbar">
                     {isLoading ? (
-                        <div className="flex items-center justify-center py-12">
-                            <div className="flex flex-col items-center space-y-4">
-                                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                                <p className="text-slate-600">Đang tải danh sách nhân viên...</p>
-                            </div>
-                        </div>
+                        <PageLoadingSpinner text="Đang tải danh sách nhân viên..." />
                     ) : filteredStaff.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12">
                             <Users className="h-12 w-12 text-slate-400 mb-4" />
@@ -359,7 +369,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                             {(!filters.search && filters.stationId === 'ALL' && filters.role === 'ALL' && filters.status === 'ALL') && (
                                 <Button
                                     onClick={handleAddStaff}
-                                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border border-blue-600 hover:border-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-lg"
                                 >
                                     <Plus className="h-4 w-4 mr-2" />
                                     Thêm nhân viên đầu tiên
@@ -375,6 +385,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                                     onSelect={onStaffSelect || (() => { })}
                                     onEdit={handleStaffEdit}
                                     onSuspend={handleStaffSuspend}
+                                    onViewDetails={handleViewStaffDetails}
                                     isSuspending={suspendingStaffId === staffMember.id}
                                     isSaving={savingStaffId === staffMember.id}
                                 />
@@ -406,6 +417,16 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                 staff={editingStaff}
                 stations={mockStations}
                 permissions={mockPermissions}
+            />
+
+            {/* Staff Detail Modal */}
+            <StaffDetailModal
+                isOpen={isDetailModalOpen}
+                onClose={() => {
+                    setIsDetailModalOpen(false);
+                    setSelectedStaff(null);
+                }}
+                staff={selectedStaff}
             />
         </div>
     );

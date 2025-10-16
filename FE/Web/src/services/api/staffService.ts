@@ -12,6 +12,7 @@ export interface Staff {
     role: 'staff';
     isVerified: boolean;
     status: 'active' | 'locked';
+    station?: string | null;
     refreshToken?: string | null;
     refreshTokenExpiresAt?: string | null;
     emailOTP?: string;

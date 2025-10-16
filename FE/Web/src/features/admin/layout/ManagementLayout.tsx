@@ -20,22 +20,24 @@ export const ManagementLayout: React.FC<ManagementLayoutProps> = ({
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+        <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
             {/* Header */}
             <CommonHeader />
 
             {/* Main Layout */}
-            <div className="flex-1 flex">
+            <div className="flex-1 flex min-h-0">
                 {/* Sidebar */}
-                <ManagementSidebar
-                    activeTab={activeTab}
-                    onTabChange={onTabChange}
-                    isCollapsed={isCollapsed}
-                    onToggleCollapse={handleToggleCollapse}
-                />
+                <div className="flex-shrink-0">
+                    <ManagementSidebar
+                        activeTab={activeTab}
+                        onTabChange={onTabChange}
+                        isCollapsed={isCollapsed}
+                        onToggleCollapse={handleToggleCollapse}
+                    />
+                </div>
 
                 {/* Main Content */}
-                <div className="flex-1 flex flex-col">
+                <div className="flex-1 flex flex-col min-h-0">
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
                         {children}
                     </div>

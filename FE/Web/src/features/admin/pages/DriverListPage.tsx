@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -18,10 +18,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Plus, Grid, List, Users, Activity, Car, Star, Calendar, User, AlertCircle, Loader2 } from 'lucide-react';
+import { Plus, Grid, List, Users, Activity, Car, Star, Calendar, User, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
+import { DriverSearchBar } from '../components/DriverSearchBar';
+import { PageLoadingSpinner, ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
 import { DriverService } from '@/services/api/driverService';
 import type { Driver, DriverFilters, SubscriptionPlan } from '../types/driver';
 
@@ -157,7 +159,6 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tải danh sách tài xế';
             setError(errorMessage);
-            toast.error(errorMessage);
             console.error('Error loading drivers:', err);
         } finally {
             setIsLoading(false);
@@ -252,7 +253,6 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tạm khóa tài xế';
                 setError(errorMessage);
-                toast.error(errorMessage);
                 console.error('Error suspending driver:', err);
             } finally {
                 setSuspendingDriverId(null);
@@ -277,7 +277,6 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi kích hoạt tài xế';
                 setError(errorMessage);
-                toast.error(errorMessage);
                 console.error('Error activating driver:', err);
             } finally {
                 setActivatingDriverId(null);
@@ -325,7 +324,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                         variant="outline"
                         size="sm"
                         onClick={() => setError(null)}
-                        className="text-red-600 hover:text-red-700"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200"
                     >
                         Đóng
                     </Button>
@@ -372,354 +371,298 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                 />
             </div>
 
-            {/* Filters and Actions */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-                        <div className="flex items-center space-x-4">
-                            <div className="flex items-center space-x-2">
-                                <Button
-                                    variant={viewMode === 'grid' ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={() => setViewMode('grid')}
-                                >
-                                    <Grid className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    variant={viewMode === 'list' ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={() => setViewMode('list')}
-                                >
-                                    <List className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                        <Button
-                            onClick={handleAddDriver}
-                            disabled={isSubmitting}
-                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSubmitting ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            ) : (
-                                <Plus className="h-4 w-4 mr-2" />
-                            )}
-                            Thêm tài xế
-                        </Button>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">Tìm kiếm</label>
-                            <input
-                                type="text"
-                                placeholder="Tên, email, SĐT, bằng lái..."
-                                value={filters.search}
-                                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">Trạng thái</label>
-                            <select
-                                value={filters.status}
-                                onChange={(e) => setFilters({ ...filters, status: e.target.value as any })}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            >
-                                <option value="ALL">Tất cả</option>
-                                <option value="ACTIVE">Hoạt động</option>
-                                <option value="INACTIVE">Không hoạt động</option>
-                                <option value="SUSPENDED">Tạm khóa</option>
-                                <option value="PENDING_VERIFICATION">Chờ xác thực</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">Gói thuê</label>
-                            <select
-                                value={filters.subscriptionPlan}
-                                onChange={(e) => setFilters({ ...filters, subscriptionPlan: e.target.value })}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            >
-                                <option value="ALL">Tất cả</option>
-                                {mockSubscriptionPlans.map(plan => (
-                                    <option key={plan.id} value={plan.id}>{plan.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">Loại bằng lái</label>
-                            <select
-                                value={filters.licenseType}
-                                onChange={(e) => setFilters({ ...filters, licenseType: e.target.value as any })}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            >
-                                <option value="ALL">Tất cả</option>
-                                <option value="A1">A1</option>
-                                <option value="A2">A2</option>
-                                <option value="A3">A3</option>
-                                <option value="B1">B1</option>
-                                <option value="B2">B2</option>
-                                <option value="C">C</option>
-                                <option value="D">D</option>
-                                <option value="E">E</option>
-                                <option value="F">F</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">Thành phố</label>
-                            <select
-                                value={filters.city}
-                                onChange={(e) => setFilters({ ...filters, city: e.target.value })}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            >
-                                <option value="ALL">Tất cả</option>
-                                <option value="TP.HCM">TP.HCM</option>
-                                <option value="Hà Nội">Hà Nội</option>
-                                <option value="Đà Nẵng">Đà Nẵng</option>
-                            </select>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Search and Filters */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6">
+                <DriverSearchBar
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                    subscriptionPlans={mockSubscriptionPlans}
+                />
+            </div>
 
             {/* Drivers List */}
-            <div className="space-y-6">
-                {isLoading ? (
-                    <div className="flex items-center justify-center py-12">
-                        <div className="flex flex-col items-center space-y-4">
-                            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                            <p className="text-slate-600">Đang tải danh sách tài xế...</p>
-                        </div>
-                    </div>
-                ) : filteredDrivers.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12">
-                        <Users className="h-12 w-12 text-slate-400 mb-4" />
-                        <h3 className="text-lg font-medium text-slate-900 mb-2">Không có tài xế nào</h3>
-                        <p className="text-slate-600 text-center mb-6">
-                            {filters.search || filters.status !== 'ALL' || filters.subscriptionPlan !== 'ALL' || filters.licenseType !== 'ALL' || filters.city !== 'ALL'
-                                ? 'Không tìm thấy tài xế phù hợp với bộ lọc hiện tại.'
-                                : 'Chưa có tài xế nào được thêm vào hệ thống.'}
-                        </p>
-                        {(!filters.search && filters.status === 'ALL' && filters.subscriptionPlan === 'ALL' && filters.licenseType === 'ALL' && filters.city === 'ALL') && (
+            <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50/50 border-b border-slate-200/60">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center text-xl font-bold text-slate-800">
+                            <div className="p-2 bg-blue-100 rounded-xl mr-3">
+                                <Users className="h-6 w-6 text-blue-600" />
+                            </div>
+                            Danh sách tài xế
+                            <span className="ml-3 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
+                                {filteredDrivers.length}
+                            </span>
+                        </CardTitle>
+                        <div className="flex space-x-2">
+                            <Button
+                                variant={viewMode === 'grid' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setViewMode('grid')}
+                                className={`rounded-lg transition-all duration-200 ${viewMode === 'grid'
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl border-blue-600 hover:border-blue-700'
+                                    : 'hover:bg-slate-100 border-slate-200 hover:border-slate-300'
+                                    }`}
+                            >
+                                <Grid className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant={viewMode === 'list' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setViewMode('list')}
+                                className={`rounded-lg transition-all duration-200 ${viewMode === 'list'
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl border-blue-600 hover:border-blue-700'
+                                    : 'hover:bg-slate-100 border-slate-200 hover:border-slate-300'
+                                    }`}
+                            >
+                                <List className="h-4 w-4" />
+                            </Button>
                             <Button
                                 onClick={handleAddDriver}
-                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                                disabled={isSubmitting}
+                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed border border-blue-600 hover:border-blue-700"
                             >
-                                <Plus className="h-4 w-4 mr-2" />
-                                Thêm tài xế đầu tiên
+                                {isSubmitting ? (
+                                    <ButtonLoadingSpinner size="sm" variant="white" text="Đang thêm..." />
+                                ) : (
+                                    <>
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Thêm tài xế
+                                    </>
+                                )}
                             </Button>
-                        )}
+                        </div>
                     </div>
-                ) : viewMode === 'grid' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredDrivers.map((driver) => (
-                            <Card key={driver.id} className="shadow-lg border-0 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-shadow">
-                                <CardContent className="p-6">
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className="flex items-center space-x-3">
-                                            {driver.avatar ? (
-                                                <img
-                                                    src={driver.avatar}
-                                                    alt={driver.name}
-                                                    className="w-12 h-12 rounded-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                                                    {driver.name.charAt(0)}
+                </CardHeader>
+                <CardContent className="m-0 p-6 max-h-[600px] overflow-y-auto custom-scrollbar">
+                    {isLoading ? (
+                        <PageLoadingSpinner text="Đang tải danh sách tài xế..." />
+                    ) : filteredDrivers.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <Users className="h-12 w-12 text-slate-400 mb-4" />
+                            <h3 className="text-lg font-medium text-slate-900 mb-2">Không có tài xế nào</h3>
+                            <p className="text-slate-600 text-center mb-6">
+                                {filters.search || filters.status !== 'ALL' || filters.subscriptionPlan !== 'ALL' || filters.licenseType !== 'ALL' || filters.city !== 'ALL'
+                                    ? 'Không tìm thấy tài xế phù hợp với bộ lọc hiện tại.'
+                                    : 'Chưa có tài xế nào được thêm vào hệ thống.'}
+                            </p>
+                            {(!filters.search && filters.status === 'ALL' && filters.subscriptionPlan === 'ALL' && filters.licenseType === 'ALL' && filters.city === 'ALL') && (
+                                <Button
+                                    onClick={handleAddDriver}
+                                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                                >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Thêm tài xế đầu tiên
+                                </Button>
+                            )}
+                        </div>
+                    ) : viewMode === 'grid' ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
+                            {filteredDrivers.map((driver) => (
+                                <Card
+                                    key={driver.id}
+                                    className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-0 shadow-lg bg-white/90 backdrop-blur-sm hover:bg-white overflow-hidden"
+                                    onClick={() => handleDriverSelect(driver)}
+                                >
+                                    <CardContent className="p-6">
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="flex items-center space-x-3">
+                                                {driver.avatar ? (
+                                                    <img
+                                                        src={driver.avatar}
+                                                        alt={driver.name}
+                                                        className="w-12 h-12 rounded-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                                        {driver.name.charAt(0)}
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    <h3 className="font-semibold text-slate-800">{driver.name}</h3>
+                                                    <p className="text-sm text-slate-500">{driver.email}</p>
+                                                    <p className="text-xs text-slate-400">{driver.phone}</p>
                                                 </div>
-                                            )}
-                                            <div>
-                                                <h3 className="font-semibold text-slate-800">{driver.name}</h3>
-                                                <p className="text-sm text-slate-500">{driver.email}</p>
-                                                <p className="text-xs text-slate-400">{driver.phone}</p>
                                             </div>
-                                        </div>
-                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(driver.status)}`}>
-                                            {getStatusText(driver.status)}
-                                        </span>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-slate-600">ID:</span>
-                                            <span className="text-sm font-medium font-mono">{driver.id.slice(-8)}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-slate-600">Trạng thái xác thực:</span>
-                                            <span className="text-sm font-medium text-yellow-600">
-                                                Chưa xác thực
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(driver.status)}`}>
+                                                {getStatusText(driver.status)}
                                             </span>
                                         </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-slate-600">Ngày tham gia:</span>
-                                            <span className="text-sm font-medium">{driver.joinDate.toLocaleDateString('vi-VN')}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-slate-600">Lần hoạt động cuối:</span>
-                                            <span className="text-sm font-medium">{driver.lastActive.toLocaleDateString('vi-VN')}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-slate-600">Gói thuê:</span>
-                                            <span className="text-sm font-medium">{driver.subscriptionPlan.name}</span>
-                                        </div>
-                                    </div>
 
-                                    <div className="flex space-x-2 mt-4">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleDriverSelect(driver)}
-                                            className="flex-1"
-                                        >
-                                            Xem chi tiết
-                                        </Button>
-                                        {driver.status === 'ACTIVE' ? (
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-slate-600">ID:</span>
+                                                <span className="text-sm font-medium font-mono">{driver.id.slice(-8)}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-slate-600">Trạng thái xác thực:</span>
+                                                <span className="text-sm font-medium text-yellow-600">
+                                                    Chưa xác thực
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-slate-600">Ngày tham gia:</span>
+                                                <span className="text-sm font-medium">{driver.joinDate.toLocaleDateString('vi-VN')}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-slate-600">Lần hoạt động cuối:</span>
+                                                <span className="text-sm font-medium">{driver.lastActive.toLocaleDateString('vi-VN')}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-slate-600">Gói thuê:</span>
+                                                <span className="text-sm font-medium">{driver.subscriptionPlan.name}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex space-x-2 mt-4">
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                onClick={() => handleSuspendDriver(driver)}
-                                                disabled={suspendingDriverId === driver.id || activatingDriverId === driver.id}
-                                                className="text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDriverSelect(driver);
+                                                }}
+                                                className="flex-1 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 border-slate-200 hover:shadow-sm"
                                             >
-                                                {suspendingDriverId === driver.id ? (
-                                                    <>
-                                                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                                        Đang xử lý...
-                                                    </>
-                                                ) : (
-                                                    'Khóa'
-                                                )}
+                                                Xem chi tiết
                                             </Button>
-                                        ) : (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleActivateDriver(driver)}
-                                                disabled={suspendingDriverId === driver.id || activatingDriverId === driver.id}
-                                                className="text-green-600 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                {activatingDriverId === driver.id ? (
-                                                    <>
-                                                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                                        Đang xử lý...
-                                                    </>
-                                                ) : (
-                                                    'Kích hoạt'
-                                                )}
-                                            </Button>
-                                        )}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                ) : (
-                    <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                        <CardContent className="p-0">
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead className="bg-slate-50 border-b border-slate-200">
-                                        <tr>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Tài xế</th>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Số điện thoại</th>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Trạng thái</th>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Xác thực</th>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Ngày tham gia</th>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Lần hoạt động cuối</th>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Thao tác</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-200">
-                                        {filteredDrivers.map((driver) => (
-                                            <tr key={driver.id} className="hover:bg-slate-50">
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center space-x-3">
-                                                        {driver.avatar ? (
-                                                            <img
-                                                                src={driver.avatar}
-                                                                alt={driver.name}
-                                                                className="w-10 h-10 rounded-full object-cover"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold">
-                                                                {driver.name.charAt(0)}
-                                                            </div>
-                                                        )}
-                                                        <div>
-                                                            <div className="font-medium text-slate-800">{driver.name}</div>
-                                                            <div className="text-sm text-slate-500">{driver.email}</div>
+                                            {driver.status === 'ACTIVE' ? (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleSuspendDriver(driver);
+                                                    }}
+                                                    disabled={suspendingDriverId === driver.id || activatingDriverId === driver.id}
+                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
+                                                >
+                                                    {suspendingDriverId === driver.id ? (
+                                                        <ButtonLoadingSpinner size="sm" variant="default" text="Đang xử lý..." />
+                                                    ) : (
+                                                        'Khóa'
+                                                    )}
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleActivateDriver(driver);
+                                                    }}
+                                                    disabled={suspendingDriverId === driver.id || activatingDriverId === driver.id}
+                                                    className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200 hover:border-green-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
+                                                >
+                                                    {activatingDriverId === driver.id ? (
+                                                        <ButtonLoadingSpinner size="sm" variant="default" text="Đang xử lý..." />
+                                                    ) : (
+                                                        'Kích hoạt'
+                                                    )}
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="overflow-hidden rounded-xl border border-slate-200 ">
+                            <table className="w-full">
+                                <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
+                                    <tr>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Tài xế</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Số điện thoại</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Trạng thái</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Xác thực</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Ngày tham gia</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Lần hoạt động cuối</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200">
+                                    {filteredDrivers.map((driver) => (
+                                        <tr key={driver.id} className="hover:bg-slate-50">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center space-x-3">
+                                                    {driver.avatar ? (
+                                                        <img
+                                                            src={driver.avatar}
+                                                            alt={driver.name}
+                                                            className="w-10 h-10 rounded-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold">
+                                                            {driver.name.charAt(0)}
                                                         </div>
+                                                    )}
+                                                    <div>
+                                                        <div className="font-medium text-slate-800">{driver.name}</div>
+                                                        <div className="text-sm text-slate-500">{driver.email}</div>
                                                     </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-800">{driver.phone}</td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(driver.status)}`}>
-                                                        {getStatusText(driver.status)}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="text-sm font-medium text-yellow-600">
-                                                        Chưa xác thực
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-800">{driver.joinDate.toLocaleDateString('vi-VN')}</td>
-                                                <td className="px-6 py-4 text-sm text-slate-800">{driver.lastActive.toLocaleDateString('vi-VN')}</td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex space-x-2">
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-800">{driver.phone}</td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(driver.status)}`}>
+                                                    {getStatusText(driver.status)}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-sm font-medium text-yellow-600">
+                                                    Chưa xác thực
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-800">{driver.joinDate.toLocaleDateString('vi-VN')}</td>
+                                            <td className="px-6 py-4 text-sm text-slate-800">{driver.lastActive.toLocaleDateString('vi-VN')}</td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex space-x-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleDriverSelect(driver)}
+                                                        className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 border-slate-200 hover:shadow-sm"
+                                                    >
+                                                        Xem
+                                                    </Button>
+                                                    {driver.status === 'ACTIVE' ? (
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            onClick={() => handleDriverSelect(driver)}
+                                                            onClick={() => handleSuspendDriver(driver)}
+                                                            disabled={suspendingDriverId === driver.id || activatingDriverId === driver.id}
+                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
                                                         >
-                                                            Xem
+                                                            {suspendingDriverId === driver.id ? (
+                                                                <ButtonLoadingSpinner size="sm" variant="default" text="Đang xử lý..." />
+                                                            ) : (
+                                                                'Khóa'
+                                                            )}
                                                         </Button>
-                                                        {driver.status === 'ACTIVE' ? (
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => handleSuspendDriver(driver)}
-                                                                disabled={suspendingDriverId === driver.id || activatingDriverId === driver.id}
-                                                                className="text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                            >
-                                                                {suspendingDriverId === driver.id ? (
-                                                                    <>
-                                                                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                                                        Đang xử lý...
-                                                                    </>
-                                                                ) : (
-                                                                    'Khóa'
-                                                                )}
-                                                            </Button>
-                                                        ) : (
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => handleActivateDriver(driver)}
-                                                                disabled={suspendingDriverId === driver.id || activatingDriverId === driver.id}
-                                                                className="text-green-600 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                            >
-                                                                {activatingDriverId === driver.id ? (
-                                                                    <>
-                                                                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                                                        Đang xử lý...
-                                                                    </>
-                                                                ) : (
-                                                                    'Kích hoạt'
-                                                                )}
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
+                                                    ) : (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleActivateDriver(driver)}
+                                                            disabled={suspendingDriverId === driver.id || activatingDriverId === driver.id}
+                                                            className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200 hover:border-green-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
+                                                        >
+                                                            {activatingDriverId === driver.id ? (
+                                                                <ButtonLoadingSpinner size="sm" variant="default" text="Đang xử lý..." />
+                                                            ) : (
+                                                                'Kích hoạt'
+                                                            )}
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
 
 
             {/* Driver Details Modal */}
@@ -893,25 +836,23 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                     )}
 
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDetailsModalOpen(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsDetailsModalOpen(false)}
+                            className="hover:bg-slate-50 border-slate-200 hover:border-slate-300 transition-all duration-200 hover:shadow-sm"
+                        >
                             Đóng
                         </Button>
                         {selectedDriver && (
                             <Button
                                 onClick={() => selectedDriver.status === 'ACTIVE' ? handleSuspendDriver(selectedDriver) : handleActivateDriver(selectedDriver)}
                                 disabled={suspendingDriverId === selectedDriver.id || activatingDriverId === selectedDriver.id}
-                                className={`${selectedDriver.status === 'ACTIVE' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+                                className={`${selectedDriver.status === 'ACTIVE' ? 'bg-red-600 hover:bg-red-700 border-red-600 hover:border-red-700' : 'bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700'} text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-lg`}
                             >
                                 {suspendingDriverId === selectedDriver.id ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Đang tạm khóa...
-                                    </>
+                                    <ButtonLoadingSpinner size="sm" variant="white" text="Đang tạm khóa..." />
                                 ) : activatingDriverId === selectedDriver.id ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Đang kích hoạt...
-                                    </>
+                                    <ButtonLoadingSpinner size="sm" variant="white" text="Đang kích hoạt..." />
                                 ) : (
                                     selectedDriver.status === 'ACTIVE' ? 'Tạm khóa' : 'Kích hoạt'
                                 )}
@@ -1089,19 +1030,21 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                     </div>
 
                     <DialogFooter>
-                        <Button variant="outline" onClick={handleCloseModal} disabled={isSubmitting}>
+                        <Button
+                            variant="outline"
+                            onClick={handleCloseModal}
+                            disabled={isSubmitting}
+                            className="hover:bg-slate-50 border-slate-200 hover:border-slate-300 transition-all duration-200 hover:shadow-sm disabled:opacity-50"
+                        >
                             Hủy
                         </Button>
                         <Button
                             onClick={handleSubmit}
                             disabled={isSubmitting}
-                            className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed border border-blue-600 hover:border-blue-700 transition-all duration-200 hover:shadow-lg"
                         >
                             {isSubmitting ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Đang thêm...
-                                </>
+                                <ButtonLoadingSpinner size="sm" variant="white" text="Đang thêm..." />
                             ) : (
                                 'Thêm tài xế'
                             )}

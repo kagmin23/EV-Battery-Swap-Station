@@ -4,6 +4,7 @@ import { ManagementLayout } from '../layout/ManagementLayout';
 import { OverviewPage } from './OverviewPage';
 import { StaffListPage } from './StaffListPage';
 import { StaffDistributionPage } from './StaffDistributionPage';
+import { StationListPage } from './StationListPage';
 import { DriverListPage } from './DriverListPage';
 import { BatteryInventoryPage } from './BatteryInventoryPage';
 import { SubscriptionPage } from './SubscriptionPage';
@@ -19,6 +20,7 @@ export const ManagementMainPage: React.FC = () => {
         if (path.includes('/staff/list')) return 'staff-list';
         if (path.includes('/staff/distribution')) return 'staff-distribution';
         if (path.includes('/staff/activities')) return 'staff-activities';
+        if (path.includes('/staff/station-list')) return 'station-list';
         if (path.includes('/driver/list')) return 'driver-list';
         if (path.includes('/battery-inventory')) return 'battery-inventory';
         if (path.includes('/vehicles')) return 'vehicles';
@@ -50,6 +52,9 @@ export const ManagementMainPage: React.FC = () => {
                 break;
             case 'staff-activities':
                 navigate('/staff/activities');
+                break;
+            case 'station-list':
+                navigate('/staff/station-list');
                 break;
             case 'driver-list':
                 navigate('/driver/list');
@@ -94,6 +99,8 @@ export const ManagementMainPage: React.FC = () => {
                         </div>
                     </div>
                 );
+            case 'station-list':
+                return <StationListPage />;
             case 'driver-list':
                 return <DriverListPage />;
             case 'battery-inventory':

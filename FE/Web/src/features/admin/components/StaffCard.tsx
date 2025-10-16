@@ -3,7 +3,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MoreVertical, Phone, MapPin, Loader2 } from 'lucide-react';
+import { ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
+import { MoreVertical, Phone, MapPin } from 'lucide-react';
 import type { Staff, StaffRole, StaffStatus } from '../types/staff';
 
 interface StaffCardProps {
@@ -11,6 +12,7 @@ interface StaffCardProps {
   onSelect: (staff: Staff) => void;
   onEdit: (staff: Staff) => void;
   onSuspend: (staff: Staff) => void;
+  onViewDetails?: (staff: Staff) => void;
   isSuspending?: boolean;
   isSaving?: boolean;
 }
@@ -20,6 +22,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
   onSelect,
   onEdit,
   onSuspend,
+  onViewDetails,
   isSuspending = false,
   isSaving = false
 }) => {
@@ -127,6 +130,20 @@ export const StaffCard: React.FC<StaffCardProps> = ({
         </div>
 
         <div className="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+          {onViewDetails && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewDetails(staff);
+              }}
+              disabled={isSaving || isSuspending}
+              className="flex-1 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
+            >
+              Xem chi tiết
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -135,33 +152,27 @@ export const StaffCard: React.FC<StaffCardProps> = ({
               onEdit(staff);
             }}
             disabled={isSaving || isSuspending}
-            className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
           >
             {isSaving ? (
-              <>
-                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                Đang lưu...
-              </>
+              <ButtonLoadingSpinner size="sm" variant="default" text="Đang lưu..." />
             ) : (
               'Chỉnh sửa'
             )}
           </Button>
           {staff.status !== 'SUSPENDED' && (
             <Button
-              variant="destructive"
+              variant="outline"
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
                 onSuspend(staff);
               }}
               disabled={isSuspending || isSaving}
-              className="hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
             >
               {isSuspending ? (
-                <>
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                  Đang xử lý...
-                </>
+                <ButtonLoadingSpinner size="sm" variant="default" text="Đang xử lý..." />
               ) : (
                 'Tạm khóa'
               )}

@@ -13,7 +13,8 @@ import {
   CreditCard,
   FileText,
   UserCheck,
-  Battery
+  Battery,
+  MapPin
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -56,6 +57,12 @@ const menuItems = [
     description: 'Quản lý tài xế'
   },
   {
+    id: 'station-list',
+    label: 'Danh sách trạm',
+    icon: MapPin,
+    description: 'Quản lý trạm đổi pin'
+  },
+  {
     id: 'battery-inventory',
     label: 'Kho pin',
     icon: Battery,
@@ -95,7 +102,7 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
 }) => {
   return (
     <div className={cn(
-      "h-full bg-white border-r border-gray-200 shadow-sm transition-all duration-300 ease-in-out flex flex-col",
+      "bg-white border-r border-gray-200 shadow-sm transition-all duration-300 ease-in-out flex flex-col",
       isCollapsed ? "w-20" : "w-72"
     )} style={{ height: '100%' }}>
       {/* Header */}
