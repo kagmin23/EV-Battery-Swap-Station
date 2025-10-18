@@ -1,7 +1,7 @@
 import httpClient from "@/services/rootAPI";
 import { toCamelCase } from "@/utils/caseConverter";
-import { signify } from "react-signify"
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { signify } from "react-signify";
 
 
 
@@ -88,11 +88,8 @@ export const clearFavorites = async (): Promise<void> => {
 
 export const getListStationNear = async (payload: Location): Promise<Station[]> => {
     try {
-
-
         const res = await httpClient.get<{ data: Station[] }>('/stations', payload)
-
-
+        console.log(res)
         if (res.data && Array.isArray(res.data)) {
             const station = toCamelCase(res.data)
 

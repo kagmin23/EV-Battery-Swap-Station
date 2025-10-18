@@ -1,24 +1,23 @@
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { initFavorites, sSelectedStation, toggleFavorite, useFavorites, useSelectedStation } from '@/store/station';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  TouchableOpacity,
-  TextInput,
-  Pressable,
   Animated,
-  PanResponder,
+  Dimensions,
   Linking,
-  Platform,
+  PanResponder,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapComponent, { MapComponentHandle } from '../driver/component/MapComponent';
-import { Ionicons } from '@expo/vector-icons';
-import StationListView, { mockStations } from '../driver/component/StationListView'
-import { useSelectedStation, useFavorites, toggleFavorite, initFavorites, sSelectedStation } from '@/store/station';
+import StationListView, { mockStations } from '../driver/component/StationListView';
 
 const { width, height } = Dimensions.get('window');
 
@@ -90,20 +89,17 @@ const LocationSation: React.FC = () => {
   }, []);
 
   const handleNavigatePress = () => {
-    if (!selectedStation) return;
-    const { latitude, longitude, title } = selectedStation;
-    const label = encodeURIComponent(title || 'Destination');
-    const scheme = Platform.select({ ios: 'maps:0,0?q=', android: 'geo:0,0?q=' });
-    const latLng = `${latitude},${longitude}`;
-    const url = Platform.select({
-      ios: `${scheme}${label}@${latLng}`,
-      android: `${scheme}${latLng}(${label})`
-    });
-    if (url) {
-      Linking.openURL(url).catch(() => {
-        console.log('Could not open maps app');
-      });
+    const station = selectedStationStore;
+
+    const url = station?.mapUrl
+    if (!url) {
+      console.warn("No map URL available for this station");
+      return;
     }
+
+    Linking.openURL(url).catch((err) =>
+      console.error("Could not open map URL:", err)
+    );
   };
 
   const PEEK_OFFSET = Math.max(160, Math.floor(height * 0.45));
@@ -304,14 +300,14 @@ const LocationSation: React.FC = () => {
                 <Text style={styles.primaryButtonText}>Swap Battery</Text>
               </TouchableOpacity>
 
-              <View style={styles.addressRow}>
+              <View style={styles.addressBot}>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text
                     style={styles.addressText}
                     numberOfLines={1}
                     ellipsizeMode="tail"
                   >
-                    {selectedStation.title}, {selectedStation.description}
+                    Station: <Text style={styles.addressRow}>{selectedStation.title}</Text>
                   </Text>
                 </View>
                 <TouchableOpacity style={styles.roundIconButton} onPress={handleNavigatePress}>
@@ -588,6 +584,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 16,
   },
+  addressBot: {
+    marginTop: 4,
+    backgroundColor: '#0b0624',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    fontWeight: '700',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   addressRow: {
     marginTop: 4,
     backgroundColor: '#0b0624',
@@ -596,12 +604,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    fontWeight: '700',
     justifyContent: 'space-between',
     gap: 8,
   },
   addressText: {
     color: 'white',
-    fontWeight: '700',
+    fontWeight: '400',
   },
   roundIconButton: {
     width: 36,

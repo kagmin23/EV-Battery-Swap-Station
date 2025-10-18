@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useMemo, useState } from 'react';
+import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Station = {
     id?: string;
@@ -56,7 +56,7 @@ export default function BookingScreen() {
     };
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
+        <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingVertical: 30 }}>
             {/* Header */}
             <View style={styles.headerRow}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>

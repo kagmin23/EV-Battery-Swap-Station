@@ -1,18 +1,17 @@
+import { getListStationNear, initFavorites, isFavorite, sSelectedStation, toggleFavorite, useFavorites, useStation } from '@/store/station';
+import { Ionicons } from '@expo/vector-icons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import * as Location from 'expo-location';
+import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    FlatList,
     Animated,
+    FlatList,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { getListStationNear, sSelectedStation, useStation, useFavorites, toggleFavorite, isFavorite, initFavorites } from '@/store/station';
-import { useFocusEffect, useRouter } from 'expo-router';
-import * as Location from 'expo-location';
-
-
 
 // Mock station data based on the image
 export const mockStations = [
@@ -103,9 +102,6 @@ const StationList: React.FC<{
     const [processingFavorites, setProcessingFavorites] = React.useState<Set<string>>(new Set());
     const nearStation = useStation()
 
-
-
-
     useFocusEffect(
         useCallback(() => {
             (async () => {
@@ -161,26 +157,40 @@ const StationList: React.FC<{
                 onClose();
             }}
         >
-            <View style={styles.stationCardHeader}>
-                <View style={styles.brandLogo}>
-                    <Text style={styles.brandText}>{item.brand || 'STATION'}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View>
+                    <View style={styles.stationCardHeader}>
+                        <View style={styles.brandLogo}>
+                            <Text style={styles.brandText}>{item.brand || 'STATION'}</Text>
+                        </View>
+                        <Text style={styles.distanceKmStation} numberOfLines={2}>
+                            {" "} - away from you {item.distanceKm || 'Unknown Station'}km
+                        </Text>
+                    </View>
                 </View>
-                <TouchableOpacity
-                    style={styles.favoriteButton}
-                    onPress={() => onToggleFavorite(item.id)}
-                    disabled={processingFavorites.has(item.id)}
-                >
-                    <Ionicons
-                        name={processingFavorites.has(item.id) ? "hourglass" : (isFavorite(item.id) ? "star" : "star-outline")}
-                        size={20}
-                        color={processingFavorites.has(item.id) ? "#6d4aff" : (isFavorite(item.id) ? "#FFD700" : "white")}
-                    />
-                </TouchableOpacity>
+                <View>
+                    <TouchableOpacity
+                        style={styles.favoriteButton}
+                        onPress={() => onToggleFavorite(item.id)}
+                        disabled={processingFavorites.has(item.id)}
+                    >
+                        <Ionicons
+                            name={processingFavorites.has(item.id) ? "hourglass" : (isFavorite(item.id) ? "star" : "star-outline")}
+                            size={20}
+                            color={processingFavorites.has(item.id) ? "#6d4aff" : (isFavorite(item.id) ? "#FFD700" : "white")}
+                        />
+                    </TouchableOpacity>
+                </View>
             </View>
 
-            <Text style={styles.stationName} numberOfLines={2}>
-                {item.stationName || 'Unknown Station'}
-            </Text>
+            <View>
+                <Text style={styles.stationName} numberOfLines={2}>
+                    <MaterialCommunityIcons name="ev-station" size={24} color="white" />{" "}{item.stationName || 'Unknown Station'}
+                </Text>
+                <Text style={styles.addressStation} numberOfLines={2}>
+                    {item.address || 'Unknown Station'}, {item.district}, {item.city}
+                </Text>
+            </View>
 
             <View style={styles.stationInfo}>
                 <View style={styles.powerInfo}>
@@ -194,6 +204,14 @@ const StationList: React.FC<{
                         {item.availableBatteries}/{item.totalBatteries || item.capacity || 0} Available
                     </Text>
                 </View>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between'}}>
+                <Text style={styles.updatedStation} numberOfLines={2}>
+                    Created: {item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN') : 'Unknown'}
+                </Text>
+                <Text style={styles.updatedStation} numberOfLines={2}>
+                    Updated: {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('vi-VN') : 'Unknown'}
+                </Text>
             </View>
         </TouchableOpacity>
     );
@@ -396,17 +414,16 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
     },
     brandLogo: {
         backgroundColor: 'white',
         paddingHorizontal: 12,
         paddingVertical: 6,
-        borderRadius: 8,
+        borderRadius: 6,
     },
     brandText: {
         color: '#120935',
-        fontSize: 12,
+        fontSize: 10,
         fontWeight: 'bold',
     },
     favoriteButton: {
@@ -414,10 +431,32 @@ const styles = StyleSheet.create({
     },
     stationName: {
         color: 'white',
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '600',
-        marginBottom: 12,
+        marginTop: 20,
+        marginBottom: 3,
         lineHeight: 22,
+    },
+    addressStation: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: '300',
+        marginBottom: 15,
+        lineHeight: 22,
+    },
+    updatedStation: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: '300',
+        marginTop: 7,
+        lineHeight: 22,
+    },
+    distanceKmStation: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: '300',
+        lineHeight: 22,
+        fontStyle: 'italic'
     },
     stationInfo: {
         flexDirection: 'row',
