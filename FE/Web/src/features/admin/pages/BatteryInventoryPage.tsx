@@ -13,12 +13,15 @@ import {
     RotateCcw,
     TrendingUp,
     Filter,
-    Search
+    Search,
+    Grid,
+    List,
+    Plus
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
-import { PageLoadingSpinner } from '@/components/ui/loading-spinner';
+import { PageLoadingSpinner, ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
 import { BatteryService, type Battery as ApiBattery, type BatteryFilters as ApiBatteryFilters } from '@/services/api/batteryService';
 import { StationService, type Station as ApiStation } from '@/services/api/stationService';
 import type { Battery, BatteryStatus, BatteryGroupedByStation } from '../types/battery';
@@ -32,6 +35,7 @@ export const BatteryInventoryPage: React.FC = () => {
     const [selectedStation, setSelectedStation] = useState<string>('ALL');
     const [statusFilter, setStatusFilter] = useState<BatteryStatus | 'ALL'>('ALL');
     const [sohRange, setSohRange] = useState({ min: 0, max: 100 });
+    const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
     // Load stations data
     const loadStations = async () => {
@@ -55,9 +59,9 @@ export const BatteryInventoryPage: React.FC = () => {
 
             const filters: Omit<ApiBatteryFilters, 'stationId'> = {
                 status: statusFilter !== 'ALL' ? statusFilter : undefined,
-                sohMin: sohRange.min,
-                sohMax: sohRange.max,
-                limit: 1000, // Get all batteries
+                sohMin: sohRange.min > 0 ? sohRange.min : undefined,
+                sohMax: sohRange.max < 100 ? sohRange.max : undefined,
+                limit: 100, // Backend max limit is 100
                 sort: 'soh',
                 order: 'desc'
             };
@@ -76,16 +80,16 @@ export const BatteryInventoryPage: React.FC = () => {
             const convertedBatteries: Battery[] = apiBatteries.map((apiBattery: ApiBattery & { stationName?: string }) => {
                 return {
                     id: apiBattery._id,
-                    batteryId: apiBattery.batteryId,
-                    stationId: apiBattery.stationId,
-                    stationName: apiBattery.stationName || stations.find(s => s.id === apiBattery.stationId)?.name || 'Unknown Station',
+                    batteryId: apiBattery.serial, // Use serial as batteryId
+                    stationId: apiBattery.station?._id || '',
+                    stationName: apiBattery.station?.stationName || stations.find(s => s.id === apiBattery.station?._id)?.name || 'Unknown Station',
                     status: apiBattery.status,
                     soh: apiBattery.soh,
-                    voltage: apiBattery.voltage,
-                    current: apiBattery.current,
-                    temperature: apiBattery.temperature,
-                    cycleCount: apiBattery.cycleCount,
-                    lastMaintenance: new Date(apiBattery.lastMaintenance),
+                    voltage: apiBattery.voltage || 0,
+                    current: 0, // Not available in backend
+                    temperature: 0, // Not available in backend
+                    cycleCount: 0, // Not available in backend
+                    lastMaintenance: new Date(), // Not available in backend
                     createdAt: new Date(apiBattery.createdAt),
                     updatedAt: new Date(apiBattery.updatedAt),
                 };
@@ -406,9 +410,13 @@ export const BatteryInventoryPage: React.FC = () => {
             {/* Battery Inventory by Station */}
             <div className="space-y-6">
                 {isLoading ? (
-                    <PageLoadingSpinner text="Đang tải danh sách pin..." />
+                    <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden">
+                        <CardContent className="p-6">
+                            <PageLoadingSpinner text="Đang tải danh sách pin..." />
+                        </CardContent>
+                    </Card>
                 ) : groupedBatteries.length === 0 ? (
-                    <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm rounded-2xl">
+                    <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden">
                         <CardContent className="flex flex-col items-center justify-center py-12">
                             <BatteryIcon className="h-12 w-12 text-slate-400 mb-4" />
                             <h3 className="text-lg font-medium text-slate-900 mb-2">Không có pin nào</h3>
@@ -419,7 +427,7 @@ export const BatteryInventoryPage: React.FC = () => {
                     </Card>
                 ) : (
                     groupedBatteries.map((group) => (
-                        <Card key={group.stationId} className="shadow-lg border-0 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden">
+                        <Card key={group.stationId} className="shadow-xl border-0 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden">
                             <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50/50 border-b border-slate-200/60">
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="flex items-center text-xl font-bold text-slate-800">
@@ -431,72 +439,133 @@ export const BatteryInventoryPage: React.FC = () => {
                                             {group.stats.total} pin
                                         </span>
                                     </CardTitle>
-                                    <div className="flex space-x-4 text-sm text-slate-600">
-                                        <span className="flex items-center">
-                                            <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
-                                            Đang sạc: {group.stats.charging}
-                                        </span>
-                                        <span className="flex items-center">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                                            Sẵn sàng: {group.stats.full}
-                                        </span>
-                                        <span className="flex items-center">
-                                            <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
-                                            Lỗi: {group.stats.faulty}
-                                        </span>
-                                        <span className="text-slate-500">
-                                            SOH TB: {group.stats.averageSoh}%
-                                        </span>
+                                    <div className="flex space-x-2">
+                                        <Button
+                                            variant={viewMode === 'grid' ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => setViewMode('grid')}
+                                            className={`rounded-lg transition-all duration-200 ${viewMode === 'grid'
+                                                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl border-blue-600 hover:border-blue-700'
+                                                : 'hover:bg-slate-100 border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                                                }`}
+                                        >
+                                            <Grid className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant={viewMode === 'table' ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => setViewMode('table')}
+                                            className={`rounded-lg transition-all duration-200 ${viewMode === 'table'
+                                                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl border-blue-600 hover:border-blue-700'
+                                                : 'hover:bg-slate-100 border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                                                }`}
+                                        >
+                                            <List className="h-4 w-4" />
+                                        </Button>
                                     </div>
+                                </div>
+                                <div className="flex space-x-4 text-sm text-slate-600 mt-2">
+                                    <span className="flex items-center">
+                                        <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
+                                        Đang sạc: {group.stats.charging}
+                                    </span>
+                                    <span className="flex items-center">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                        Sẵn sàng: {group.stats.full}
+                                    </span>
+                                    <span className="flex items-center">
+                                        <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                                        Lỗi: {group.stats.faulty}
+                                    </span>
+                                    <span className="text-slate-500">
+                                        SOH TB: {group.stats.averageSoh}%
+                                    </span>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {group.batteries.map((battery) => (
-                                        <Card key={battery.id} className="border border-slate-200 hover:shadow-md transition-shadow">
-                                            <CardContent className="p-4">
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <div className="flex items-center space-x-2">
-                                                        <BatteryIcon className={`h-5 w-5 ${getStatusColor(battery.status)}`} />
-                                                        <span className="font-medium text-slate-800">{battery.batteryId}</span>
+                                {viewMode === 'grid' ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {group.batteries.map((battery) => (
+                                            <Card
+                                                key={battery.id}
+                                                className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-0 shadow-lg bg-white/90 backdrop-blur-sm hover:bg-white overflow-hidden"
+                                            >
+                                                <CardContent className="p-6">
+                                                    <div className="flex items-start justify-between mb-4">
+                                                        <div className="flex items-center space-x-4">
+                                                            <div className="relative">
+                                                                <div className={`w-14 h-14 bg-gradient-to-br ${getStatusColor(battery.status).includes('green') ? 'from-green-500 to-green-600' :
+                                                                    getStatusColor(battery.status).includes('blue') ? 'from-blue-500 to-blue-600' :
+                                                                        getStatusColor(battery.status).includes('yellow') ? 'from-yellow-500 to-yellow-600' :
+                                                                            getStatusColor(battery.status).includes('red') ? 'from-red-500 to-red-600' :
+                                                                                'from-gray-500 to-gray-600'} rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg`}>
+                                                                    <BatteryIcon className="h-7 w-7" />
+                                                                </div>
+                                                                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${getStatusColor(battery.status).includes('green') ? 'bg-green-500' :
+                                                                    getStatusColor(battery.status).includes('blue') ? 'bg-blue-500' :
+                                                                        getStatusColor(battery.status).includes('yellow') ? 'bg-yellow-500' :
+                                                                            getStatusColor(battery.status).includes('red') ? 'bg-red-500' :
+                                                                                'bg-gray-400'}`} />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <h3 className="font-bold text-slate-800 truncate text-lg">{battery.batteryId}</h3>
+                                                                <p className="text-sm text-slate-500 truncate">{battery.stationName}</p>
+                                                                <div className="flex items-center space-x-2 mt-2">
+                                                                    {getStatusBadge(battery.status)}
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    {getStatusBadge(battery.status)}
-                                                </div>
 
-                                                <div className="space-y-2">
-                                                    <div className="flex justify-between text-sm">
-                                                        <span className="text-slate-600">SOH:</span>
-                                                        <span className={`font-medium ${getSohColor(battery.soh)}`}>
-                                                            {battery.soh}%
-                                                        </span>
+                                                    <div className="space-y-3 mb-4">
+                                                        <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-2 rounded-lg">
+                                                            <MapPin className="h-4 w-4 mr-2 text-blue-500" />
+                                                            <span className="truncate font-medium">{battery.stationName}</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-2 rounded-lg">
+                                                            <BatteryIcon className="h-4 w-4 mr-2 text-green-500" />
+                                                            <span>{battery.voltage}V</span>
+                                                        </div>
+                                                        <div className="text-xs text-slate-500 bg-slate-100 px-3 py-2 rounded-lg">
+                                                            <span className="font-medium">SOH:</span> <span className={`font-semibold ${getSohColor(battery.soh)}`}>{battery.soh}%</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex justify-between text-sm">
-                                                        <span className="text-slate-600">Điện áp:</span>
-                                                        <span className="font-medium">{battery.voltage}V</span>
+
+                                                    <div className="space-y-2 pt-4 border-t border-slate-100">
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-slate-600">Dòng điện:</span>
+                                                            <span className="font-medium flex items-center">
+                                                                <Zap className="h-3 w-3 mr-1" />
+                                                                {battery.current}A
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-slate-600">Nhiệt độ:</span>
+                                                            <span className="font-medium flex items-center">
+                                                                <Thermometer className="h-3 w-3 mr-1" />
+                                                                {battery.temperature}°C
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-slate-600">Chu kỳ:</span>
+                                                            <span className="font-medium flex items-center">
+                                                                <RotateCcw className="h-3 w-3 mr-1" />
+                                                                {battery.cycleCount}
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex justify-between text-sm">
-                                                        <span className="text-slate-600">Dòng điện:</span>
-                                                        <span className="font-medium">{battery.current}A</span>
-                                                    </div>
-                                                    <div className="flex justify-between text-sm">
-                                                        <span className="text-slate-600">Nhiệt độ:</span>
-                                                        <span className="font-medium flex items-center">
-                                                            <Thermometer className="h-3 w-3 mr-1" />
-                                                            {battery.temperature}°C
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex justify-between text-sm">
-                                                        <span className="text-slate-600">Chu kỳ:</span>
-                                                        <span className="font-medium flex items-center">
-                                                            <RotateCcw className="h-3 w-3 mr-1" />
-                                                            {battery.cycleCount}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    ))}
-                                </div>
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="overflow-hidden rounded-xl border border-slate-200">
+                                        {/* Table view will be implemented here */}
+                                        <div className="text-center py-8 text-slate-500">
+                                            Chế độ xem bảng sẽ được triển khai
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     ))

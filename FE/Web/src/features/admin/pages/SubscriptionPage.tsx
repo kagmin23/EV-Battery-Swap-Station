@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -30,9 +30,15 @@ import {
   Users,
   TrendingUp,
   Calendar,
-  X
+  X,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
+import { SubscriptionService } from '@/services/api/subscriptionService';
+import type { SubscriptionPlan, CreateSubscriptionPlanRequest, UpdateSubscriptionPlanRequest } from '@/services/api/subscriptionService';
+import { toast } from 'sonner';
 
+// Legacy interface for backward compatibility with UI
 interface Subscription {
   id: string;
   name: string;
@@ -46,59 +52,41 @@ interface Subscription {
   revenue: number;
 }
 
-const mockSubscriptions: Subscription[] = [
-  {
-    id: '1',
-    name: 'Gói Cơ Bản',
-    description: 'Phù hợp cho người dùng thường xuyên',
-    price: 299000,
-    duration: 30,
-    swapLimit: 10,
-    features: ['10 lần đổi pin/tháng', 'Hỗ trợ 24/7', 'Ưu tiên thấp'],
-    status: 'active',
-    subscriberCount: 245,
-    revenue: 73255000
-  },
-  {
-    id: '2',
-    name: 'Gói Tiêu Chuẩn',
-    description: 'Lựa chọn phổ biến nhất',
-    price: 499000,
-    duration: 30,
-    swapLimit: 20,
-    features: ['20 lần đổi pin/tháng', 'Hỗ trợ 24/7', 'Ưu tiên trung bình', 'Giảm 5% cho lần gia hạn'],
-    status: 'active',
-    subscriberCount: 532,
-    revenue: 265468000
-  },
-  {
-    id: '3',
-    name: 'Gói Premium',
-    description: 'Không giới hạn cho doanh nghiệp',
-    price: 899000,
-    duration: 30,
-    swapLimit: -1, // unlimited
-    features: ['Không giới hạn đổi pin', 'Hỗ trợ VIP 24/7', 'Ưu tiên cao nhất', 'Giảm 10% gia hạn', 'Bảo trì pin miễn phí'],
-    status: 'active',
-    subscriberCount: 128,
-    revenue: 115072000
-  },
-  {
-    id: '4',
-    name: 'Gói Thử Nghiệm',
-    description: 'Dùng thử 7 ngày đầu tiên',
-    price: 0,
-    duration: 7,
-    swapLimit: 3,
-    features: ['3 lần đổi pin miễn phí', 'Trải nghiệm đầy đủ tính năng'],
-    status: 'active',
-    subscriberCount: 89,
-    revenue: 0
-  }
-];
+// Helper function to convert API data to UI format
+const convertApiToUI = (apiPlan: SubscriptionPlan): Subscription => {
+  return {
+    id: apiPlan._id,
+    name: apiPlan.subcriptionName,
+    description: `Gói ${apiPlan.period === 'yearly' ? 'năm' : 'tháng'}`,
+    price: apiPlan.price,
+    duration: apiPlan.period === 'yearly' ? 365 : 30,
+    swapLimit: -1, // Default to unlimited, can be enhanced later
+    features: apiPlan.benefits || [],
+    status: apiPlan.status === 'active' ? 'active' : 'inactive',
+    subscriberCount: 0, // This would need to be calculated from actual subscriptions
+    revenue: 0 // This would need to be calculated from actual revenue
+  };
+};
+
+// Helper function to convert UI data to API format
+const convertUIToApi = (uiData: Partial<Subscription>): CreateSubscriptionPlanRequest | UpdateSubscriptionPlanRequest => {
+  const baseData = {
+    subcriptionName: uiData.name || '',
+    price: uiData.price || 0,
+    period: (uiData.duration === 365 ? 'yearly' : 'monthly') as 'monthly' | 'yearly',
+    benefits: uiData.features || [],
+    status: (uiData.status === 'active' ? 'active' : 'expired') as 'active' | 'expired',
+    duration_months: uiData.duration === 365 ? 12 : 1,
+    // Legacy fields for backward compatibility
+    name: uiData.name,
+    active: uiData.status === 'active'
+  };
+
+  return baseData;
+};
 
 export const SubscriptionPage: React.FC = () => {
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>(mockSubscriptions);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
@@ -112,12 +100,36 @@ export const SubscriptionPage: React.FC = () => {
     status: 'active'
   });
   const [newFeature, setNewFeature] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const filteredSubscriptions = subscriptions;
 
   const totalRevenue = subscriptions.reduce((sum, sub) => sum + sub.revenue, 0);
   const totalSubscribers = subscriptions.reduce((sum, sub) => sum + sub.subscriberCount, 0);
   const activePackages = subscriptions.filter(sub => sub.status === 'active').length;
+
+  // Load subscription plans on component mount
+  useEffect(() => {
+    const loadSubscriptions = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const plans = await SubscriptionService.getAllPlans();
+        const convertedPlans = plans.map(convertApiToUI);
+        setSubscriptions(convertedPlans);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Không thể tải danh sách gói thuê';
+        setError(errorMessage);
+        toast.error(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSubscriptions();
+  }, []);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -171,50 +183,96 @@ export const SubscriptionPage: React.FC = () => {
     setFormData({ ...formData, features: updatedFeatures });
   };
 
-  const handleSaveAdd = () => {
-    const newSubscription: Subscription = {
-      id: Date.now().toString(),
-      name: formData.name || '',
-      description: formData.description || '',
-      price: formData.price || 0,
-      duration: formData.duration || 30,
-      swapLimit: formData.swapLimit || 0,
-      features: formData.features || [],
-      status: formData.status || 'active',
-      subscriberCount: 0,
-      revenue: 0
-    };
-    setSubscriptions([...subscriptions, newSubscription]);
-    setIsAddModalOpen(false);
+  const handleSaveAdd = async () => {
+    try {
+      setActionLoading(true);
+      const apiData = convertUIToApi(formData) as CreateSubscriptionPlanRequest;
+      const newPlan = await SubscriptionService.createPlan(apiData);
+      const convertedPlan = convertApiToUI(newPlan);
+      setSubscriptions([...subscriptions, convertedPlan]);
+      setIsAddModalOpen(false);
+      toast.success('Tạo gói thuê thành công');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Không thể tạo gói thuê';
+      toast.error(errorMessage);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editingSubscription) {
-      const updatedSubscriptions = subscriptions.map(sub =>
-        sub.id === editingSubscription.id
-          ? {
-            ...sub,
-            name: formData.name || sub.name,
-            description: formData.description || sub.description,
-            price: formData.price || sub.price,
-            duration: formData.duration || sub.duration,
-            swapLimit: formData.swapLimit || sub.swapLimit,
-            features: formData.features || sub.features,
-            status: formData.status || sub.status
-          }
-          : sub
-      );
-      setSubscriptions(updatedSubscriptions);
-      setIsEditModalOpen(false);
-      setEditingSubscription(null);
+      try {
+        setActionLoading(true);
+        const apiData = convertUIToApi(formData) as UpdateSubscriptionPlanRequest;
+        const updatedPlan = await SubscriptionService.updatePlan(editingSubscription.id, apiData);
+        const convertedPlan = convertApiToUI(updatedPlan);
+        const updatedSubscriptions = subscriptions.map(sub =>
+          sub.id === editingSubscription.id ? convertedPlan : sub
+        );
+        setSubscriptions(updatedSubscriptions);
+        setIsEditModalOpen(false);
+        setEditingSubscription(null);
+        toast.success('Cập nhật gói thuê thành công');
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Không thể cập nhật gói thuê';
+        toast.error(errorMessage);
+      } finally {
+        setActionLoading(false);
+      }
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Bạn có chắc chắn muốn xóa gói này?')) {
-      setSubscriptions(subscriptions.filter(sub => sub.id !== id));
+      try {
+        setActionLoading(true);
+        await SubscriptionService.deletePlan(id);
+        setSubscriptions(subscriptions.filter(sub => sub.id !== id));
+        toast.success('Xóa gói thuê thành công');
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Không thể xóa gói thuê';
+        toast.error(errorMessage);
+      } finally {
+        setActionLoading(false);
+      }
     }
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <p className="text-slate-600">Đang tải danh sách gói thuê...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center space-y-4">
+            <AlertCircle className="h-8 w-8 text-red-600" />
+            <p className="text-red-600">{error}</p>
+            <Button
+              onClick={() => window.location.reload()}
+              variant="outline"
+              className="mt-4"
+            >
+              Thử lại
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -226,9 +284,14 @@ export const SubscriptionPage: React.FC = () => {
         </div>
         <Button
           onClick={handleOpenAddModal}
+          disabled={actionLoading}
           className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg"
         >
-          <Plus className="h-5 w-5 mr-2" />
+          {actionLoading ? (
+            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+          ) : (
+            <Plus className="h-5 w-5 mr-2" />
+          )}
           Thêm gói mới
         </Button>
       </div>
@@ -346,6 +409,7 @@ export const SubscriptionPage: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => handleOpenEditModal(subscription)}
+                disabled={actionLoading}
                 className="flex-1 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300"
               >
                 <Edit className="h-4 w-4 mr-1" />
@@ -355,9 +419,14 @@ export const SubscriptionPage: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => handleDelete(subscription.id)}
+                disabled={actionLoading}
                 className="flex-1 hover:bg-red-50 hover:text-red-600 hover:border-red-300"
               >
-                <Trash2 className="h-4 w-4 mr-1" />
+                {actionLoading ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-1" />
+                )}
                 Xóa
               </Button>
             </div>
@@ -494,11 +563,26 @@ export const SubscriptionPage: React.FC = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddModalOpen(false)}
+              disabled={actionLoading}
+            >
               Hủy
             </Button>
-            <Button onClick={handleSaveAdd} className="bg-blue-600 hover:bg-blue-700">
-              Thêm gói
+            <Button
+              onClick={handleSaveAdd}
+              disabled={actionLoading}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {actionLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Đang tạo...
+                </>
+              ) : (
+                'Thêm gói'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -622,11 +706,26 @@ export const SubscriptionPage: React.FC = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditModalOpen(false)}
+              disabled={actionLoading}
+            >
               Hủy
             </Button>
-            <Button onClick={handleSaveEdit} className="bg-blue-600 hover:bg-blue-700">
-              Lưu thay đổi
+            <Button
+              onClick={handleSaveEdit}
+              disabled={actionLoading}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {actionLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Đang lưu...
+                </>
+              ) : (
+                'Lưu thay đổi'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

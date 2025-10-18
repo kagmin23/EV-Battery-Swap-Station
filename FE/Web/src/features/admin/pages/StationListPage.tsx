@@ -8,6 +8,7 @@ import { StationCard } from '../components/StationCard';
 import { StationTable } from '../components/StationTable';
 import { StationModal } from '../components/StationModal';
 import { StationDetailModal } from '../components/StationDetailModal';
+import { StationStaffModal } from '../components/StationStaffModal';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
 import { PageLoadingSpinner, ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
@@ -35,9 +36,12 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [suspendingStationId, setSuspendingStationId] = useState<string | null>(null);
-    const [savingStaffId, setSavingStaffId] = useState<string | null>(null);
+    const [savingStationId, setSavingStationId] = useState<string | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedStation, setSelectedStation] = useState<Station | null>(null);
+    const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+    const [selectedStationForStaff, setSelectedStationForStaff] = useState<Station | null>(null);
+    const [savingStaffId, setSavingStaffId] = useState<string | null>(null);
 
     // Load staff data from API
     const loadStaff = async () => {
@@ -51,7 +55,7 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                 email: apiStaffMember.email || 'N/A',
                 phone: apiStaffMember.phoneNumber || 'N/A',
                 role: 'STAFF' as const,
-                stationId: apiStaffMember.station || 'default',
+                stationId: apiStaffMember.station ? apiStaffMember.station.toString() : 'default',
                 stationName: 'Chưa phân trạm',
                 status: apiStaffMember.status === 'active' ? 'ONLINE' : 'OFFLINE',
                 permissions: [],
@@ -175,6 +179,11 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
         setIsDetailModalOpen(true);
     };
 
+    const handleViewStationStaff = (station: Station) => {
+        setSelectedStationForStaff(station);
+        setIsStaffModalOpen(true);
+    };
+
     // Get staff by station
     const getStaffByStation = (stationId: string): Staff[] => {
         return allStaff.filter(staff => staff.stationId === stationId);
@@ -215,16 +224,22 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
             toast.success('Đã xóa nhân viên khỏi trạm');
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi xóa nhân viên khỏi trạm';
-            setError(errorMessage);
+            toast.error(errorMessage);
             console.error('Error removing staff from station:', err);
         } finally {
             setSavingStaffId(null);
         }
     };
 
+    // Reload staff data
+    const handleReloadStaff = async () => {
+        await loadStaff();
+    };
+
+
     const handleSaveStation = async (data: AddStationRequest | UpdateStationRequest): Promise<void> => {
         try {
-            setSavingStaffId('id' in data ? data.id as string : 'new');
+            setSavingStationId('id' in data ? data.id as string : 'new');
             setError(null);
 
             if ('id' in data) {
@@ -320,7 +335,7 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
             setError(errorMessage);
             console.error('Error saving station:', err);
         } finally {
-            setSavingStaffId(null);
+            setSavingStationId(null);
         }
     };
 
@@ -436,10 +451,10 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                             </Button>
                             <Button
                                 onClick={handleAddStation}
-                                disabled={savingStaffId === 'new'}
+                                disabled={savingStationId === 'new'}
                                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed border border-blue-600 hover:border-blue-700"
                             >
-                                {savingStaffId === 'new' ? (
+                                {savingStationId === 'new' ? (
                                     <ButtonLoadingSpinner size="sm" variant="white" text="Đang thêm..." />
                                 ) : (
                                     <>
@@ -483,8 +498,9 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                                     onEdit={handleStationEdit}
                                     onSuspend={handleStationSuspend}
                                     onViewDetails={handleViewStationDetails}
+                                    onViewStaff={handleViewStationStaff}
                                     isSuspending={suspendingStationId === station.id}
-                                    isSaving={savingStaffId === station.id}
+                                    isSaving={savingStationId === station.id}
                                 />
                             ))}
                         </div>
@@ -495,8 +511,10 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                                 onSelect={onStationSelect || (() => { })}
                                 onEdit={handleStationEdit}
                                 onSuspend={handleStationSuspend}
+                                onViewDetails={handleViewStationDetails}
+                                onViewStaff={handleViewStationStaff}
                                 suspendingStationId={suspendingStationId}
-                                savingStationId={savingStaffId}
+                                savingStationId={savingStationId}
                             />
                         </div>
                     )}
@@ -522,10 +540,21 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                     setSelectedStation(null);
                 }}
                 station={selectedStation}
-                staff={selectedStation ? getStaffByStation(selectedStation.id) : []}
+            />
+
+            {/* Station Staff Modal */}
+            <StationStaffModal
+                isOpen={isStaffModalOpen}
+                onClose={() => {
+                    setIsStaffModalOpen(false);
+                    setSelectedStationForStaff(null);
+                }}
+                station={selectedStationForStaff}
+                staff={selectedStationForStaff ? getStaffByStation(selectedStationForStaff.id) : []}
                 allStaff={allStaff}
                 onAddStaff={handleAddStaffToStation}
                 onRemoveStaff={handleRemoveStaffFromStation}
+                onReloadStaff={handleReloadStaff}
                 savingStaffId={savingStaffId}
             />
         </div>

@@ -10,32 +10,20 @@ import {
     Battery,
     Activity,
     X,
-    ExternalLink,
-    Users
+    ExternalLink
 } from 'lucide-react';
 import type { Station, StationStatus } from '../types/station';
-import type { Staff } from '../types/staff';
 
 interface StationDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
     station: Station | null;
-    staff?: Staff[];
-    allStaff?: Staff[];
-    onAddStaff?: (stationId: string, staffId: string) => void;
-    onRemoveStaff?: (stationId: string, staffId: string) => void;
-    savingStaffId?: string | null;
 }
 
 export const StationDetailModal: React.FC<StationDetailModalProps> = ({
     isOpen,
     onClose,
-    station,
-    staff = [],
-    allStaff = [],
-    onAddStaff,
-    onRemoveStaff,
-    savingStaffId
+    station
 }) => {
     if (!station) return null;
 
@@ -300,82 +288,6 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = ({
                         </CardContent>
                     </Card>
 
-                    {/* Staff Management */}
-                    <Card className="shadow-sm border-slate-200">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
-                                <Users className="h-5 w-5 mr-2 text-blue-600" />
-                                Quản lý nhân viên
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {/* Current Staff */}
-                            <div>
-                                <h4 className="text-sm font-medium text-slate-700 mb-3">Nhân viên hiện tại ({staff.length})</h4>
-                                {staff.length === 0 ? (
-                                    <p className="text-sm text-slate-500 italic">Chưa có nhân viên nào được phân công</p>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {staff.map((staffMember) => (
-                                            <div key={staffMember.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                                                        {staffMember.name.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium text-slate-800">{staffMember.name}</p>
-                                                        <p className="text-sm text-slate-500">{staffMember.email}</p>
-                                                    </div>
-                                                </div>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => onRemoveStaff?.(station.id, staffMember.id)}
-                                                    disabled={savingStaffId === staffMember.id}
-                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 hover:shadow-sm"
-                                                >
-                                                    {savingStaffId === staffMember.id ? 'Đang xử lý...' : 'Xóa'}
-                                                </Button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Add Staff */}
-                            {onAddStaff && allStaff.length > 0 && (
-                                <div>
-                                    <h4 className="text-sm font-medium text-slate-700 mb-3">Thêm nhân viên</h4>
-                                    <div className="space-y-2">
-                                        {allStaff
-                                            .filter(s => s.stationId !== station.id)
-                                            .map((staffMember) => (
-                                                <div key={staffMember.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                                                            {staffMember.name.charAt(0).toUpperCase()}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-medium text-slate-800">{staffMember.name}</p>
-                                                            <p className="text-sm text-slate-500">{staffMember.email}</p>
-                                                        </div>
-                                                    </div>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => onAddStaff(station.id, staffMember.id)}
-                                                        disabled={savingStaffId === staffMember.id}
-                                                        className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200 hover:border-green-300 transition-all duration-200 hover:shadow-sm"
-                                                    >
-                                                        {savingStaffId === staffMember.id ? 'Đang xử lý...' : 'Thêm'}
-                                                    </Button>
-                                                </div>
-                                            ))}
-                                    </div>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
                 </div>
             </DialogContent>
         </Dialog>

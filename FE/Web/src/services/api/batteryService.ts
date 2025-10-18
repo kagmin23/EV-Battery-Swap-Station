@@ -6,17 +6,18 @@ const API_BASE_URL = 'http://localhost:8001/api';
 // Types for battery management
 export interface Battery {
     _id: string;
-    batteryId: string;
-    stationId: string;
-    stationName?: string; // Added for frontend display
+    serial: string;
+    model?: string;
     status: 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';
     soh: number;
-    voltage: number;
-    current: number;
-    temperature: number;
-    cycleCount: number;
-    capacity: number; // Added capacity field
-    lastMaintenance: string;
+    station?: {
+        _id: string;
+        stationName: string;
+        address: string;
+    };
+    manufacturer?: string;
+    capacity_kWh?: number;
+    voltage?: number;
     createdAt: string;
     updatedAt: string;
     __v: number;
@@ -90,10 +91,10 @@ export class BatteryService {
             // Add stationId as a query parameter
             params.append('stationId', stationId);
             if (filters.status) params.append('status', filters.status);
-            if (filters.sohMin !== undefined) params.append('sohMin', filters.sohMin.toString());
-            if (filters.sohMax !== undefined) params.append('sohMax', filters.sohMax.toString());
-            if (filters.page) params.append('page', filters.page.toString());
-            if (filters.limit) params.append('limit', filters.limit.toString());
+            if (filters.sohMin !== undefined && filters.sohMin !== null) params.append('sohMin', filters.sohMin.toString());
+            if (filters.sohMax !== undefined && filters.sohMax !== null) params.append('sohMax', filters.sohMax.toString());
+            if (filters.page && filters.page > 0) params.append('page', filters.page.toString());
+            if (filters.limit && filters.limit > 0) params.append('limit', filters.limit.toString());
             if (filters.sort) params.append('sort', filters.sort);
             if (filters.order) params.append('order', filters.order);
 
@@ -101,7 +102,7 @@ export class BatteryService {
             if (response.data.success) {
                 return {
                     success: response.data.success,
-                    data: response.data.data || response.data.batteries || [],
+                    data: response.data.data || [],
                     pagination: response.data.pagination || {
                         page: 1,
                         limit: 20,
@@ -226,7 +227,7 @@ export class BatteryService {
     // Get battery by ID
     static async getBatteryById(id: string): Promise<Battery> {
         try {
-            const response = await api.get(`/admin/batteries/${id}`);
+            const response = await api.get(`/batteries/${id}`);
             if (response.data.success) {
                 return response.data.data;
             }
@@ -265,7 +266,7 @@ export class BatteryService {
     // Update battery status
     static async updateBatteryStatus(id: string, status: Battery['status']): Promise<Battery> {
         try {
-            const response = await api.patch(`/admin/batteries/${id}/status`, { status });
+            const response = await api.put(`/batteries/${id}`, { status });
             if (response.data.success) {
                 return response.data.data;
             }
@@ -301,44 +302,15 @@ export class BatteryService {
     }
 
     // Get battery statistics
+    // Note: This endpoint doesn't exist in the backend yet
     static async getBatteryStats(): Promise<{
         total: number;
         byStatus: Record<string, number>;
         byStation: Array<{ stationId: string; count: number }>;
         averageSoh: number;
     }> {
-        try {
-            const response = await api.get('/admin/batteries/stats');
-            if (response.data.success) {
-                return response.data.data;
-            }
-            throw new Error(response.data.message || 'Failed to fetch battery statistics');
-        } catch (error) {
-            if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    const status = error.response.status;
-                    const message = error.response.data?.message || 'Server error';
-
-                    switch (status) {
-                        case 400:
-                            throw new Error(`Bad Request: ${message}`);
-                        case 401:
-                            throw new Error('Unauthorized: Please login again');
-                        case 403:
-                            throw new Error('Forbidden: You do not have permission to access battery statistics');
-                        case 500:
-                            throw new Error('Internal Server Error: Please try again later');
-                        default:
-                            throw new Error(`Error ${status}: ${message}`);
-                    }
-                } else if (error.request) {
-                    throw new Error('Network Error: Please check your internet connection');
-                } else {
-                    throw new Error(`Request Error: ${error.message}`);
-                }
-            }
-            throw new Error('An unexpected error occurred');
-        }
+        // TODO: Implement this endpoint in backend or calculate stats from battery list
+        throw new Error('Battery statistics endpoint not implemented yet');
     }
 }
 
