@@ -1,5 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { config } from '@/config/env';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { getAllVehicle, useVehicles } from '@/store/vehicle';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Animated,
     Dimensions,
@@ -12,11 +17,7 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import LinkVehicleSheet from './component/LinkVehicleSheet';
-import { getAllVehicle, useVehicles } from '@/store/vehicle';
 
 
 const { height } = Dimensions.get('window');
@@ -29,6 +30,15 @@ const ProfileScreen: React.FC = () => {
     const sheetY = useRef(new Animated.Value(height)).current;
     const vehicles = useVehicles();
     const { user } = useAuth();
+
+    const resolveAvatarUrl = (avatar?: string) => {
+        if (!avatar) return '';
+        if (/^https?:\/\//i.test(avatar)) return avatar;
+        const base = config.API_BASE_URL.replace(/\/?api\/?$/, '');
+        return `${base}${avatar.startsWith('/') ? avatar : `/${avatar}`}`;
+    };
+
+    const avatarUri = React.useMemo(() => resolveAvatarUrl(user?.avatar), [user?.avatar]);
 
     useFocusEffect(
         useCallback(() => {
@@ -87,10 +97,14 @@ const ProfileScreen: React.FC = () => {
                 >
                     <View style={styles.avatarContainer}>
                         <View style={styles.avatar}>
-                            {user?.avatar ? (
+                            {avatarUri ? (
                                 <Image
-                                    source={{ uri: user.avatar }}
-                                    style={{ width: 70, height: 70, borderRadius: 35 }}
+                                    source={{ uri: avatarUri }}
+                                    style={{
+                                        width: 70, height: 70, borderRadius: 35,
+                                        borderWidth: 1,
+                                        borderColor: '#ff74e2',
+                                    }}
                                     resizeMode="cover"
                                 />
                             ) : (
