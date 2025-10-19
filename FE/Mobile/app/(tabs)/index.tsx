@@ -564,6 +564,7 @@ const styles = StyleSheet.create({
   statLabel: {
     color: '#bfa8ff',
     fontSize: 12,
+    marginTop: "auto"
   },
   statusDot: {
     width: 10,
