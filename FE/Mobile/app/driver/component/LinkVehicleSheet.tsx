@@ -102,7 +102,11 @@ export default function LinkVehicleSheet({ visible, onClose }: Props) {
     ));
 
     const batteryOptionsFromStore: Option[] = useMemo(() => {
-        return (batteries || []).map(b => ({ label: b.name, value: b.name }));
+        return (batteries || []).map(b => ({
+            label: `${b.model} - ${b.capacityKWh} kWh`,
+            value: b.model,
+            key: b.id ?? b.model
+        }));
     }, [batteries]);
 
 

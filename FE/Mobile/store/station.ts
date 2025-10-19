@@ -14,7 +14,11 @@ interface Station {
     mapUrl: string,
     capacity: number,
     sohAvg: number,
-    availableBatteries: number
+    availableBatteries: number,
+    coordinates?: {
+        lat: number,
+        lng: number
+    }
 }
 
 
@@ -23,7 +27,16 @@ interface Location {
     lng: number,
 
 }
+
+
+export interface StationInMapResponse extends Station {
+    coordinates: {
+        lat: number,
+        lng: number,
+    }
+}
 export const sStation = signify<Station[]>([]);
+export const sStationInMap = signify<StationInMapResponse[]>([]);
 export const sSelectedStation = signify<Station | null>(null);
 export const sFavorites = signify<string[]>([]);
 let favoritesCache: string[] = [];
@@ -32,7 +45,7 @@ let favoritesCache: string[] = [];
 export const useStation = () => sStation.use();
 export const useSelectedStation = () => sSelectedStation.use();
 export const useFavorites = () => sFavorites.use();
-
+export const useStationInMap = () => sStationInMap.use();
 const FAVORITES_KEY = "favoriteStations";
 
 const loadFavorites = async (): Promise<string[]> => {
@@ -86,6 +99,14 @@ export const clearFavorites = async (): Promise<void> => {
     }
 };
 
+// Helper function to extract coordinates from API response
+export const getStationCoordinates = (station: StationInMapResponse) => {
+    return {
+        latitude: Number(station.coordinates?.lat) || 0,
+        longitude: Number(station.coordinates?.lng) || 0,
+    };
+};
+
 export const getListStationNear = async (payload: Location): Promise<Station[]> => {
     try {
         const res = await httpClient.get<{ data: Station[] }>('/stations', payload)
@@ -112,6 +133,42 @@ export const getListStationNear = async (payload: Location): Promise<Station[]> 
         console.error('Full error object:', error);
 
         sStation.set([])
+        return []
+    }
+}
+
+export const getAllStationInMap = async (): Promise<StationInMapResponse[]> => {
+    try {
+        const res = await httpClient.get<{ data: any[] }>('/admin/stations')
+        console.log('API Response:', res)
+
+        if (res.data && Array.isArray(res.data)) {
+            // Transform API response to match StationInMapResponse interface
+            const stations = res.data.map((station: any) => ({
+                ...station,
+                coordinates: {
+                    lat: station.location?.coordinates?.[1] || 0, // coordinates[1] is latitude
+                    lng: station.location?.coordinates?.[0] || 0,  // coordinates[0] is longitude
+                }
+            }));
+
+            console.log('Transformed stations:', stations);
+            sStationInMap.set(stations);
+            return stations;
+        } else {
+            console.warn('Invalid API response format:', res.data)
+            sStationInMap.set([])
+            return []
+        }
+    } catch (error: any) {
+        console.error('API Error details:', {
+            message: error.message,
+            success: error.success,
+            errors: error.errors,
+            isApiError: error.success !== undefined
+        });
+        console.error('Full error object:', error);
+        sStationInMap.set([])
         return []
     }
 }

@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapComponent, { MapComponentHandle } from '../driver/component/MapComponent';
-import StationListView, { mockStations } from '../driver/component/StationListView';
+import StationListView from '../driver/component/StationListView';
 
 const { width, height } = Dimensions.get('window');
 
@@ -81,6 +81,19 @@ const LocationSation: React.FC = () => {
   useEffect(() => {
     if (selectedStationStore) {
       setSelectedStation(selectedStationStore);
+
+      // Focus map on selected station if it has coordinates
+      if (selectedStationStore.coordinates && mapRef.current) {
+        const { lat, lng } = selectedStationStore.coordinates;
+        if (lat && lng) {
+          mapRef.current.animateToRegion({
+            latitude: lat,
+            longitude: lng,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }, 1000);
+        }
+      }
     }
   }, [selectedStationStore]);
 
@@ -319,7 +332,6 @@ const LocationSation: React.FC = () => {
         )}
 
         <StationListView
-          stations={mockStations as any[]}
           onClose={closeListView}
           listY={listY}
           showListView={showListView}
