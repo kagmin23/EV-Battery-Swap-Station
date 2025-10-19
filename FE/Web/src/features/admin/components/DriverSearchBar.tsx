@@ -61,27 +61,61 @@ export const DriverSearchBar: React.FC<DriverSearchBarProps> = ({
                 <div className="flex flex-col sm:flex-row gap-3">
                     {/* Status Filter */}
                     <Select value={filters.status} onValueChange={handleStatusChange}>
-                        <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl">
+                        <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
                             <SelectValue placeholder="Trạng thái" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                            <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-                            <SelectItem value="ACTIVE">Hoạt động</SelectItem>
-                            <SelectItem value="INACTIVE">Không hoạt động</SelectItem>
-                            <SelectItem value="SUSPENDED">Tạm khóa</SelectItem>
-                            <SelectItem value="PENDING_VERIFICATION">Chờ xác thực</SelectItem>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
+                            <SelectItem
+                                value="ALL"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                Tất cả trạng thái
+                            </SelectItem>
+                            <SelectItem
+                                value="ACTIVE"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                Hoạt động
+                            </SelectItem>
+                            <SelectItem
+                                value="INACTIVE"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                Không hoạt động
+                            </SelectItem>
+                            <SelectItem
+                                value="SUSPENDED"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                Tạm khóa
+                            </SelectItem>
+                            <SelectItem
+                                value="PENDING_VERIFICATION"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                Chờ xác thực
+                            </SelectItem>
                         </SelectContent>
                     </Select>
 
                     {/* Subscription Plan Filter */}
                     <Select value={filters.subscriptionPlan} onValueChange={handleSubscriptionPlanChange}>
-                        <SelectTrigger className="w-full sm:w-[180px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl">
+                        <SelectTrigger className="w-full sm:w-[180px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
                             <SelectValue placeholder="Gói thuê" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                            <SelectItem value="ALL">Tất cả gói thuê</SelectItem>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
+                            <SelectItem
+                                value="ALL"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                Tất cả gói thuê
+                            </SelectItem>
                             {subscriptionPlans.map((plan) => (
-                                <SelectItem key={plan.id} value={plan.id}>
+                                <SelectItem
+                                    key={plan.id}
+                                    value={plan.id}
+                                    className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                                >
                                     {plan.name}
                                 </SelectItem>
                             ))}
@@ -90,34 +124,109 @@ export const DriverSearchBar: React.FC<DriverSearchBarProps> = ({
 
                     {/* License Type Filter */}
                     <Select value={filters.licenseType} onValueChange={handleLicenseTypeChange}>
-                        <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl">
+                        <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
                             <SelectValue placeholder="Loại bằng" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                            <SelectItem value="ALL">Tất cả loại bằng</SelectItem>
-                            <SelectItem value="A1">A1</SelectItem>
-                            <SelectItem value="A2">A2</SelectItem>
-                            <SelectItem value="A3">A3</SelectItem>
-                            <SelectItem value="B1">B1</SelectItem>
-                            <SelectItem value="B2">B2</SelectItem>
-                            <SelectItem value="C">C</SelectItem>
-                            <SelectItem value="D">D</SelectItem>
-                            <SelectItem value="E">E</SelectItem>
-                            <SelectItem value="F">F</SelectItem>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
+                            <SelectItem
+                                value="ALL"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                Tất cả loại bằng
+                            </SelectItem>
+                            <SelectItem
+                                value="A1"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                A1
+                            </SelectItem>
+                            <SelectItem
+                                value="A2"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                A2
+                            </SelectItem>
+                            <SelectItem
+                                value="A3"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                A3
+                            </SelectItem>
+                            <SelectItem
+                                value="B1"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                B1
+                            </SelectItem>
+                            <SelectItem
+                                value="B2"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                B2
+                            </SelectItem>
+                            <SelectItem
+                                value="C"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                C
+                            </SelectItem>
+                            <SelectItem
+                                value="D"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                D
+                            </SelectItem>
+                            <SelectItem
+                                value="E"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                E
+                            </SelectItem>
+                            <SelectItem
+                                value="F"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                F
+                            </SelectItem>
                         </SelectContent>
                     </Select>
 
                     {/* City Filter */}
                     <Select value={filters.city} onValueChange={handleCityChange}>
-                        <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl">
+                        <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
                             <SelectValue placeholder="Thành phố" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                            <SelectItem value="ALL">Tất cả thành phố</SelectItem>
-                            <SelectItem value="TP.HCM">TP.HCM</SelectItem>
-                            <SelectItem value="Hà Nội">Hà Nội</SelectItem>
-                            <SelectItem value="Đà Nẵng">Đà Nẵng</SelectItem>
-                            <SelectItem value="Hải Phòng">Hải Phòng</SelectItem>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
+                            <SelectItem
+                                value="ALL"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                Tất cả thành phố
+                            </SelectItem>
+                            <SelectItem
+                                value="TP.HCM"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                TP.HCM
+                            </SelectItem>
+                            <SelectItem
+                                value="Hà Nội"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                Hà Nội
+                            </SelectItem>
+                            <SelectItem
+                                value="Đà Nẵng"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                Đà Nẵng
+                            </SelectItem>
+                            <SelectItem
+                                value="Hải Phòng"
+                                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                            >
+                                Hải Phòng
+                            </SelectItem>
                         </SelectContent>
                     </Select>
 

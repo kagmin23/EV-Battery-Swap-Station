@@ -12,6 +12,7 @@ interface StationCardProps {
     onEdit: (station: Station) => void;
     onSuspend: (station: Station) => void;
     onViewDetails?: (station: Station) => void;
+    onViewStaff?: (station: Station) => void;
     isSuspending?: boolean;
     isSaving?: boolean;
 }
@@ -22,6 +23,7 @@ export const StationCard: React.FC<StationCardProps> = ({
     onEdit,
     onSuspend,
     onViewDetails,
+    onViewStaff,
     isSuspending = false,
     isSaving = false
 }) => {
@@ -119,9 +121,24 @@ export const StationCard: React.FC<StationCardProps> = ({
                                 onViewDetails(station);
                             }}
                             disabled={isSaving || isSuspending}
-                            className="flex-1 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
+                            className="flex-2 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
                         >
                             Xem chi tiết
+                        </Button>
+                    )}
+                    {onViewStaff && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onViewStaff(station);
+                            }}
+                            disabled={isSaving || isSuspending}
+                            className="flex-1 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
+                        >
+                            <Users className="h-4 w-4 mr-1" />
+                            Nhân viên
                         </Button>
                     )}
                     <Button
@@ -132,7 +149,7 @@ export const StationCard: React.FC<StationCardProps> = ({
                             onEdit(station);
                         }}
                         disabled={isSaving || isSuspending}
-                        className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
+                        className="flex-1 hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
                     >
                         {isSaving ? (
                             <ButtonLoadingSpinner size="sm" variant="default" text="Đang lưu..." />
@@ -149,7 +166,7 @@ export const StationCard: React.FC<StationCardProps> = ({
                                 onSuspend(station);
                             }}
                             disabled={isSuspending || isSaving}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
+                            className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
                         >
                             {isSuspending ? (
                                 <ButtonLoadingSpinner size="sm" variant="default" text="Đang xử lý..." />

@@ -56,6 +56,12 @@ function App() {
             </ProtectedRoute>
           } />
 
+          <Route path="/faulty-batteries" element={
+            <ProtectedRoute requiredRole="admin">
+              <ManagementMainPage />
+            </ProtectedRoute>
+          } />
+
           <Route path="/vehicles" element={
             <ProtectedRoute requiredRole="admin">
               <ManagementMainPage />

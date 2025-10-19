@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
-import { MapPin, ExternalLink } from 'lucide-react';
+import { MapPin, ExternalLink, Users } from 'lucide-react';
 import type { Station, StationStatus } from '../types/station';
 
 interface StationTableProps {
@@ -10,6 +10,8 @@ interface StationTableProps {
     onSelect: (station: Station) => void;
     onEdit: (station: Station) => void;
     onSuspend: (station: Station) => void;
+    onViewDetails?: (station: Station) => void;
+    onViewStaff?: (station: Station) => void;
     suspendingStationId?: string | null;
     savingStationId?: string | null;
 }
@@ -19,6 +21,8 @@ export const StationTable: React.FC<StationTableProps> = ({
     onSelect,
     onEdit,
     onSuspend,
+    onViewDetails,
+    onViewStaff,
     suspendingStationId,
     savingStationId
 }) => {
@@ -83,20 +87,35 @@ export const StationTable: React.FC<StationTableProps> = ({
                         <td className="px-6 py-4 text-sm text-slate-800">{formatSoh(station.sohAvg)}</td>
                         <td className="px-6 py-4">
                             <div className="flex space-x-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => onSelect(station)}
-                                    className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 border-slate-200 hover:shadow-sm"
-                                >
-                                    Xem
-                                </Button>
+                                {onViewDetails && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onViewDetails(station)}
+                                        disabled={savingStationId === station.id || suspendingStationId === station.id}
+                                        className="flex-2 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 border-slate-200 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Xem chi tiết
+                                    </Button>
+                                )}
+                                {onViewStaff && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onViewStaff(station)}
+                                        disabled={savingStationId === station.id || suspendingStationId === station.id}
+                                        className="flex-1 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 transition-all duration-200 border-slate-200 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <Users className="h-4 w-4 mr-1" />
+                                        Nhân viên
+                                    </Button>
+                                )}
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => onEdit(station)}
                                     disabled={savingStationId === station.id || suspendingStationId === station.id}
-                                    className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 border-slate-200 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200 border-slate-200 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {savingStationId === station.id ? (
                                         <ButtonLoadingSpinner size="sm" variant="default" text="Đang lưu..." />
@@ -110,7 +129,7 @@ export const StationTable: React.FC<StationTableProps> = ({
                                         size="sm"
                                         onClick={() => onSuspend(station)}
                                         disabled={suspendingStationId === station.id || savingStationId === station.id}
-                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
+                                        className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
                                     >
                                         {suspendingStationId === station.id ? (
                                             <ButtonLoadingSpinner size="sm" variant="default" text="Đang xử lý..." />

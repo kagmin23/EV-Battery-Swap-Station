@@ -7,6 +7,7 @@ import { StaffDistributionPage } from './StaffDistributionPage';
 import { StationListPage } from './StationListPage';
 import { DriverListPage } from './DriverListPage';
 import { BatteryInventoryPage } from './BatteryInventoryPage';
+import FaultyBatteryPage from './FaultyBatteryPage';
 import { SubscriptionPage } from './SubscriptionPage';
 
 export const ManagementMainPage: React.FC = () => {
@@ -23,6 +24,7 @@ export const ManagementMainPage: React.FC = () => {
         if (path.includes('/staff/station-list')) return 'station-list';
         if (path.includes('/driver/list')) return 'driver-list';
         if (path.includes('/battery-inventory')) return 'battery-inventory';
+        if (path.includes('/faulty-batteries')) return 'faulty-batteries';
         if (path.includes('/vehicles')) return 'vehicles';
         if (path.includes('/subscriptions')) return 'subscriptions';
         if (path.includes('/transactions')) return 'transactions';
@@ -61,6 +63,9 @@ export const ManagementMainPage: React.FC = () => {
                 break;
             case 'battery-inventory':
                 navigate('/battery-inventory');
+                break;
+            case 'faulty-batteries':
+                navigate('/faulty-batteries');
                 break;
             case 'vehicles':
                 navigate('/vehicles');
@@ -105,6 +110,8 @@ export const ManagementMainPage: React.FC = () => {
                 return <DriverListPage />;
             case 'battery-inventory':
                 return <BatteryInventoryPage />;
+            case 'faulty-batteries':
+                return <FaultyBatteryPage />;
             case 'vehicles':
                 return (
                     <div className="p-6">

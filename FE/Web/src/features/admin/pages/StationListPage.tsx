@@ -8,11 +8,14 @@ import { StationCard } from '../components/StationCard';
 import { StationTable } from '../components/StationTable';
 import { StationModal } from '../components/StationModal';
 import { StationDetailModal } from '../components/StationDetailModal';
+import { StationStaffModal } from '../components/StationStaffModal';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
 import { PageLoadingSpinner, ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
 import { StationService, type CreateStationRequest, type UpdateStationRequest as ApiUpdateStationRequest, type Station as ApiStation } from '@/services/api/stationService';
+import { StaffService, type Staff as ApiStaff } from '@/services/api/staffService';
 import type { Station, StationFilters, AddStationRequest, UpdateStationRequest, StationStatus } from '../types/station';
+import type { Staff } from '../types/staff';
 
 interface StationListPageProps {
     onStationSelect?: (station: Station) => void;
@@ -20,6 +23,7 @@ interface StationListPageProps {
 
 export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelect }) => {
     const [stations, setStations] = useState<Station[]>([]);
+    const [allStaff, setAllStaff] = useState<Staff[]>([]);
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStation, setEditingStation] = useState<Station | null>(null);
@@ -35,6 +39,36 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
     const [savingStationId, setSavingStationId] = useState<string | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedStation, setSelectedStation] = useState<Station | null>(null);
+    const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+    const [selectedStationForStaff, setSelectedStationForStaff] = useState<Station | null>(null);
+    const [savingStaffId, setSavingStaffId] = useState<string | null>(null);
+
+    // Load staff data from API
+    const loadStaff = async () => {
+        try {
+            const apiStaff = await StaffService.getAllStaff();
+
+            // Convert API staff to UI staff format
+            const convertedStaff: Staff[] = apiStaff.map((apiStaffMember: ApiStaff) => ({
+                id: apiStaffMember._id,
+                name: apiStaffMember.fullName || 'N/A',
+                email: apiStaffMember.email || 'N/A',
+                phone: apiStaffMember.phoneNumber || 'N/A',
+                role: 'STAFF' as const,
+                stationId: apiStaffMember.station ? apiStaffMember.station.toString() : 'default',
+                stationName: 'Chưa phân trạm',
+                status: apiStaffMember.status === 'active' ? 'ONLINE' : 'OFFLINE',
+                permissions: [],
+                lastActive: new Date(apiStaffMember.updatedAt),
+                createdAt: new Date(apiStaffMember.createdAt),
+                updatedAt: new Date(apiStaffMember.updatedAt),
+            }));
+
+            setAllStaff(convertedStaff);
+        } catch (err) {
+            console.error('Error loading staff:', err);
+        }
+    };
 
     // Load station data from API
     const loadStations = async () => {
@@ -76,7 +110,11 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
 
     // Load data on component mount
     useEffect(() => {
-        loadStations();
+        const loadData = async () => {
+            await loadStaff();
+            await loadStations();
+        };
+        loadData();
     }, []);
 
     const filteredStations = stations.filter((station) => {
@@ -140,6 +178,64 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
         setSelectedStation(station);
         setIsDetailModalOpen(true);
     };
+
+    const handleViewStationStaff = (station: Station) => {
+        setSelectedStationForStaff(station);
+        setIsStaffModalOpen(true);
+    };
+
+    // Get staff by station
+    const getStaffByStation = (stationId: string): Staff[] => {
+        return allStaff.filter(staff => staff.stationId === stationId);
+    };
+
+    // Add staff to station
+    const handleAddStaffToStation = async (stationId: string, staffId: string) => {
+        try {
+            setSavingStaffId(staffId);
+            await StationService.addStaffToStation(stationId, staffId);
+
+            // Update local state
+            setAllStaff(prev => prev.map(s =>
+                s.id === staffId ? { ...s, stationId, stationName: stations.find(st => st.id === stationId)?.name || 'Chưa phân trạm' } : s
+            ));
+
+            toast.success('Đã thêm nhân viên vào trạm');
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi thêm nhân viên vào trạm';
+            setError(errorMessage);
+            console.error('Error adding staff to station:', err);
+        } finally {
+            setSavingStaffId(null);
+        }
+    };
+
+    // Remove staff from station
+    const handleRemoveStaffFromStation = async (stationId: string, staffId: string) => {
+        try {
+            setSavingStaffId(staffId);
+            await StationService.removeStaffFromStation(stationId, staffId);
+
+            // Update local state
+            setAllStaff(prev => prev.map(s =>
+                s.id === staffId ? { ...s, stationId: 'default', stationName: 'Chưa phân trạm' } : s
+            ));
+
+            toast.success('Đã xóa nhân viên khỏi trạm');
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi xóa nhân viên khỏi trạm';
+            toast.error(errorMessage);
+            console.error('Error removing staff from station:', err);
+        } finally {
+            setSavingStaffId(null);
+        }
+    };
+
+    // Reload staff data
+    const handleReloadStaff = async () => {
+        await loadStaff();
+    };
+
 
     const handleSaveStation = async (data: AddStationRequest | UpdateStationRequest): Promise<void> => {
         try {
@@ -402,6 +498,7 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                                     onEdit={handleStationEdit}
                                     onSuspend={handleStationSuspend}
                                     onViewDetails={handleViewStationDetails}
+                                    onViewStaff={handleViewStationStaff}
                                     isSuspending={suspendingStationId === station.id}
                                     isSaving={savingStationId === station.id}
                                 />
@@ -414,6 +511,8 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                                 onSelect={onStationSelect || (() => { })}
                                 onEdit={handleStationEdit}
                                 onSuspend={handleStationSuspend}
+                                onViewDetails={handleViewStationDetails}
+                                onViewStaff={handleViewStationStaff}
                                 suspendingStationId={suspendingStationId}
                                 savingStationId={savingStationId}
                             />
@@ -441,6 +540,22 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                     setSelectedStation(null);
                 }}
                 station={selectedStation}
+            />
+
+            {/* Station Staff Modal */}
+            <StationStaffModal
+                isOpen={isStaffModalOpen}
+                onClose={() => {
+                    setIsStaffModalOpen(false);
+                    setSelectedStationForStaff(null);
+                }}
+                station={selectedStationForStaff}
+                staff={selectedStationForStaff ? getStaffByStation(selectedStationForStaff.id) : []}
+                allStaff={allStaff}
+                onAddStaff={handleAddStaffToStation}
+                onRemoveStaff={handleRemoveStaffFromStation}
+                onReloadStaff={handleReloadStaff}
+                savingStaffId={savingStaffId}
             />
         </div>
     );

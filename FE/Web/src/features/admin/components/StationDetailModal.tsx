@@ -287,6 +287,7 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = ({
                             </div>
                         </CardContent>
                     </Card>
+
                 </div>
             </DialogContent>
         </Dialog>
