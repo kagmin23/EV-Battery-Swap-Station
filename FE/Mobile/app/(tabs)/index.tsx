@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapComponent, { MapComponentHandle } from '../driver/component/MapComponent';
-import StationListView, { mockStations } from '../driver/component/StationListView';
+import StationListView from '../driver/component/StationListView';
 
 const { width, height } = Dimensions.get('window');
 
@@ -319,7 +319,6 @@ const LocationSation: React.FC = () => {
         )}
 
         <StationListView
-          stations={mockStations as any[]}
           onClose={closeListView}
           listY={listY}
           showListView={showListView}

@@ -13,78 +13,10 @@ import {
     View,
 } from 'react-native';
 
-// Mock station data based on the image
-export const mockStations = [
-    {
-        id: '1',
-        stationName: 'PhayuKhunHan, KhunHan',
-        address: 'Đông Hòa, KhunHan District',
-        availableBatteries: 1,
-        totalBatteries: 1,
-        power: '22kW',
-        brand: 'SAASCHARGE',
-        status: 'available',
-        latitude: 10.8231,
-        longitude: 106.6297,
-    },
-    {
-        id: '2',
-        stationName: 'บริเวณลานจอดรถ SCG HOME บุญถาวร - จันทบุร, จันทบุรี',
-        address: 'SCG HOME บุญถาวร, จันทบุรี',
-        availableBatteries: 3,
-        totalBatteries: 5,
-        power: '180kW',
-        brand: 'VIRTA',
-        status: 'available',
-        latitude: 10.8231,
-        longitude: 106.6297,
-    },
-    {
-        id: '3',
-        stationName: 'Tha Mai, Tha Mai',
-        address: 'Tha Mai District, Chanthaburi',
-        availableBatteries: 1,
-        totalBatteries: 1,
-        power: '7kW',
-        brand: 'SAASCHARGE',
-        status: 'available',
-        latitude: 10.8231,
-        longitude: 106.6297,
-    },
-    {
-        id: '4',
-        stationName: 'สำหรับพนักงาน WD เท่านั้น 203,205 นิคมอุสา, ปราจีนบุรี',
-        address: 'นิคมอุสา, ปราจีนบุรี',
-        availableBatteries: 2,
-        totalBatteries: 4,
-        power: '50kW',
-        brand: 'VIRTA',
-        status: 'busy',
-        latitude: 10.8231,
-        longitude: 106.6297,
-    },
-];
 
-interface UIStation {
-    id: string;
-    stationName: string;
-    address: string;
-    city?: string;
-    district?: string;
-    mapUrl?: string;
-    capacity?: number;
-    sohAvg?: number;
-    availableBatteries: number;
-    totalBatteries?: number;
-    power?: string;
-    brand?: string;
-    status?: string;
-    latitude?: number;
-    longitude?: number;
-}
+
 
 interface StationListViewProps {
-    stations: UIStation[];
     onClose: () => void;
     listY: Animated.Value;
     showListView: boolean;
@@ -92,9 +24,8 @@ interface StationListViewProps {
 
 // Station List Component
 const StationList: React.FC<{
-    stations: UIStation[];
     onClose: () => void;
-}> = ({ stations, onClose }) => {
+}> = ({ onClose }) => {
     const router = useRouter();
     const [activeTab, setActiveTab] = React.useState<'nearby' | 'favorites'>('nearby');
     const favoriteStations = useFavorites();
@@ -137,12 +68,32 @@ const StationList: React.FC<{
         }
     };
 
-    const availableStations = nearStation.length > 0 ? nearStation : stations;
+    const availableStations = nearStation.length > 0 ? nearStation : [];
 
     // Filter stations based on active tab
     const filteredStations = activeTab === 'favorites'
         ? availableStations.filter(station => isFavorite(station.id))
         : availableStations;
+
+    // Loading skeleton component
+    const LoadingSkeleton = () => (
+        <View style={styles.skeletonCard}>
+            <View style={styles.skeletonHeader}>
+                <View style={styles.skeletonBrand} />
+                <View style={styles.skeletonDistance} />
+            </View>
+            <View style={styles.skeletonTitle} />
+            <View style={styles.skeletonAddress} />
+            <View style={styles.skeletonInfo}>
+                <View style={styles.skeletonPower} />
+                <View style={styles.skeletonAvailability} />
+            </View>
+            <View style={styles.skeletonFooter}>
+                <View style={styles.skeletonDate} />
+                <View style={styles.skeletonDate} />
+            </View>
+        </View>
+    );
     const renderStationCard = ({ item }: { item: any }) => (
         <TouchableOpacity
             style={styles.stationCard}
@@ -205,7 +156,7 @@ const StationList: React.FC<{
                     </Text>
                 </View>
             </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between'}}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={styles.updatedStation} numberOfLines={2}>
                     Created: {item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN') : 'Unknown'}
                 </Text>
@@ -255,9 +206,10 @@ const StationList: React.FC<{
             </View>
 
             {isLoading ? (
-                <View style={styles.loadingContainer}>
-                    <Ionicons name="refresh" size={32} color="#6d4aff" />
-                    <Text style={styles.loadingText}>Loading nearby stations...</Text>
+                <View style={styles.stationList}>
+                    {Array.from({ length: 3 }).map((_, index) => (
+                        <LoadingSkeleton key={index} />
+                    ))}
                 </View>
             ) : (
                 <FlatList
@@ -293,7 +245,6 @@ const StationList: React.FC<{
 };
 
 const StationListView: React.FC<StationListViewProps> = ({
-    stations,
     onClose,
     listY,
     showListView,
@@ -303,7 +254,6 @@ const StationListView: React.FC<StationListViewProps> = ({
     return (
         <Animated.View style={[styles.listViewContainer, { transform: [{ translateY: listY }] }]}>
             <StationList
-                stations={stations}
                 onClose={onClose}
             />
         </Animated.View>
@@ -520,6 +470,75 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginTop: 12,
         fontWeight: '600',
+    },
+    // Skeleton styles
+    skeletonCard: {
+        backgroundColor: '#0b0624',
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 12,
+        opacity: 0.6,
+    },
+    skeletonHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    skeletonBrand: {
+        width: 60,
+        height: 24,
+        backgroundColor: '#2a1f4e',
+        borderRadius: 6,
+    },
+    skeletonDistance: {
+        width: 80,
+        height: 16,
+        backgroundColor: '#2a1f4e',
+        borderRadius: 4,
+    },
+    skeletonTitle: {
+        width: '70%',
+        height: 22,
+        backgroundColor: '#2a1f4e',
+        borderRadius: 4,
+        marginBottom: 8,
+    },
+    skeletonAddress: {
+        width: '90%',
+        height: 16,
+        backgroundColor: '#2a1f4e',
+        borderRadius: 4,
+        marginBottom: 15,
+    },
+    skeletonInfo: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    skeletonPower: {
+        width: 100,
+        height: 16,
+        backgroundColor: '#2a1f4e',
+        borderRadius: 4,
+    },
+    skeletonAvailability: {
+        width: 120,
+        height: 16,
+        backgroundColor: '#2a1f4e',
+        borderRadius: 4,
+    },
+    skeletonFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 7,
+    },
+    skeletonDate: {
+        width: 100,
+        height: 14,
+        backgroundColor: '#2a1f4e',
+        borderRadius: 4,
     },
 });
 
