@@ -14,7 +14,11 @@ interface Station {
     mapUrl: string,
     capacity: number,
     sohAvg: number,
-    availableBatteries: number
+    availableBatteries: number,
+    coordinates?: {
+        lat: number,
+        lng: number
+    }
 }
 
 

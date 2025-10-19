@@ -102,6 +102,11 @@ const StationList: React.FC<{
                     ...item,
                     title: item.stationName,
                     description: item.address,
+                    // Add coordinates for map focus
+                    coordinates: {
+                        lat: item.location?.coordinates?.[1] || item.latitude || 0,
+                        lng: item.location?.coordinates?.[0] || item.longitude || 0,
+                    }
                 };
                 sSelectedStation.set(selected as any);
                 router.push('/(tabs)');

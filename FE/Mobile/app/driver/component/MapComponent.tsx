@@ -19,6 +19,7 @@ interface MapComponentProps {
 
 export type MapComponentHandle = {
     centerOnUser: () => Promise<void>;
+    animateToRegion: (region: Region, duration?: number) => void;
 };
 
 
@@ -115,6 +116,9 @@ const MapComponent = forwardRef<MapComponentHandle, MapComponentProps>(({
             } catch (e) {
                 console.log('centerOnUser error', e);
             }
+        },
+        animateToRegion: (region: Region, duration: number = 1000) => {
+            mapRef.current?.animateToRegion(region, duration);
         }
     }), [userLocation]);
 
@@ -158,9 +162,9 @@ const MapComponent = forwardRef<MapComponentHandle, MapComponentProps>(({
                         </View>
                     </Marker>
                 )}
-                {batteryStations.map((station) => (
+                {batteryStations.map((station, index) => (
                     <Marker
-                        key={station.id}
+                        key={`station-${station.id}-${index}`}
                         coordinate={getStationCoordinates(station)}
                         title={station.stationName}
                         description={`${station.availableBatteries}/${station.capacity} batteries available`}

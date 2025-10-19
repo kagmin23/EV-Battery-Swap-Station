@@ -81,6 +81,19 @@ const LocationSation: React.FC = () => {
   useEffect(() => {
     if (selectedStationStore) {
       setSelectedStation(selectedStationStore);
+
+      // Focus map on selected station if it has coordinates
+      if (selectedStationStore.coordinates && mapRef.current) {
+        const { lat, lng } = selectedStationStore.coordinates;
+        if (lat && lng) {
+          mapRef.current.animateToRegion({
+            latitude: lat,
+            longitude: lng,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }, 1000);
+        }
+      }
     }
   }, [selectedStationStore]);
 
