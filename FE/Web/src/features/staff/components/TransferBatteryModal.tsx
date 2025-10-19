@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { X, MapPin, Battery as BatteryIcon, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
-import { mockStations, type Station, type Battery } from '../../../mock';
+import { mockStations, type Station } from '../../../mock';
 import { BatteryLocationService } from '../../../services/batteryLocationService';
+import type { Battery } from '../apis/DashboardApi';
 
 interface TransferBatteryModalProps {
   isOpen: boolean;
@@ -24,7 +25,7 @@ export default function TransferBatteryModal({
   if (!isOpen) return null;
 
   const availableBatteries = batteries.filter(
-    b => b.status === "available" || b.status === "charging"
+    b => b.status === "charging" || b.status === "full" || b.status === "idle"
   );
 
   const availableStations = mockStations.filter(
@@ -82,9 +83,9 @@ export default function TransferBatteryModal({
               <MapPin className="w-6 h-6 text-text-primary" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-text-primary">Transfer Battery to Station</h2>
+              <h2 className="text-2xl font-bold text-text-primary"> Chuyển đến Trạm</h2>
               <p className="text-sm text-text-secondary mt-1">
-                Current Station: {currentStationData?.station_name}
+                Trạm hiện tại: {currentStationData?.station_name}
               </p>
             </div>
           </div>
@@ -114,57 +115,59 @@ export default function TransferBatteryModal({
               <div>
                 <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
                   <BatteryIcon className="w-5 h-5" />
-                  Select Batteries ({selectedBatteries.length} selected)
+                  Chọn Pin ({selectedBatteries.length} đã chọn)
                 </h3>
                 <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                   {availableBatteries.length === 0 ? (
                     <div className="text-center py-8 text-text-secondary">
                       <AlertCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      No available batteries to transfer
+                      Không có pin nào để chuyển
                     </div>
                   ) : (
                     availableBatteries.map((battery) => (
                       <div
-                        key={battery.battery_id}
-                        onClick={() => toggleBatterySelection(battery.battery_id)}
+                        key={battery._id}
+                        onClick={() => toggleBatterySelection(battery._id)}
                         className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                          selectedBatteries.includes(battery.battery_id)
+                          selectedBatteries.includes(battery._id)
                             ? 'border-button-primary bg-button-primary/20'
                             : 'border-border hover:border-border-light bg-bg-tertiary'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-semibold text-text-primary">
-                            {battery.battery_id}
+                            {battery.serial}
                           </span>
-                          {selectedBatteries.includes(battery.battery_id) && (
+                          {selectedBatteries.includes(battery._id) && (
                             <CheckCircle className="w-5 h-5 text-button-primary" />
                           )}
                         </div>
                         <div className="space-y-1 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-text-secondary">Model:</span>
-                            <span className="text-text-primary">{battery.battery_model}</span>
+                            <span className="text-text-secondary">Mẫu:</span>
+                            <span className="text-text-primary">{battery.model || 'N/A'}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-text-secondary">Capacity:</span>
-                            <span className="text-text-primary">{battery.capacity_kWh} kWh</span>
+                            <span className="text-text-secondary">Dung lượng:</span>
+                            <span className="text-text-primary">{battery.capacity_kWh || 0} kWh</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-text-secondary">SOH:</span>
+                            <span className="text-text-secondary">Tình trạng:</span>
                             <span className={`font-semibold ${
-                              battery.soh_percent >= 90 ? 'text-green-400' :
-                              battery.soh_percent >= 70 ? 'text-yellow-400' :
+                              battery.soh >= 90 ? 'text-green-400' :
+                              battery.soh >= 70 ? 'text-yellow-400' :
                               'text-red-400'
                             }`}>
-                              {battery.soh_percent}%
+                              {battery.soh}%
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-text-secondary">Status:</span>
+                            <span className="text-text-secondary">Trạng thái:</span>
                             <span className={`text-xs px-2 py-1 rounded ${
-                              battery.status === 'available' ? 'bg-green-600 text-white' :
+                              battery.status === 'full' ? 'bg-green-600 text-white' :
                               battery.status === 'charging' ? 'bg-blue-600 text-white' :
+                              battery.status === 'faulty' ? 'bg-red-600 text-white' :
+                              battery.status === 'in-use' ? 'bg-yellow-600 text-white' :
                               'bg-gray-600 text-white'
                             }`}>
                               {battery.status}
@@ -181,7 +184,7 @@ export default function TransferBatteryModal({
               <div>
                 <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
                   <MapPin className="w-5 h-5" />
-                  Select Target Station
+                  Chọn Trạm
                 </h3>
                 <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                   {availableStations.map((station) => (
@@ -207,11 +210,11 @@ export default function TransferBatteryModal({
                       </div>
                       <div className="space-y-1 text-sm">
                         <div className="flex items-start gap-2">
-                          <span className="text-text-secondary">Location:</span>
+                          <span className="text-text-secondary">Vị trí:</span>
                           <span className="text-text-primary flex-1">{station.location}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-text-secondary">Capacity:</span>
+                          <span className="text-text-secondary">Dung lượng</span>
                           <span className="text-text-primary font-medium">{station.capacity} batteries</span>
                         </div>
                         <div className="flex justify-between">
@@ -235,7 +238,7 @@ export default function TransferBatteryModal({
               </h4>
               <div className="grid grid-cols-3 gap-4 items-center text-center">
                 <div>
-                  <p className="text-text-secondary text-sm mb-1">From</p>
+                  <p className="text-text-secondary text-sm mb-1"></p>
                   <p className="text-text-primary font-semibold">{currentStationData?.station_name}</p>
                 </div>
                 <div className="flex justify-center">

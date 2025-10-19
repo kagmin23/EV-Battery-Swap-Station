@@ -16,10 +16,12 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
+import { TableSkeleton, CardSkeleton } from '@/components/ui/table-skeleton';
 
 type ViewMode = 'table' | 'analytics';
 
 export default function BatteryChanges() {
+  const [isLoading] = useState(false); // Set to true when integrating real API
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [filters, setFilters] = useState<FiltersType>({
     dateFrom: '',
@@ -169,22 +171,40 @@ export default function BatteryChanges() {
     window.URL.revokeObjectURL(url);
   };
 
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        {/* Header Skeleton */}
+        <div className="mb-6 animate-pulse">
+          <div className="h-9 w-80 bg-gray-200 rounded dark:bg-gray-700 mb-2" />
+          <div className="h-5 w-96 bg-gray-200 rounded-full dark:bg-gray-700" />
+        </div>
+        
+        {/* Stats Cards Skeleton */}
+        <CardSkeleton count={4} />
+        
+        {/* Filters & Table Skeleton */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="animate-pulse mb-6">
+            <div className="h-10 w-full bg-gray-200 rounded dark:bg-gray-700" />
+          </div>
+          <TableSkeleton rows={10} columns={8} />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="p-6 min-h-screen"
-      style={{
-        background: 'linear-gradient(to bottom right, var(--color-bg-primary), var(--color-bg-secondary), var(--color-bg-tertiary))'
-      }}
-    >
+    <div className="p-6 min-h-screen">
       {/* Header */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
           <div>
             <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
-              🔋 Battery Changes Management
+              🔋 Quản lý Thay đổi Pin
             </h1>
             <p style={{ color: 'var(--color-text-secondary)' }}>
-              Track and analyze all battery swap transactions
+              Theo dõi và phân tích tất cả giao dịch đổi pin
             </p>
           </div>
           <div className="flex gap-3">
@@ -192,7 +212,7 @@ export default function BatteryChanges() {
               onClick={handleExportData}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2"
             >
-              📥 Export CSV
+              📥 Xuất CSV
             </button>
           </div>
         </div>
@@ -211,7 +231,7 @@ export default function BatteryChanges() {
               : 'text-gray-600 hover:bg-gray-100'
               }`}
           >
-            📋 Table View
+            📋 Xem bảng
           </button>
           <button
             onClick={() => setViewMode('analytics')}
@@ -220,7 +240,7 @@ export default function BatteryChanges() {
               : 'text-gray-600 hover:bg-gray-100'
               }`}
           >
-            📊 Analytics View
+            📊 Xem phân tích
           </button>
         </div>
       </div>

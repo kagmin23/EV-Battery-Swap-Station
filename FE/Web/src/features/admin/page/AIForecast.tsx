@@ -24,8 +24,10 @@ import {
   aiInsights,
   forecastMetrics,
 } from '@/mock/ForecastData';
+import { CardSkeleton } from '@/components/ui/table-skeleton';
 
 export default function AIForecast() {
+  const [isLoading] = useState(false); // Set to true when integrating real API
   const [selectedTimeRange, setSelectedTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -82,21 +84,55 @@ export default function AIForecast() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        {/* Header Skeleton */}
+        <div className="mb-8 animate-pulse">
+          <div className="h-10 w-80 bg-gray-200 rounded dark:bg-gray-700 mb-2" />
+          <div className="h-5 w-96 bg-gray-200 rounded-full dark:bg-gray-700" />
+        </div>
+        
+        {/* Metrics Cards Skeleton */}
+        <CardSkeleton count={4} />
+        
+        {/* Forecast Charts Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {[1, 2].map((i) => (
+            <div key={i} className="bg-white rounded-lg shadow p-6">
+              <div className="animate-pulse">
+                <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700 mb-4" />
+                <div className="h-64 bg-gray-200 rounded dark:bg-gray-700" />
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* AI Insights Skeleton */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="animate-pulse mb-6">
+            <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700" />
+          </div>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse h-24 bg-gray-200 rounded dark:bg-gray-700" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="p-6 min-h-screen"
-      style={{
-        background: 'linear-gradient(to bottom right, var(--color-bg-primary), var(--color-bg-secondary), var(--color-bg-tertiary))',
-      }}
-    >
+    <div className="p-6 min-h-screen">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3" style={{ color: 'var(--color-text-primary)' }}>
           <Brain className="w-8 h-8 text-purple-600" />
-          AI Forecast & Predictions
+          Dự báo & Dự đoán AI
         </h1>
         <p style={{ color: 'var(--color-text-secondary)' }}>
-          AI-powered predictive analytics and insights for EV Battery Swap Station
+          Phân tích dự đoán và thông tin chi tiết từ AI cho Trạm đổi Pin EV
         </p>
       </div>
 

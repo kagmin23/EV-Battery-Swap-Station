@@ -31,6 +31,7 @@ import { ReportCard } from '../components/ReportCard';
 import { ReportGeneratorModal } from '../components/ReportGeneratorModal';
 import { reportTemplates, recentReports, getCategoryLabel } from '@/mock/ReportData';
 import type { ReportTemplate } from '@/mock/ReportData';
+import { CardSkeleton } from '@/components/ui/table-skeleton';
 
 const iconMap: Record<string, React.ElementType> = {
   'battery-charging': BatteryCharging,
@@ -67,6 +68,7 @@ const getIconColors = (category: string): { iconColor: string; iconBg: string } 
 };
 
 export default function ReportManagement() {
+  const [isLoading] = useState(false); // Set to true when integrating real API
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(false);
@@ -135,21 +137,65 @@ export default function ReportManagement() {
     { value: 'customer-service', label: 'Customer Service', count: reportTemplates.filter(r => r.category === 'customer-service').length },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        {/* Header Skeleton */}
+        <div className="mb-8 animate-pulse">
+          <div className="h-10 w-64 bg-gray-200 rounded dark:bg-gray-700 mb-2" />
+          <div className="h-5 w-96 bg-gray-200 rounded-full dark:bg-gray-700" />
+        </div>
+        
+        {/* Search & Filters Skeleton */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="animate-pulse">
+            <div className="h-10 w-full bg-gray-200 rounded dark:bg-gray-700 mb-4" />
+            <div className="flex gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-10 w-32 bg-gray-200 rounded dark:bg-gray-700" />
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        {/* Report Templates Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+              <div className="animate-pulse">
+                <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700 mb-4" />
+                <div className="h-4 w-full bg-gray-200 rounded-full dark:bg-gray-700 mb-2" />
+                <div className="h-4 w-3/4 bg-gray-200 rounded-full dark:bg-gray-700" />
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Recent Reports Skeleton */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="animate-pulse mb-6">
+            <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700" />
+          </div>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse h-20 bg-gray-200 rounded dark:bg-gray-700" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="p-6 min-h-screen"
-      style={{
-        background: 'linear-gradient(to bottom right, var(--color-bg-primary), var(--color-bg-secondary), var(--color-bg-tertiary))',
-      }}
-    >
+    <div className="p-6 min-h-screen">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3" style={{ color: 'var(--color-text-primary)' }}>
           <FileText className="w-8 h-8" />
-          Report Management
+          Quản lý Báo cáo
         </h1>
         <p style={{ color: 'var(--color-text-secondary)' }}>
-          Generate, view, and manage comprehensive reports for EV Battery Swap Station
+          Tạo, xem và quản lý báo cáo toàn diện cho Trạm đổi Pin EV
         </p>
       </div>
 
@@ -158,7 +204,7 @@ export default function ReportManagement() {
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600 mb-1">Total Reports</p>
+              <p className="text-sm text-slate-600 mb-1">Tổng báo cáo</p>
               <p className="text-2xl font-bold text-slate-800">{reportTemplates.length}</p>
             </div>
             <FileText className="w-10 h-10 text-blue-500" />
@@ -167,7 +213,7 @@ export default function ReportManagement() {
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600 mb-1">Favorites</p>
+              <p className="text-sm text-slate-600 mb-1">Yêu thích</p>
               <p className="text-2xl font-bold text-slate-800">{favorites.size}</p>
             </div>
             <Star className="w-10 h-10 text-yellow-500" />
@@ -176,7 +222,7 @@ export default function ReportManagement() {
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600 mb-1">Generated Today</p>
+              <p className="text-sm text-slate-600 mb-1">Tạo hôm nay</p>
               <p className="text-2xl font-bold text-slate-800">{recentReports.filter(r => r.generatedDate.includes('2024-10-14')).length}</p>
             </div>
             <Calendar className="w-10 h-10 text-green-500" />
@@ -185,7 +231,7 @@ export default function ReportManagement() {
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600 mb-1">Recent Downloads</p>
+              <p className="text-sm text-slate-600 mb-1">Tải xuống gần đây</p>
               <p className="text-2xl font-bold text-slate-800">{recentReports.length}</p>
             </div>
             <Download className="w-10 h-10 text-purple-500" />
@@ -202,7 +248,7 @@ export default function ReportManagement() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search reports..."
+                placeholder="Tìm báo cáo..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"

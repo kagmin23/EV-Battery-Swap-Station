@@ -15,8 +15,10 @@ import {
   mockRevenueBySource,
   calculateRevenueMetrics,
 } from '@/mock/RevenueData';
+import { CardSkeleton } from '@/components/ui/table-skeleton';
 
 export default function RevenueReport() {
+  const [isLoading] = useState(false); // Set to true when integrating real API
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [selectedStation, setSelectedStation] = useState<string>('ALL');
 
@@ -75,21 +77,57 @@ export default function RevenueReport() {
     document.body.removeChild(link);
   };
 
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        {/* Header Skeleton */}
+        <div className="mb-8 animate-pulse">
+          <div className="h-10 w-64 bg-gray-200 rounded dark:bg-gray-700 mb-2" />
+          <div className="h-5 w-96 bg-gray-200 rounded-full dark:bg-gray-700" />
+        </div>
+        
+        {/* Period Filter Skeleton */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="animate-pulse flex gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-10 w-32 bg-gray-200 rounded dark:bg-gray-700" />
+            ))}
+          </div>
+        </div>
+        
+        {/* Revenue Stats Cards Skeleton */}
+        <CardSkeleton count={4} />
+        
+        {/* Charts Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white rounded-lg shadow p-6 col-span-2">
+            <div className="animate-pulse">
+              <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700 mb-4" />
+              <div className="h-80 bg-gray-200 rounded dark:bg-gray-700" />
+            </div>
+          </div>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white rounded-lg shadow p-6">
+              <div className="animate-pulse">
+                <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700 mb-4" />
+                <div className="h-64 bg-gray-200 rounded dark:bg-gray-700" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="p-6 min-h-screen"
-      style={{
-        background:
-          'linear-gradient(to bottom right, var(--color-bg-primary), var(--color-bg-secondary), var(--color-bg-tertiary))',
-      }}
-    >
+    <div className="p-6 min-h-screen">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-          Revenue Report
+          Báo cáo Doanh thu
         </h1>
         <p style={{ color: 'var(--color-text-secondary)' }}>
-          Comprehensive revenue analysis and insights for EV Battery Swap Station
+          Phân tích doanh thu toàn diện và thông tin chi tiết cho Trạm đổi Pin EV
         </p>
       </div>
 
@@ -107,7 +145,7 @@ export default function RevenueReport() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <RevenueStatsCard
-          title="Total Revenue"
+          title="Tổng doanh thu"
           value={formatCurrency(metrics.totalRevenue)}
           icon={DollarSign}
           trend={metrics.growthRate}
@@ -116,27 +154,27 @@ export default function RevenueReport() {
           iconBg="bg-blue-500"
         />
         <RevenueStatsCard
-          title="Total Transactions"
+          title="Tổng giao dịch"
           value={metrics.totalTransactions.toLocaleString()}
-          subtitle={`Avg: ${formatCurrency(metrics.avgTransactionValue)}`}
+          subtitle={`Trung bình: ${formatCurrency(metrics.avgTransactionValue)}`}
           icon={ShoppingCart}
           gradientFrom="from-green-50"
           gradientTo="to-green-100/50"
           iconBg="bg-green-500"
         />
         <RevenueStatsCard
-          title="Top Performing Station"
+          title="Trạm hoạt động tốt nhất"
           value={metrics.topStation}
-          subtitle="Highest revenue"
+          subtitle="Doanh thu cao nhất"
           icon={MapPin}
           gradientFrom="from-purple-50"
           gradientTo="to-purple-100/50"
           iconBg="bg-purple-500"
         />
         <RevenueStatsCard
-          title="Peak Hour"
+          title="Giờ cao điểm"
           value={metrics.peakHour}
-          subtitle="Highest activity"
+          subtitle="Hoạt động cao nhất"
           icon={Clock}
           gradientFrom="from-orange-50"
           gradientTo="to-orange-100/50"

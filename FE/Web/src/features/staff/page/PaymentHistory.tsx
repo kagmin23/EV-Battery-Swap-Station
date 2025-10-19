@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { TableSkeleton, CardSkeleton } from '@/components/ui/table-skeleton';
 
 // Extended Transaction interface with payment details
 interface PaymentTransaction {
@@ -161,6 +162,7 @@ export default function PaymentHistory() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('all');
   const [selectedTransaction, setSelectedTransaction] = useState<PaymentTransaction | null>(null);
+  const [isLoading] = useState(false); // Set to true when integrating real API
 
   // Filter transactions
   const filteredTransactions = mockPaymentTransactions.filter(transaction => {
@@ -236,91 +238,114 @@ export default function PaymentHistory() {
     // Implement export functionality
   };
 
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        {/* Header Skeleton */}
+        <div className="mb-8 animate-pulse">
+          <div className="h-10 w-64 bg-gray-200 rounded dark:bg-gray-700 mb-2" />
+          <div className="h-4 w-96 bg-gray-200 rounded-full dark:bg-gray-700" />
+        </div>
+        
+        {/* Stats Cards Skeleton */}
+        <CardSkeleton count={4} />
+        
+        {/* Table Skeleton */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="animate-pulse mb-6">
+            <div className="h-8 w-48 bg-gray-200 rounded dark:bg-gray-700" />
+          </div>
+          <TableSkeleton rows={10} columns={7} />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-text-primary">Payment History</h1>
-          <p className="text-text-secondary mt-1">Track and manage all payment transactions</p>
+          <h1 className="text-3xl font-bold text-text-primary">Lịch sử Thanh toán</h1>
+          <p className="text-text-secondary mt-1">Theo dõi và quản lý tất cả giao dịch thanh toán</p>
         </div>
         <Button onClick={handleExport} variant="outline">
           <Download className="h-4 w-4 mr-2" />
-          Export
+          Xuất
         </Button>
       </div>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-green-100 to-green-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-green-900 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-green-800 flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
-              Total Revenue
+              Tổng doanh thu
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-900">
               {formatCurrency(totalRevenue)}
             </div>
-            <p className="text-xs text-green-700 mt-1">From completed transactions</p>
+            <p className="text-xs text-green-700 mt-1">Từ giao dịch hoàn thành</p>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-100 to-blue-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-blue-900 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-blue-800 flex items-center gap-2">
               <CheckCircle className="h-4 w-4" />
-              Completed
+              Hoàn thành
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-900">
               {completedCount}
             </div>
-            <p className="text-xs text-blue-700 mt-1">Successful payments</p>
+            <p className="text-xs text-blue-700 mt-1">Thanh toán thành công</p>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-yellow-50 to-yellow-100">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-yellow-100 to-yellow-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-yellow-900 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-yellow-800 flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Pending Amount
+              Đang chờ
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-900">
               {formatCurrency(pendingAmount)}
             </div>
-            <p className="text-xs text-yellow-700 mt-1">Awaiting confirmation</p>
+            <p className="text-xs text-yellow-700 mt-1">Chờ xác nhận</p>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-100 to-purple-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-purple-900 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-purple-800 flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Today's Transactions
+              Giao dịch hôm nay
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-900">
               {todayTransactions}
             </div>
-            <p className="text-xs text-purple-700 mt-1">Transactions today</p>
+            <p className="text-xs text-purple-700 mt-1">Giao dịch hôm nay</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card className="shadow-lg border-0">
+      <Card className="shadow-lg border-0 bg-white">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search by transaction ID, customer name, or reference..."
+                placeholder="Tìm theo mã giao dịch, tên khách hàng hoặc mã tham chiếu..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -330,28 +355,28 @@ export default function PaymentHistory() {
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full md:w-48">
                 <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder="Trạng thái" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-                <SelectItem value="refunded">Refunded</SelectItem>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="completed">Hoàn thành</SelectItem>
+                <SelectItem value="pending">Đang chờ</SelectItem>
+                <SelectItem value="failed">Thất bại</SelectItem>
+                <SelectItem value="refunded">Đã hoàn trả</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
               <SelectTrigger className="w-full md:w-48">
                 <CreditCard className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Payment Method" />
+                <SelectValue placeholder="Phương thức" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Methods</SelectItem>
-                <SelectItem value="credit_card">Credit Card</SelectItem>
-                <SelectItem value="e_wallet">E-Wallet</SelectItem>
-                <SelectItem value="cash">Cash</SelectItem>
-                <SelectItem value="subscription">Subscription</SelectItem>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="credit_card">Thẻ tín dụng</SelectItem>
+                <SelectItem value="e_wallet">Ví điện tử</SelectItem>
+                <SelectItem value="cash">Tiền mặt</SelectItem>
+                <SelectItem value="subscription">Đăng ký</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -359,11 +384,11 @@ export default function PaymentHistory() {
       </Card>
 
       {/* Transactions Table */}
-      <Card className="shadow-lg border-0">
+      <Card className="shadow-lg border-0 bg-white">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>Transaction History</span>
-            <Badge variant="secondary">{filteredTransactions.length} transactions</Badge>
+            <span>Lịch sử giao dịch</span>
+            <Badge variant="secondary">{filteredTransactions.length} giao dịch</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -372,25 +397,25 @@ export default function PaymentHistory() {
               <thead className="bg-slate-50 border-b">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
-                    Transaction ID
+                    Mã giao dịch
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
-                    Customer
+                    Khách hàng
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
-                    Date & Time
+                    Ngày & Giờ
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
-                    Amount
+                    Số tiền
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
-                    Payment Method
+                    Phương thức
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
-                    Status
+                    Trạng thái
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
-                    Actions
+                    Thao tác
                   </th>
                 </tr>
               </thead>
@@ -398,7 +423,7 @@ export default function PaymentHistory() {
                 {filteredTransactions.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
-                      No transactions found
+                      Không tìm thấy giao dịch
                     </td>
                   </tr>
                 ) : (
@@ -446,7 +471,7 @@ export default function PaymentHistory() {
                           onClick={() => setSelectedTransaction(transaction)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
-                          View
+                          Xem
                         </Button>
                       </td>
                     </tr>
@@ -461,10 +486,10 @@ export default function PaymentHistory() {
       {/* Transaction Detail Modal */}
       {selectedTransaction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-auto">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-auto bg-white">
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
-                <CardTitle>Transaction Details</CardTitle>
+                <CardTitle>Chi tiết Giao dịch</CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -477,47 +502,47 @@ export default function PaymentHistory() {
             <CardContent className="space-y-6 pt-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-slate-600">Transaction ID</p>
+                  <p className="text-sm text-slate-600">Mã giao dịch</p>
                   <p className="font-semibold">{selectedTransaction.transaction_id}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Status</p>
+                  <p className="text-sm text-slate-600">Trạng thái</p>
                   {getStatusBadge(selectedTransaction.payment_status)}
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Customer</p>
+                  <p className="text-sm text-slate-600">Khách hàng</p>
                   <p className="font-semibold">{selectedTransaction.user_name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Customer ID</p>
+                  <p className="text-sm text-slate-600">Mã khách hàng</p>
                   <p className="font-semibold">{selectedTransaction.user_id}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Station</p>
+                  <p className="text-sm text-slate-600">Trạm</p>
                   <p className="font-semibold">{selectedTransaction.station_name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Transaction Time</p>
+                  <p className="text-sm text-slate-600">Thời gian</p>
                   <p className="font-semibold">{formatDateTime(selectedTransaction.transaction_time)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Battery Given</p>
+                  <p className="text-sm text-slate-600">Pin đã lắp</p>
                   <p className="font-semibold">{selectedTransaction.battery_given}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Battery Returned</p>
+                  <p className="text-sm text-slate-600">Pin đã tháo</p>
                   <p className="font-semibold">{selectedTransaction.battery_returned}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Payment Method</p>
+                  <p className="text-sm text-slate-600">Phương thức thanh toán</p>
                   <p className="font-semibold">{getPaymentMethodLabel(selectedTransaction.payment_method)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Payment Reference</p>
+                  <p className="text-sm text-slate-600">Mã tham chiếu</p>
                   <p className="font-semibold">{selectedTransaction.payment_reference}</p>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-sm text-slate-600">Amount</p>
+                  <p className="text-sm text-slate-600">Số tiền</p>
                   <p className="text-2xl font-bold text-green-600">
                     {formatCurrency(selectedTransaction.cost)}
                   </p>
