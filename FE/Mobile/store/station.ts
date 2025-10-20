@@ -140,7 +140,6 @@ export const getListStationNear = async (payload: Location): Promise<Station[]> 
 export const getAllStationInMap = async (): Promise<StationInMapResponse[]> => {
     try {
         const res = await httpClient.get<{ data: any[] }>('/admin/stations')
-        console.log('API Response:', res)
 
         if (res.data && Array.isArray(res.data)) {
             // Transform API response to match StationInMapResponse interface
