@@ -16,7 +16,10 @@ import {
     Search,
     Grid,
     List,
-    Plus
+    Plus,
+    ArrowRightLeft,
+    Edit,
+    Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../components/PageHeader';
@@ -24,6 +27,10 @@ import { StatsCard } from '../components/StatsCard';
 import { PageLoadingSpinner, ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
 import { BatteryService, type Battery as ApiBattery, type BatteryFilters as ApiBatteryFilters } from '@/services/api/batteryService';
 import { StationService, type Station as ApiStation } from '@/services/api/stationService';
+import { AddBatteryModal } from '../components/AddBatteryModal';
+import { TransferBatteryModal } from '../components/TransferBatteryModal';
+import { EditBatteryModal } from '../components/EditBatteryModal';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 import type { Battery, BatteryStatus, BatteryGroupedByStation } from '../types/battery';
 
 export const BatteryInventoryPage: React.FC = () => {
@@ -36,6 +43,16 @@ export const BatteryInventoryPage: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState<BatteryStatus | 'ALL'>('ALL');
     const [sohRange, setSohRange] = useState({ min: 0, max: 100 });
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+    const [isAddBatteryModalOpen, setIsAddBatteryModalOpen] = useState(false);
+    const [isTransferBatteryModalOpen, setIsTransferBatteryModalOpen] = useState(false);
+    const [isEditBatteryModalOpen, setIsEditBatteryModalOpen] = useState(false);
+    const [editingBattery, setEditingBattery] = useState<Battery | null>(null);
+    const [deletingBatteryId, setDeletingBatteryId] = useState<string | null>(null);
+
+    // Confirmation modal states
+    const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+    const [confirmationAction, setConfirmationAction] = useState<'edit' | 'delete' | null>(null);
+    const [confirmationBattery, setConfirmationBattery] = useState<Battery | null>(null);
 
     // Load stations data
     const loadStations = async () => {
@@ -67,32 +84,45 @@ export const BatteryInventoryPage: React.FC = () => {
             };
 
             let response;
-            if (selectedStation !== 'ALL') {
+            if (statusFilter === 'faulty') {
+                // Get faulty batteries using specific endpoint
+                response = await BatteryService.getFaultyBatteries();
+            } else if (selectedStation !== 'ALL') {
                 // Get batteries from specific station
                 response = await BatteryService.getBatteriesByStation(selectedStation, filters);
             } else {
-                // Get batteries from all stations
-                response = await BatteryService.getAllBatteriesFromAllStations(stations, filters);
+                // Get batteries from all stations using main endpoint
+                response = await BatteryService.getAllBatteries(filters);
             }
-            const apiBatteries = response.data;
+            const apiBatteries = response.data || [];
 
             // Convert API batteries to UI format
             const convertedBatteries: Battery[] = apiBatteries.map((apiBattery: ApiBattery & { stationName?: string }) => {
-                return {
+                console.log('API Battery data:', apiBattery); // Debug API response
+
+                // Extract all available fields from API response
+                const batteryData = {
                     id: apiBattery._id,
                     batteryId: apiBattery.serial, // Use serial as batteryId
                     stationId: apiBattery.station?._id || '',
                     stationName: apiBattery.station?.stationName || stations.find(s => s.id === apiBattery.station?._id)?.name || 'Unknown Station',
                     status: apiBattery.status,
-                    soh: apiBattery.soh,
-                    voltage: apiBattery.voltage || 0,
+                    soh: apiBattery.soh || 100,
+                    voltage: apiBattery.voltage || 400, // Default voltage for EV batteries
                     current: 0, // Not available in backend
                     temperature: 0, // Not available in backend
                     cycleCount: 0, // Not available in backend
                     lastMaintenance: new Date(), // Not available in backend
                     createdAt: new Date(apiBattery.createdAt),
                     updatedAt: new Date(apiBattery.updatedAt),
+                    // Additional fields for editing - use actual values or sensible defaults
+                    model: apiBattery.model || `Battery-${apiBattery.serial}`,
+                    manufacturer: apiBattery.manufacturer || 'Unknown Manufacturer',
+                    capacity_kWh: apiBattery.capacity_kWh || 50,
                 };
+
+                console.log('Converted battery data:', batteryData);
+                return batteryData;
             });
 
             setBatteries(convertedBatteries);
@@ -211,6 +241,63 @@ export const BatteryInventoryPage: React.FC = () => {
         if (soh >= 60) return 'text-yellow-600';
         if (soh >= 40) return 'text-orange-600';
         return 'text-red-600';
+    };
+
+    // Handle successful operations
+    const handleBatteryOperationSuccess = () => {
+        loadBatteries();
+    };
+
+    // Handle edit battery - open edit modal directly
+    const handleEditBattery = (battery: Battery) => {
+        setEditingBattery(battery);
+        setIsEditBatteryModalOpen(true);
+    };
+
+    // Handle delete battery - show confirmation first
+    const handleDeleteBattery = (battery: Battery) => {
+        setConfirmationBattery(battery);
+        setConfirmationAction('delete');
+        setIsConfirmationModalOpen(true);
+    };
+
+    // Handle confirmation modal actions
+    const handleConfirmationConfirm = async () => {
+        if (!confirmationBattery || !confirmationAction) return;
+
+        try {
+            if (confirmationAction === 'edit') {
+                // Close confirmation modal first
+                handleConfirmationClose();
+                // Then open edit modal
+                setEditingBattery(confirmationBattery);
+                setIsEditBatteryModalOpen(true);
+            } else if (confirmationAction === 'delete') {
+                // Delete battery
+                setDeletingBatteryId(confirmationBattery.id);
+                await BatteryService.deleteBattery(confirmationBattery.id);
+
+                // Update local state
+                setBatteries(prev => prev.filter(b => b.id !== confirmationBattery.id));
+                groupBatteriesByStation(batteries.filter(b => b.id !== confirmationBattery.id));
+
+                toast.success(`Đã xóa pin ${confirmationBattery.batteryId} thành công`);
+                handleConfirmationClose();
+            }
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra';
+            toast.error(errorMessage);
+            console.error('Error:', err);
+        } finally {
+            setDeletingBatteryId(null);
+        }
+    };
+
+    // Handle confirmation modal close
+    const handleConfirmationClose = () => {
+        setIsConfirmationModalOpen(false);
+        setConfirmationAction(null);
+        setConfirmationBattery(null);
     };
 
     return (
@@ -402,6 +489,24 @@ export const BatteryInventoryPage: React.FC = () => {
                             >
                                 <Filter className="h-5 w-5" />
                             </Button>
+
+                            {/* Add Battery Button */}
+                            <Button
+                                onClick={() => setIsAddBatteryModalOpen(true)}
+                                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg border border-green-600 hover:border-green-700"
+                            >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Thêm pin mới
+                            </Button>
+
+                            {/* Transfer Battery Button */}
+                            <Button
+                                onClick={() => setIsTransferBatteryModalOpen(true)}
+                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg border border-blue-600 hover:border-blue-700"
+                            >
+                                <ArrowRightLeft className="h-4 w-4 mr-2" />
+                                Chuyển pin
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -554,6 +659,41 @@ export const BatteryInventoryPage: React.FC = () => {
                                                             </span>
                                                         </div>
                                                     </div>
+
+                                                    {/* Action Buttons */}
+                                                    <div className="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleEditBattery(battery);
+                                                            }}
+                                                            className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
+                                                        >
+                                                            <Edit className="h-4 w-4 mr-2" />
+                                                            Chỉnh sửa
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteBattery(battery);
+                                                            }}
+                                                            disabled={deletingBatteryId === battery.id}
+                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
+                                                        >
+                                                            {deletingBatteryId === battery.id ? (
+                                                                <ButtonLoadingSpinner size="sm" variant="default" text="Đang xóa..." />
+                                                            ) : (
+                                                                <>
+                                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                                    Xóa
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    </div>
                                                 </CardContent>
                                             </Card>
                                         ))}
@@ -571,6 +711,61 @@ export const BatteryInventoryPage: React.FC = () => {
                     ))
                 )}
             </div>
+
+            {/* Add Battery Modal */}
+            <AddBatteryModal
+                isOpen={isAddBatteryModalOpen}
+                onClose={() => setIsAddBatteryModalOpen(false)}
+                onSuccess={handleBatteryOperationSuccess}
+            />
+
+            {/* Transfer Battery Modal */}
+            <TransferBatteryModal
+                isOpen={isTransferBatteryModalOpen}
+                onClose={() => setIsTransferBatteryModalOpen(false)}
+                onSuccess={handleBatteryOperationSuccess}
+                batteries={batteries}
+            />
+
+            {/* Edit Battery Modal */}
+            <EditBatteryModal
+                isOpen={isEditBatteryModalOpen}
+                onClose={() => {
+                    setIsEditBatteryModalOpen(false);
+                    setEditingBattery(null);
+                }}
+                onSuccess={handleBatteryOperationSuccess}
+                battery={editingBattery}
+            />
+
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={isConfirmationModalOpen}
+                onClose={handleConfirmationClose}
+                onConfirm={handleConfirmationConfirm}
+                title={
+                    confirmationAction === 'edit'
+                        ? `Xác nhận chỉnh sửa pin ${confirmationBattery?.batteryId}`
+                        : `Xác nhận xóa pin ${confirmationBattery?.batteryId}`
+                }
+                message={
+                    confirmationAction === 'edit'
+                        ? (
+                            <div>
+                                Bạn có chắc chắn muốn chỉnh sửa pin <span className="font-bold text-slate-800">{confirmationBattery?.batteryId}</span>?
+                            </div>
+                        )
+                        : (
+                            <div>
+                                Bạn có chắc chắn muốn xóa pin <span className="font-bold text-slate-800">{confirmationBattery?.batteryId}</span>?<br />
+                                <span className="text-red-600 font-medium">Hành động này không thể hoàn tác.</span>
+                            </div>
+                        )
+                }
+                confirmText={confirmationAction === 'edit' ? 'Chỉnh sửa' : 'Xóa'}
+                type={confirmationAction || 'edit'}
+                isLoading={deletingBatteryId === confirmationBattery?.id}
+            />
         </div>
     );
 };

@@ -501,6 +501,7 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                                     onViewStaff={handleViewStationStaff}
                                     isSuspending={suspendingStationId === station.id}
                                     isSaving={savingStationId === station.id}
+                                    staffCount={getStaffByStation(station.id).length}
                                 />
                             ))}
                         </div>

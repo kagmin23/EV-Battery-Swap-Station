@@ -12,6 +12,10 @@ export interface Battery {
     lastMaintenance: Date;
     createdAt: Date;
     updatedAt: Date;
+    // Additional fields for editing
+    model?: string;
+    manufacturer?: string;
+    capacity_kWh?: number;
 }
 
 export type BatteryStatus = 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';

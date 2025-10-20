@@ -15,6 +15,7 @@ interface StationCardProps {
     onViewStaff?: (station: Station) => void;
     isSuspending?: boolean;
     isSaving?: boolean;
+    staffCount?: number;
 }
 
 export const StationCard: React.FC<StationCardProps> = ({
@@ -25,7 +26,8 @@ export const StationCard: React.FC<StationCardProps> = ({
     onViewDetails,
     onViewStaff,
     isSuspending = false,
-    isSaving = false
+    isSaving = false,
+    staffCount = 0
 }) => {
     const getStatusBadge = (status: StationStatus) => {
         switch (status) {
@@ -104,6 +106,10 @@ export const StationCard: React.FC<StationCardProps> = ({
                     <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-2 rounded-lg">
                         <Battery className="h-4 w-4 mr-2 text-green-500" />
                         <span>{formatCapacity(station.capacity)} pin</span>
+                    </div>
+                    <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-2 rounded-lg">
+                        <Users className="h-4 w-4 mr-2 text-purple-500" />
+                        <span>{staffCount} nhân viên</span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-slate-500 bg-slate-100 px-3 py-2 rounded-lg">
                         <span className="font-medium">SOH trung bình:</span>

@@ -98,7 +98,65 @@ export class BatteryService {
             if (filters.sort) params.append('sort', filters.sort);
             if (filters.order) params.append('order', filters.order);
 
-            const response = await api.get(`/admin/batteries?${params.toString()}`);
+            const response = await api.get(`/batteries?${params.toString()}`);
+            if (response.data.success) {
+                return {
+                    success: response.data.success,
+                    data: response.data.data || [],
+                    pagination: response.data.pagination || {
+                        page: 1,
+                        limit: 20,
+                        total: response.data.data?.length || 0,
+                        pages: 1
+                    }
+                };
+            }
+            throw new Error(response.data.message || 'Failed to fetch batteries');
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    const status = error.response.status;
+                    const message = error.response.data?.message || 'Server error';
+
+                    switch (status) {
+                        case 400:
+                            throw new Error(`Bad Request: ${message}`);
+                        case 401:
+                            throw new Error('Unauthorized: Please login again');
+                        case 403:
+                            throw new Error('Forbidden: You do not have permission to access batteries');
+                        case 404:
+                            throw new Error('Not Found: Batteries endpoint not found');
+                        case 500:
+                            throw new Error('Internal Server Error: Please try again later');
+                        default:
+                            throw new Error(`Error ${status}: ${message}`);
+                    }
+                } else if (error.request) {
+                    throw new Error('Network Error: Please check your internet connection');
+                } else {
+                    throw new Error(`Request Error: ${error.message}`);
+                }
+            }
+            throw new Error('An unexpected error occurred');
+        }
+    }
+
+    // Get all batteries with filters (using main /batteries endpoint)
+    static async getAllBatteries(filters: BatteryFilters = {}): Promise<BatteryResponse> {
+        try {
+            const params = new URLSearchParams();
+
+            if (filters.status) params.append('status', filters.status);
+            if (filters.stationId) params.append('stationId', filters.stationId);
+            if (filters.sohMin !== undefined && filters.sohMin !== null) params.append('sohMin', filters.sohMin.toString());
+            if (filters.sohMax !== undefined && filters.sohMax !== null) params.append('sohMax', filters.sohMax.toString());
+            if (filters.page && filters.page > 0) params.append('page', filters.page.toString());
+            if (filters.limit && filters.limit > 0) params.append('limit', filters.limit.toString());
+            if (filters.sort) params.append('sort', filters.sort);
+            if (filters.order) params.append('order', filters.order);
+
+            const response = await api.get(`/batteries?${params.toString()}`);
             if (response.data.success) {
                 return {
                     success: response.data.success,
@@ -284,6 +342,135 @@ export class BatteryService {
                             throw new Error('Unauthorized: Please login again');
                         case 403:
                             throw new Error('Forbidden: You do not have permission to update this battery');
+                        case 404:
+                            throw new Error('Not Found: Battery not found');
+                        case 500:
+                            throw new Error('Internal Server Error: Please try again later');
+                        default:
+                            throw new Error(`Error ${status}: ${message}`);
+                    }
+                } else if (error.request) {
+                    throw new Error('Network Error: Please check your internet connection');
+                } else {
+                    throw new Error(`Request Error: ${error.message}`);
+                }
+            }
+            throw new Error('An unexpected error occurred');
+        }
+    }
+
+    // Create new battery
+    static async createBattery(batteryData: {
+        serial: string;
+        model?: string;
+        soh?: number;
+        status?: 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';
+        stationId?: string;
+        manufacturer?: string;
+        capacity_kWh?: number;
+        voltage?: number;
+    }): Promise<Battery> {
+        try {
+            const response = await api.post('/batteries', batteryData);
+            if (response.data.success) {
+                return response.data.data;
+            }
+            throw new Error(response.data.message || 'Failed to create battery');
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    const status = error.response.status;
+                    const message = error.response.data?.message || 'Server error';
+
+                    switch (status) {
+                        case 400:
+                            throw new Error(`Bad Request: ${message}`);
+                        case 401:
+                            throw new Error('Unauthorized: Please login again');
+                        case 403:
+                            throw new Error('Forbidden: You do not have permission to create batteries');
+                        case 500:
+                            throw new Error('Internal Server Error: Please try again later');
+                        default:
+                            throw new Error(`Error ${status}: ${message}`);
+                    }
+                } else if (error.request) {
+                    throw new Error('Network Error: Please check your internet connection');
+                } else {
+                    throw new Error(`Request Error: ${error.message}`);
+                }
+            }
+            throw new Error('An unexpected error occurred');
+        }
+    }
+
+    // Update battery
+    static async updateBattery(id: string, updateData: {
+        model?: string;
+        soh?: number;
+        status?: 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';
+        stationId?: string;
+        manufacturer?: string;
+        capacity_kWh?: number;
+        voltage?: number;
+    }): Promise<Battery> {
+        try {
+            const response = await api.put(`/batteries/${id}`, updateData);
+            if (response.data.success) {
+                return response.data.data;
+            }
+            throw new Error(response.data.message || 'Failed to update battery');
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    const status = error.response.status;
+                    const message = error.response.data?.message || 'Server error';
+
+                    switch (status) {
+                        case 400:
+                            throw new Error(`Bad Request: ${message}`);
+                        case 401:
+                            throw new Error('Unauthorized: Please login again');
+                        case 403:
+                            throw new Error('Forbidden: You do not have permission to update this battery');
+                        case 404:
+                            throw new Error('Not Found: Battery not found');
+                        case 500:
+                            throw new Error('Internal Server Error: Please try again later');
+                        default:
+                            throw new Error(`Error ${status}: ${message}`);
+                    }
+                } else if (error.request) {
+                    throw new Error('Network Error: Please check your internet connection');
+                } else {
+                    throw new Error(`Request Error: ${error.message}`);
+                }
+            }
+            throw new Error('An unexpected error occurred');
+        }
+    }
+
+    // Delete battery
+    static async deleteBattery(id: string): Promise<void> {
+        try {
+            const response = await api.delete(`/batteries/${id}`);
+            if (response.data.success) {
+                return;
+            }
+            throw new Error(response.data.message || 'Failed to delete battery');
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    const status = error.response.status;
+                    const message = error.response.data?.message || 'Server error';
+
+                    switch (status) {
+                        case 400:
+                            throw new Error(`Bad Request: ${message}`);
+                        case 401:
+                            throw new Error('Unauthorized: Please login again');
+                        case 403:
+                            throw new Error('Forbidden: You do not have permission to delete this battery');
                         case 404:
                             throw new Error('Not Found: Battery not found');
                         case 500:
