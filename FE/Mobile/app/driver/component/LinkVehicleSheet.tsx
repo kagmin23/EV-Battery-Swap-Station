@@ -156,7 +156,7 @@ export default function LinkVehicleSheet({ visible, onClose }: Props) {
             brand,
             carName,
             batteryModel,
-            modelYear: modelYear ? parseInt(modelYear, 10) : undefined,
+            modelYear: modelYear ? parseInt(modelYear, 10) : null,
             licensePlate,
         };
         await creatVehicle(payload)

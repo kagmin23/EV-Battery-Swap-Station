@@ -152,16 +152,6 @@ const MapComponent = forwardRef<MapComponentHandle, MapComponentProps>(({
                 zoomEnabled={true}
                 mapType="standard"
             >
-                {userLocation && (
-                    <Marker
-                        coordinate={{ latitude: userLocation.latitude, longitude: userLocation.longitude }}
-                        title="Your location"
-                    >
-                        <View style={[styles.markerContainer, { backgroundColor: '#2563eb' }]}>
-                            <Ionicons name="navigate" size={18} color="white" />
-                        </View>
-                    </Marker>
-                )}
                 {batteryStations.map((station, index) => (
                     <Marker
                         key={`station-${station.id}-${index}`}

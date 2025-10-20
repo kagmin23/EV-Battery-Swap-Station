@@ -1,5 +1,5 @@
 
-import { initFavorites, sSelectedStation, toggleFavorite, useFavorites, useSelectedStation } from '@/store/station';
+import { initFavorites, sSelectedStation, Station, toggleFavorite, useFavorites, useSelectedStation } from '@/store/station';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapComponent, { MapComponentHandle } from '../driver/component/MapComponent';
 import StationListView from '../driver/component/StationListView';
+import { toCamelCase } from '@/utils/caseConverter';
 
 const { width, height } = Dimensions.get('window');
 
@@ -101,16 +102,10 @@ const LocationSation: React.FC = () => {
     initFavorites();
   }, []);
 
-  const handleNavigatePress = () => {
-    const station = selectedStationStore;
-
-    const url = station?.mapUrl
-    if (!url) {
-      console.warn("No map URL available for this station");
-      return;
-    }
-
-    Linking.openURL(url).catch((err) =>
+  const handleNavigatePress = (station: Station) => {
+    const stationToCamelCase = toCamelCase(station)
+    const mapUrl = stationToCamelCase?.mapUrl
+    Linking.openURL(mapUrl).catch((err) =>
       console.error("Could not open map URL:", err)
     );
   };
@@ -236,7 +231,7 @@ const LocationSation: React.FC = () => {
                 <View style={styles.dragGrip} />
               </View>
               <View style={styles.sheetHeader}>
-                <Text style={styles.sheetTitle}>EV Battery Swap Station</Text>
+                <Text style={styles.sheetTitle}> {selectedStation.stationName}</Text>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <TouchableOpacity
                     style={{ borderRadius: 20, padding: 4 }}
@@ -292,27 +287,17 @@ const LocationSation: React.FC = () => {
                   <Text style={styles.statLabel}>Status</Text>
                 </View>
               </View>
-
-              <TouchableOpacity
-                style={styles.primaryButton}
-                onPress={() => {
-                  try {
-                    const stationParam = encodeURIComponent(JSON.stringify({
-                      title: selectedStation.title,
-                      description: selectedStation.description,
-                      availableBatteries: selectedStation.availableBatteries,
-                      totalBatteries: selectedStation.totalBatteries,
-                      status: selectedStation.status,
-                    }));
-                    router.push(`/(tabs)/booking?station=${stationParam}`);
-                  } catch {
+              {selectedStation.availableBatteries > 0 && (
+                <TouchableOpacity
+                  style={styles.primaryButton}
+                  onPress={() => {
+                    sSelectedStation.set(selectedStation);
                     router.push('/(tabs)/booking');
-                  }
-                }}
-              >
-                <Text style={styles.primaryButtonText}>Swap Battery</Text>
-              </TouchableOpacity>
-
+                  }}
+                >
+                  <Text style={styles.primaryButtonText}>Swap Battery</Text>
+                </TouchableOpacity>
+              )}
               <View style={styles.addressBot}>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text
@@ -320,10 +305,10 @@ const LocationSation: React.FC = () => {
                     numberOfLines={1}
                     ellipsizeMode="tail"
                   >
-                    Station: <Text style={styles.addressRow}>{selectedStation.title}</Text>
+                    Address: <Text style={styles.addressRow}>{selectedStation.address}</Text>
                   </Text>
                 </View>
-                <TouchableOpacity style={styles.roundIconButton} onPress={handleNavigatePress}>
+                <TouchableOpacity style={styles.roundIconButton} onPress={() => handleNavigatePress(selectedStation)}>
                   <Ionicons name="return-up-forward-sharp" size={18} color="#d6c7ff" />
                 </TouchableOpacity>
               </View>

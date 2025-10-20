@@ -211,6 +211,18 @@ const ProfileScreen: React.FC = () => {
                     <Ionicons name="chevron-forward" size={20} color="white" />
                 </TouchableOpacity>
 
+                {/* Request Support */}
+                <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/request_support')}>
+                    <View style={styles.iconContainer}>
+                        <Ionicons name="help-circle" size={24} color="#6d4aff" />
+                    </View>
+                    <View style={styles.cardContent}>
+                        <Text style={styles.cardTitle}>Request Support</Text>
+                        <Text style={styles.cardSubtitle}>Get help with any issues</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="white" />
+                </TouchableOpacity>
+
                 {/* Current Subscription Plan */}
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Current Subscription Plan</Text>
