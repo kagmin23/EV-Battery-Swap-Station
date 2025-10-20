@@ -5,7 +5,7 @@ import { signify } from "react-signify";
 
 
 
-interface Station {
+export interface Station {
     id: string,
     stationName: string,
     address: string,
@@ -110,7 +110,6 @@ export const getStationCoordinates = (station: StationInMapResponse) => {
 export const getListStationNear = async (payload: Location): Promise<Station[]> => {
     try {
         const res = await httpClient.get<{ data: Station[] }>('/stations', payload)
-        console.log(res)
         if (res.data && Array.isArray(res.data)) {
             const station = toCamelCase(res.data)
 
@@ -151,9 +150,9 @@ export const getAllStationInMap = async (): Promise<StationInMapResponse[]> => {
                 }
             }));
 
-            console.log('Transformed stations:', stations);
-            sStationInMap.set(stations);
-            return stations;
+
+            sStationInMap.set(toCamelCase(stations));
+            return toCamelCase(stations);
         } else {
             console.warn('Invalid API response format:', res.data)
             sStationInMap.set([])
@@ -171,3 +170,9 @@ export const getAllStationInMap = async (): Promise<StationInMapResponse[]> => {
         return []
     }
 }
+
+// store/station.ts
+export const getNameStationById = (stations: Station[] | undefined, stationId: string) => {
+    const station = stations?.find((s: Station) => s.id === stationId);
+    return station || null;
+};

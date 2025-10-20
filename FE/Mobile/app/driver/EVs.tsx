@@ -11,6 +11,7 @@ import { getAllVehicle, useVehicles } from '@/store/vehicle';
 export default function EVs() {
     const router = useRouter();
     const vehicles = useVehicles();
+    // console.log(vehicles)
     const [isAddEvOpen, setIsAddEvOpen] = useState(false);
 
     useFocusEffect(

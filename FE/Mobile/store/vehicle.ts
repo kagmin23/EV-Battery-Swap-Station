@@ -3,13 +3,13 @@ import { toCamelCase, toSnakeCase } from '@/utils/caseConverter';
 import { signify } from 'react-signify';
 
 export type Vehicle = {
-    id?: string;
+    vehicleId?: string;
     carName: string;
     brand: string;
     batteryModel: string;
-    vin?: string;
-    modelYear?: number;
-    licensePlate?: string
+    vin: string | null;
+    modelYear: number | null;
+    licensePlate: string
 };
 
 interface CreateVehicleResponse {
@@ -63,6 +63,11 @@ export const creatVehicle = async (data: Vehicle
     }
 }
 
+
+export const getNameVehicleById = (vehicles: Vehicle[] | undefined, vehicleId: string) => {
+    const vehicle = vehicles?.find((v: Vehicle) => v.vehicleId === vehicleId);
+    return vehicle || null;
+}
 
 
 
