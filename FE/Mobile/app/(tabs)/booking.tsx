@@ -1,33 +1,95 @@
 import { useSelectedStation } from '@/store/station';
-import { getAllVehicle, useVehicles } from '@/store/vehicle';
+import { getAllVehicle, useVehicles, Vehicle } from '@/store/vehicle';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { formatDateVN, formatTimeVN } from '@/utils/dateTime';
 import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCreateBooking } from '@/features/driver/apis/booking';
 import { showSuccessToast, showErrorToast } from '@/utils/toast';
-import { useBookings, getAllBookings } from '@/store/booking';
+import { useBookings } from '@/store/booking';
+import { getAllBatteryByStationId, useBatteriesInStation } from '@/store/baterry';
 
 
 export default function BookingScreen() {
     const router = useRouter();
     const vehicles = useVehicles();
+    const station = useSelectedStation();
+    const createBookingMutation = useCreateBooking();
+    const bookings = useBookings();
+    const batteriesInStation = useBatteriesInStation();
+
+    const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>(undefined);
+
+    // Get available battery models from station
+    const availableBatteryModels = useMemo(() => {
+        if (!batteriesInStation || !batteriesInStation.batteries || !Array.isArray(batteriesInStation.batteries) || batteriesInStation.batteries.length === 0) return [];
+        return batteriesInStation.batteries.map((battery: any) => battery.model);
+    }, [batteriesInStation]);
+
+    console.log('batteriesInStation type:', typeof batteriesInStation);
+    console.log('batteriesInStation:', batteriesInStation);
+    console.log('batteriesInStation is array:', Array.isArray(batteriesInStation));
+    console.log('batteriesInStation.batteries:', batteriesInStation?.batteries);
+    console.log('availableBatteryModels:', availableBatteryModels);
+
+    // Check if vehicle is compatible with station batteries
+    const isVehicleCompatible = useCallback((vehicle: Vehicle) => {
+        return availableBatteryModels.includes(vehicle.batteryModel);
+    }, [availableBatteryModels]);
+
+    // Get selected battery ID for the selected vehicle
+    const getSelectedBatteryId = useCallback(() => {
+        if (!selectedVehicleId || !batteriesInStation?.batteries) return null;
+
+        const selectedVehicle = vehicles.find(v => v.vehicleId === selectedVehicleId);
+        if (!selectedVehicle) return null;
+
+        // Find the first available battery with matching model
+        const matchingBattery = batteriesInStation.batteries.find((battery: any) =>
+            battery.model === selectedVehicle.batteryModel &&
+            (battery.status === 'full' || battery.status === 'idle') // Only get fully and  charged batteries
+        );
+
+        return matchingBattery?.id || null;
+    }, [selectedVehicleId, batteriesInStation, vehicles]);
+
+    // Get selected battery info for display
+    const getSelectedBatteryInfo = useCallback(() => {
+        if (!selectedVehicleId || !batteriesInStation?.batteries) return null;
+
+        const selectedVehicle = vehicles.find(v => v.vehicleId === selectedVehicleId);
+        if (!selectedVehicle) return null;
+
+        // Find the first available battery with matching model
+        const matchingBattery = batteriesInStation.batteries.find((battery: any) =>
+            battery.model === selectedVehicle.batteryModel &&
+            (battery.status === 'full' || battery.status === 'idle')
+        );
+
+        return matchingBattery || null;
+    }, [selectedVehicleId, batteriesInStation, vehicles]);
+
+    // Auto-select first compatible vehicle
+    useEffect(() => {
+        if (vehicles.length > 0 && availableBatteryModels.length > 0 && !selectedVehicleId) {
+            const compatibleVehicle = vehicles.find(v => isVehicleCompatible(v));
+            if (compatibleVehicle) {
+                setSelectedVehicleId(compatibleVehicle.vehicleId || '');
+            }
+        }
+    }, [vehicles, availableBatteryModels, selectedVehicleId, isVehicleCompatible]);
 
     useFocusEffect(
         useCallback(() => {
             getAllVehicle();
-            getAllBookings();
-        }, [])
+            // getAllBookings();
+            getAllBatteryByStationId(station?.id || '')
+        }, [station?.id])
     )
-    const station = useSelectedStation();
-    const createBookingMutation = useCreateBooking();
-    const bookings = useBookings();
 
-
-    const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>(vehicles[0]?.vehicleId || undefined);
     const [date, setDate] = useState<Date>(new Date());
     const [time, setTime] = useState<Date>(() => {
         const now = new Date();
@@ -65,7 +127,6 @@ export default function BookingScreen() {
 
     const onConfirm = async () => {
         const vehicle = vehicles.find(x => x.vehicleId === selectedVehicleId);
-
         if (!vehicle) {
             showErrorToast('Please select a vehicle.', 'Validation error');
             return;
@@ -83,6 +144,9 @@ export default function BookingScreen() {
             return;
         }
 
+        console.log('station object:', station);
+        console.log('vehicle object:', vehicle);
+
         const scheduled = new Date(
             date.getFullYear(),
             date.getMonth(),
@@ -94,16 +158,35 @@ export default function BookingScreen() {
         );
 
         // Check for duplicate booking
-        const stationId = (station as any)._id || (station as any).id;
+        const stationId = station.id;
+        console.log('stationId:', stationId);
+        console.log('scheduled time:', scheduled.toISOString());
+
+        if (!stationId) {
+            showErrorToast('Invalid station ID.', 'Validation error');
+            return;
+        }
+
         if (checkDuplicateBooking(vehicle.vehicleId!, stationId, scheduled)) {
             showErrorToast('This vehicle already has a booking at this station within 20 minutes.', 'Duplicate booking');
             return;
         }
 
+        // Get the actual battery ID for the selected vehicle
+        const selectedBatteryId = getSelectedBatteryId();
+        if (!selectedBatteryId) {
+            showErrorToast('No available battery found for this vehicle model.', 'Battery not available');
+            return;
+        }
+
+        console.log('Selected battery ID:', selectedBatteryId);
+        console.log('Vehicle battery model:', vehicle.batteryModel);
+
         createBookingMutation.mutate({
-            stationId: (station as any)._id || (station as any).id,
+            stationId: stationId,
             vehicleId: vehicle.vehicleId!,
             scheduledTime: scheduled.toISOString(),
+            batteryId: selectedBatteryId,
         }, {
             onSuccess: (response) => {
                 showSuccessToast(response.message || 'Booking successful!');
@@ -162,17 +245,66 @@ export default function BookingScreen() {
                     <View style={styles.cardHeaderRow}>
                         <Ionicons name="car" size={18} color="#6C63FF" />
                         <Text style={styles.cardHeader}>Vehicle</Text>
+                        {availableBatteryModels.length > 0 && (
+                            <Text style={styles.compatibilityInfo}>
+                                Compatible models: {availableBatteryModels.join(', ')}
+                            </Text>
+                        )}
                     </View>
                     <View style={{ gap: 10 }}>
-                        {vehicles.map(v => (
-                            <TouchableOpacity key={v.vehicleId} style={[styles.vehicleRow, selectedVehicleId === v.vehicleId && styles.vehicleRowActive]} onPress={() => setSelectedVehicleId(v.vehicleId || '')}>
-                                <View style={styles.vehicleRowLeft}>
-                                    <Ionicons name="car" size={18} color={selectedVehicleId === v.vehicleId ? '#bfb6ff' : '#bfb6ff'} />
-                                    <Text style={[styles.vehicleName, selectedVehicleId === v.vehicleId && styles.vehicleNameActive]}>{v.carName}</Text>
-                                </View>
-                                <Text style={[styles.plate, selectedVehicleId === v.vehicleId && styles.plateActive]}>{v.licensePlate}</Text>
-                            </TouchableOpacity>
-                        ))}
+                        {vehicles.map(v => {
+                            const isCompatible = availableBatteryModels.includes(v.batteryModel);
+                            const isDisabled = !isCompatible;
+
+                            return (
+                                <TouchableOpacity
+                                    key={v.vehicleId}
+                                    style={[
+                                        styles.vehicleRow,
+                                        selectedVehicleId === v.vehicleId && styles.vehicleRowActive,
+                                        isDisabled && styles.vehicleRowDisabled
+                                    ]}
+                                    onPress={() => {
+                                        if (!isDisabled) {
+                                            setSelectedVehicleId(v.vehicleId || '');
+                                        }
+                                    }}
+                                    disabled={isDisabled}
+                                >
+                                    <View style={styles.vehicleRowLeft}>
+                                        <Ionicons
+                                            name="car"
+                                            size={18}
+                                            color={isDisabled ? '#666' : (selectedVehicleId === v.vehicleId ? '#bfb6ff' : '#bfb6ff')}
+                                        />
+                                        <Text style={[
+                                            styles.vehicleName,
+                                            selectedVehicleId === v.vehicleId && styles.vehicleNameActive,
+                                            isDisabled && styles.vehicleNameDisabled
+                                        ]}>
+                                            {v.carName}
+                                        </Text>
+                                        {isDisabled && (
+                                            <Text style={styles.incompatibleText}>(Incompatible)</Text>
+                                        )}
+                                    </View>
+                                    <View style={styles.vehicleRowRight}>
+                                        <Text style={[
+                                            styles.plate,
+                                            selectedVehicleId === v.vehicleId && styles.plateActive,
+                                            isDisabled && styles.plateDisabled
+                                        ]}>
+                                            {v.licensePlate}
+                                        </Text>
+                                        {selectedVehicleId === v.vehicleId && !isDisabled && (
+                                            <Text style={styles.batteryInfo}>
+                                                Battery: {getSelectedBatteryInfo()?.model || 'N/A'}
+                                            </Text>
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
                 </View>
 
@@ -332,6 +464,7 @@ const styles = StyleSheet.create({
     card: { backgroundColor: '#1a0f3e', borderRadius: 16, padding: 16, marginBottom: 14, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
     cardHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
     cardHeader: { color: '#bfb6ff', fontWeight: '700' },
+    compatibilityInfo: { color: '#4ade80', fontSize: 12, fontStyle: 'italic', marginLeft: 'auto' },
     stationTitle: { color: 'white', fontSize: 18, fontWeight: '800' },
     stationSub: { color: '#bfb6ff', marginTop: 4 },
     statRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 12 },
@@ -341,11 +474,17 @@ const styles = StyleSheet.create({
     statusDot: { width: 10, height: 10, borderRadius: 5 },
     vehicleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#120935', borderRadius: 12, padding: 12 },
     vehicleRowActive: { backgroundColor: '#2d1c82', borderWidth: 1, borderColor: '#6C63FF' },
+    vehicleRowDisabled: { backgroundColor: '#2a2a2a', opacity: 0.5 },
     vehicleRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    vehicleRowRight: { alignItems: 'flex-end' },
     vehicleName: { color: 'white', fontWeight: '700' },
     vehicleNameActive: { color: '#bfb6ff' },
+    vehicleNameDisabled: { color: '#666' },
     plate: { color: '#bfb6ff' },
     plateActive: { color: '#bfb6ff' },
+    plateDisabled: { color: '#666' },
+    incompatibleText: { color: '#ff6b6b', fontSize: 12, fontStyle: 'italic' },
+    batteryInfo: { color: '#4ade80', fontSize: 11, fontStyle: 'italic', marginTop: 2 },
     inputRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#120935', borderRadius: 12, padding: 12 },
     inputLeft: { gap: 2 },
     inputLabel: { color: '#bfb6ff', fontSize: 12 },

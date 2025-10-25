@@ -2,6 +2,7 @@ import { useAuth } from '@/features/auth/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const { user, logout, loading } = useAuth();
@@ -21,63 +22,66 @@ export default function HomeScreen() {
   ];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Welcome,</Text>
-          <Text style={styles.name}>{user?.fullName || user?.email}</Text>
-        </View>
-        <TouchableOpacity style={styles.logoutBtn} onPress={logout} disabled={loading}>
-          <Ionicons name="log-out-outline" size={20} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Today&apos;s Overview</Text>
-        <View style={styles.grid}>
-          {cards.map(c => (
-            <View key={c.label} style={[styles.card, { backgroundColor: '#1a1233' }]}>
-              <View style={[styles.iconWrap, { backgroundColor: c.color + '22' }]}> 
-                <Ionicons name={c.icon as any} size={22} color={c.color} />
-              </View>
-              <Text style={styles.cardValue}>{c.value}</Text>
-              <Text style={styles.cardLabel}>{c.label}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.actionsRow}>
-          {quickActions.map(a => (
-            <TouchableOpacity key={a.label} style={styles.actionBtn}>
-              <View style={[styles.actionIcon, { backgroundColor: a.color + '22' }]}> 
-                <Ionicons name={a.icon as any} size={22} color={a.color} />
-              </View>
-              <Text style={styles.actionLabel}>{a.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>System status</Text>
-        <View style={styles.systemBox}>
-          <Ionicons name="pulse" size={26} color="#6d4aff" />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.systemTitle}>All systems operational</Text>
-            <Text style={styles.systemSubtitle}>No incidents reported</Text>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>Welcome,</Text>
+            <Text style={styles.name}>{user?.fullName || user?.email}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#666" />
+          <TouchableOpacity style={styles.logoutBtn} onPress={logout} disabled={loading}>
+            <Ionicons name="log-out-outline" size={20} color="#fff" />
+          </TouchableOpacity>
         </View>
-      </View>
-    </ScrollView>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Today&apos;s Overview</Text>
+          <View style={styles.grid}>
+            {cards.map(c => (
+              <View key={c.label} style={[styles.card, { backgroundColor: '#1a1233' }]}>
+                <View style={[styles.iconWrap, { backgroundColor: c.color + '22' }]}>
+                  <Ionicons name={c.icon as any} size={22} color={c.color} />
+                </View>
+                <Text style={styles.cardValue}>{c.value}</Text>
+                <Text style={styles.cardLabel}>{c.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.actionsRow}>
+            {quickActions.map(a => (
+              <TouchableOpacity key={a.label} style={styles.actionBtn}>
+                <View style={[styles.actionIcon, { backgroundColor: a.color + '22' }]}>
+                  <Ionicons name={a.icon as any} size={22} color={a.color} />
+                </View>
+                <Text style={styles.actionLabel}>{a.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>System status</Text>
+          <View style={styles.systemBox}>
+            <Ionicons name="pulse" size={26} color="#6d4aff" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.systemTitle}>All systems operational</Text>
+              <Text style={styles.systemSubtitle}>No incidents reported</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#666" />
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0520', paddingHorizontal: 20, paddingTop: 50 },
+  safeArea: { flex: 1, backgroundColor: '#0a0520' },
+  container: { flex: 1, backgroundColor: '#0a0520', paddingHorizontal: 20, paddingTop: 20 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 },
   greeting: { color: '#aaa', fontSize: 14 },
   name: { color: '#fff', fontSize: 24, fontWeight: '700', marginTop: 2 },

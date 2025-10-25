@@ -31,7 +31,7 @@ export default function MyBookingsScreen() {
             getAllVehicle()
         }, [])
     ))
-
+    console.log(mybooking)
     return (
         <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
             <View style={styles.headerRow}>
@@ -45,18 +45,15 @@ export default function MyBookingsScreen() {
                 data={mybooking}
                 keyExtractor={(item) => item.bookingId}
                 renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.card}>
+                    <TouchableOpacity
+                        style={styles.card}
+                        onPress={() => router.push(`/(tabs)/booking-details?bookingId=${item.bookingId}`)}
+                    >
                         <View style={styles.row}>
                             <Ionicons name="location-outline" size={18} color="#9EA0A5" />
                             <Text style={styles.station}>{getNameStationById(stationInMap, item.stationId)?.stationName}</Text>
                         </View>
                         <Text style={styles.area}>{getNameStationById(stationInMap, item.stationId)?.address || "No address"}</Text>
-
-
-
-
-
-
                         <View style={styles.details}>
                             <Text style={styles.label}>🚗 {getNameVehicleById(vehicles, item.vehicleId)?.carName || "No vehicle"}</Text>
                             <Text style={styles.label}>📅 {extractDateAndTime(item.scheduledTime).date} - {extractDateAndTime(item.scheduledTime).time}</Text>
