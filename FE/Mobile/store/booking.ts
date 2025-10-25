@@ -7,6 +7,7 @@ export interface Booking {
     userId: string;
     stationId: string;
     vehicleId: string;
+    batteryId?: string;
     scheduledTime: string;
     status: string;
     createdAt: string;

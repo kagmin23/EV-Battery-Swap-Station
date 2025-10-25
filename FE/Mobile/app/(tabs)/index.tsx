@@ -1,7 +1,7 @@
 
-import { initFavorites, sSelectedStation, Station, toggleFavorite, useFavorites, useSelectedStation } from '@/store/station';
+import { getAllStationInMap, initFavorites, sSelectedStation, Station, toggleFavorite, useFavorites, useSelectedStation } from '@/store/station';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -79,6 +79,15 @@ const LocationSation: React.FC = () => {
   const selectedStationStore = useSelectedStation();
   const favoriteIds = useFavorites();
 
+  useFocusEffect((
+    useCallback(() => {
+      (async () => {
+        await initFavorites();
+        await getAllStationInMap();
+      })();
+    }, [getAllStationInMap, initFavorites])
+  ))
+
   useEffect(() => {
     if (selectedStationStore) {
       setSelectedStation(selectedStationStore);
@@ -97,10 +106,6 @@ const LocationSation: React.FC = () => {
       }
     }
   }, [selectedStationStore]);
-
-  useEffect(() => {
-    initFavorites();
-  }, []);
 
   const handleNavigatePress = (station: Station) => {
     const stationToCamelCase = toCamelCase(station)

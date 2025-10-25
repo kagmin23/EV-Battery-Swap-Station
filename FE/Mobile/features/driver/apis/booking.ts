@@ -6,6 +6,7 @@ export interface BookingRequest {
     stationId: string;
     scheduledTime: string;
     vehicleId: string;
+    batteryId: string
 }
 
 export interface BookingResponse {
