@@ -281,11 +281,11 @@ export const BatteryInventoryPage: React.FC = () => {
                 setBatteries(prev => prev.filter(b => b.id !== confirmationBattery.id));
                 groupBatteriesByStation(batteries.filter(b => b.id !== confirmationBattery.id));
 
-                toast.success(`Đã xóa pin ${confirmationBattery.batteryId} thành công`);
+                toast.success(`Successfully deleted battery ${confirmationBattery.batteryId}`);
                 handleConfirmationClose();
             }
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra';
+            const errorMessage = err instanceof Error ? err.message : 'An error occurred';
             toast.error(errorMessage);
             console.error('Error:', err);
         } finally {
@@ -304,8 +304,8 @@ export const BatteryInventoryPage: React.FC = () => {
         <div className="p-6 space-y-8">
             {/* Header */}
             <PageHeader
-                title="Kho pin"
-                description="Quản lý và theo dõi trạng thái pin tại các trạm đổi pin"
+                title="Battery Inventory"
+                description="Manage and track battery status at battery swap stations"
             />
 
             {/* Error Alert */}
@@ -321,7 +321,7 @@ export const BatteryInventoryPage: React.FC = () => {
                         onClick={() => setError(null)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 hover:shadow-sm"
                     >
-                        Đóng
+                        Close
                     </Button>
                 </div>
             )}
@@ -329,7 +329,7 @@ export const BatteryInventoryPage: React.FC = () => {
             {/* Quick Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <StatsCard
-                    title="Tổng pin"
+                    title="Total Batteries"
                     value={batteries.length}
                     icon={BatteryIcon}
                     gradientFrom="from-blue-50"
@@ -399,7 +399,7 @@ export const BatteryInventoryPage: React.FC = () => {
                                         value="ALL"
                                         className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                                     >
-                                        Tất cả trạm
+                                        All stations
                                     </SelectItem>
                                     {stations.map(station => (
                                         <SelectItem
@@ -496,7 +496,7 @@ export const BatteryInventoryPage: React.FC = () => {
                                 className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg border border-green-600 hover:border-green-700"
                             >
                                 <Plus className="h-4 w-4 mr-2" />
-                                Thêm pin mới
+                                Add New Battery
                             </Button>
 
                             {/* Transfer Battery Button */}
@@ -505,7 +505,7 @@ export const BatteryInventoryPage: React.FC = () => {
                                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg border border-blue-600 hover:border-blue-700"
                             >
                                 <ArrowRightLeft className="h-4 w-4 mr-2" />
-                                Chuyển pin
+                                Transfer Battery
                             </Button>
                         </div>
                     </div>
@@ -672,7 +672,7 @@ export const BatteryInventoryPage: React.FC = () => {
                                                             className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
                                                         >
                                                             <Edit className="h-4 w-4 mr-2" />
-                                                            Chỉnh sửa
+                                                            Edit
                                                         </Button>
                                                         <Button
                                                             variant="outline"
@@ -685,11 +685,11 @@ export const BatteryInventoryPage: React.FC = () => {
                                                             className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
                                                         >
                                                             {deletingBatteryId === battery.id ? (
-                                                                <ButtonLoadingSpinner size="sm" variant="default" text="Đang xóa..." />
+                                                                <ButtonLoadingSpinner size="sm" variant="default" text="Deleting..." />
                                                             ) : (
                                                                 <>
                                                                     <Trash2 className="h-4 w-4 mr-2" />
-                                                                    Xóa
+                                                                    Delete
                                                                 </>
                                                             )}
                                                         </Button>
@@ -745,24 +745,24 @@ export const BatteryInventoryPage: React.FC = () => {
                 onConfirm={handleConfirmationConfirm}
                 title={
                     confirmationAction === 'edit'
-                        ? `Xác nhận chỉnh sửa pin ${confirmationBattery?.batteryId}`
-                        : `Xác nhận xóa pin ${confirmationBattery?.batteryId}`
+                        ? `Confirm edit battery ${confirmationBattery?.batteryId}`
+                        : `Confirm delete battery ${confirmationBattery?.batteryId}`
                 }
                 message={
                     confirmationAction === 'edit'
                         ? (
                             <div>
-                                Bạn có chắc chắn muốn chỉnh sửa pin <span className="font-bold text-slate-800">{confirmationBattery?.batteryId}</span>?
+                                Are you sure you want to edit battery <span className="font-bold text-slate-800">{confirmationBattery?.batteryId}</span>?
                             </div>
                         )
                         : (
                             <div>
-                                Bạn có chắc chắn muốn xóa pin <span className="font-bold text-slate-800">{confirmationBattery?.batteryId}</span>?<br />
-                                <span className="text-red-600 font-medium">Hành động này không thể hoàn tác.</span>
+                                Are you sure you want to delete battery <span className="font-bold text-slate-800">{confirmationBattery?.batteryId}</span>?<br />
+                                <span className="text-red-600 font-medium">This action cannot be undone.</span>
                             </div>
                         )
                 }
-                confirmText={confirmationAction === 'edit' ? 'Chỉnh sửa' : 'Xóa'}
+                confirmText={confirmationAction === 'edit' ? 'Edit' : 'Delete'}
                 type={confirmationAction || 'edit'}
                 isLoading={deletingBatteryId === confirmationBattery?.id}
             />

@@ -130,9 +130,9 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
             });
 
             setStaff(convertedStaff);
-            toast.success('Tải danh sách nhân viên thành công');
+            toast.success('Staff list loaded successfully');
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tải danh sách nhân viên';
+            const errorMessage = err instanceof Error ? err.message : 'Error loading staff list';
             setError(errorMessage);
             console.error('Error loading staff:', err);
         } finally {
@@ -203,11 +203,11 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
 
             toast.success(
                 newStatus === 'active'
-                    ? `Đã kích hoạt nhân viên ${suspendingStaff.name}`
-                    : `Đã tạm khóa nhân viên ${suspendingStaff.name}`
+                    ? `Activated staff ${suspendingStaff.name}`
+                    : `Locked staff ${suspendingStaff.name}`
             );
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi thay đổi trạng thái nhân viên';
+            const errorMessage = err instanceof Error ? err.message : 'Error changing staff status';
             setError(errorMessage);
             console.error('Error changing staff status:', err);
         } finally {
@@ -305,13 +305,13 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                 };
 
                 setStaff(prev => [...prev, convertedStaff]);
-                toast.success(`Đã thêm nhân viên ${convertedStaff.name} thành công`);
+                toast.success(`Successfully added staff ${convertedStaff.name}`);
             }
 
             setIsModalOpen(false);
             setEditingStaff(null);
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi lưu thông tin nhân viên';
+            const errorMessage = err instanceof Error ? err.message : 'Error saving staff information';
             setError(errorMessage);
             console.error('Error saving staff:', err);
         } finally {
@@ -340,7 +340,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                         onClick={() => setError(null)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 hover:shadow-sm"
                     >
-                        Đóng
+                        Close
                     </Button>
                 </div>
             )}
@@ -348,7 +348,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
             {/* Quick Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatsCard
-                    title="Tổng nhân viên"
+                    title="Total Staff"
                     value={staff.length}
                     icon={Users}
                     gradientFrom="from-blue-50"
@@ -357,7 +357,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     iconBg="bg-blue-500"
                 />
                 <StatsCard
-                    title="Hoạt động"
+                    title="Active"
                     value={staff.filter(s => s.status === 'active' || s.status === 'ONLINE').length}
                     icon={Activity}
                     gradientFrom="from-green-50"
@@ -366,7 +366,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     iconBg="bg-green-500"
                 />
                 <StatsCard
-                    title="Tạm khóa"
+                    title="Locked"
                     value={staff.filter(s => s.status === 'locked' || s.status === 'SUSPENDED').length}
                     icon={Clock}
                     gradientFrom="from-orange-50"
@@ -394,7 +394,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                             <div className="p-2 bg-blue-100 rounded-xl mr-3">
                                 <Users className="h-6 w-6 text-blue-600" />
                             </div>
-                            Danh sách nhân viên
+                            Staff List
                             <span className="ml-3 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
                                 {filteredStaff.length}
                             </span>
@@ -428,11 +428,11 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed border border-blue-600 hover:border-blue-700"
                             >
                                 {savingStaffId === 'new' ? (
-                                    <ButtonLoadingSpinner size="sm" variant="white" text="Đang thêm..." />
+                                    <ButtonLoadingSpinner size="sm" variant="white" text="Adding..." />
                                 ) : (
                                     <>
                                         <Plus className="h-4 w-4 mr-2" />
-                                        Thêm nhân viên
+                                        Add Staff
                                     </>
                                 )}
                             </Button>
@@ -441,15 +441,15 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                 </CardHeader>
                 <CardContent className="m-0 p-6 max-h-[600px] overflow-y-auto custom-scrollbar">
                     {isLoading ? (
-                        <PageLoadingSpinner text="Đang tải danh sách nhân viên..." />
+                        <PageLoadingSpinner text="Loading staff list..." />
                     ) : filteredStaff.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12">
                             <Users className="h-12 w-12 text-slate-400 mb-4" />
-                            <h3 className="text-lg font-medium text-slate-900 mb-2">Không có nhân viên nào</h3>
+                            <h3 className="text-lg font-medium text-slate-900 mb-2">No staff found</h3>
                             <p className="text-slate-600 text-center mb-6">
                                 {filters.search || filters.stationId !== 'ALL' || filters.role !== 'ALL' || filters.status !== 'ALL'
-                                    ? 'Không tìm thấy nhân viên phù hợp với bộ lọc hiện tại.'
-                                    : 'Chưa có nhân viên nào được thêm vào hệ thống.'}
+                                    ? 'No staff found matching the current filters.'
+                                    : 'No staff has been added to the system yet.'}
                             </p>
                             {(!filters.search && filters.stationId === 'ALL' && filters.role === 'ALL' && filters.status === 'ALL') && (
                                 <Button
@@ -457,7 +457,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                                     className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border border-blue-600 hover:border-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-lg"
                                 >
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Thêm nhân viên đầu tiên
+                                    Add First Staff
                                 </Button>
                             )}
                         </div>
@@ -520,13 +520,13 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                 isOpen={isConfirmationModalOpen}
                 onClose={handleCancelSuspend}
                 onConfirm={handleConfirmSuspend}
-                title={`Xác nhận ${suspendingStaff?.status === 'ONLINE' ? 'tạm khóa' : 'kích hoạt'} nhân viên`}
+                title={`Confirm ${suspendingStaff?.status === 'ONLINE' ? 'lock' : 'activate'} staff`}
                 message={
                     <div>
-                        Bạn có chắc chắn muốn {suspendingStaff?.status === 'ONLINE' ? 'tạm khóa' : 'kích hoạt'} nhân viên <span className="font-bold text-slate-800">{suspendingStaff?.name}</span>?
+                        Are you sure you want to {suspendingStaff?.status === 'ONLINE' ? 'lock' : 'activate'} staff <span className="font-bold text-slate-800">{suspendingStaff?.name}</span>?
                     </div>
                 }
-                confirmText={suspendingStaff?.status === 'ONLINE' ? 'Tạm khóa' : 'Kích hoạt'}
+                confirmText={suspendingStaff?.status === 'ONLINE' ? 'Lock' : 'Activate'}
                 type="delete"
                 isLoading={suspendingStaffId === suspendingStaff?.id}
             />

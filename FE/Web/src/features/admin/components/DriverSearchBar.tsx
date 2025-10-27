@@ -44,7 +44,7 @@ export const DriverSearchBar: React.FC<DriverSearchBarProps> = ({
                 <div className="p-2 bg-blue-100 rounded-xl">
                     <Search className="h-5 w-5 text-blue-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-800">Tìm kiếm & Lọc</h3>
+                <h3 className="text-lg font-semibold text-slate-800">Search & Filter</h3>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-4">
@@ -52,7 +52,7 @@ export const DriverSearchBar: React.FC<DriverSearchBarProps> = ({
                 <div className="flex-1 relative">
                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
                     <Input
-                        placeholder="Tìm kiếm tài xế theo tên, email, SĐT, bằng lái..."
+                        placeholder="Search driver by name, email, phone, license..."
                         value={filters.search}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="pl-12 h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl text-slate-700 placeholder:text-slate-400"
@@ -64,38 +64,38 @@ export const DriverSearchBar: React.FC<DriverSearchBarProps> = ({
                     {/* Status Filter */}
                     <Select value={filters.status} onValueChange={handleStatusChange}>
                         <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
-                            <SelectValue placeholder="Trạng thái" />
+                            <SelectValue placeholder="Status" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
                             <SelectItem
                                 value="ALL"
                                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                             >
-                                Tất cả trạng thái
+                                All status
                             </SelectItem>
                             <SelectItem
                                 value="ACTIVE"
                                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                             >
-                                Hoạt động
+                                Active
                             </SelectItem>
                             <SelectItem
                                 value="INACTIVE"
                                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                             >
-                                Không hoạt động
+                                Inactive
                             </SelectItem>
                             <SelectItem
                                 value="SUSPENDED"
                                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                             >
-                                Tạm khóa
+                                Suspended
                             </SelectItem>
                             <SelectItem
                                 value="PENDING_VERIFICATION"
                                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                             >
-                                Chờ xác thực
+                                Pending Verification
                             </SelectItem>
                         </SelectContent>
                     </Select>
@@ -103,14 +103,14 @@ export const DriverSearchBar: React.FC<DriverSearchBarProps> = ({
                     {/* Subscription Plan Filter */}
                     <Select value={filters.subscriptionPlan} onValueChange={handleSubscriptionPlanChange}>
                         <SelectTrigger className="w-full sm:w-[180px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
-                            <SelectValue placeholder="Gói thuê" />
+                            <SelectValue placeholder="Subscription Plan" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
                             <SelectItem
                                 value="ALL"
                                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                             >
-                                Tất cả gói thuê
+                                All subscription plans
                             </SelectItem>
                             {subscriptionPlans.map((plan) => (
                                 <SelectItem
@@ -127,14 +127,14 @@ export const DriverSearchBar: React.FC<DriverSearchBarProps> = ({
                     {/* License Type Filter */}
                     <Select value={filters.licenseType} onValueChange={handleLicenseTypeChange}>
                         <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
-                            <SelectValue placeholder="Loại bằng" />
+                            <SelectValue placeholder="License Type" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
                             <SelectItem
                                 value="ALL"
                                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                             >
-                                Tất cả loại bằng
+                                All license types
                             </SelectItem>
                             <SelectItem
                                 value="A1"
@@ -196,14 +196,14 @@ export const DriverSearchBar: React.FC<DriverSearchBarProps> = ({
                     {/* City Filter */}
                     <Select value={filters.city} onValueChange={handleCityChange}>
                         <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
-                            <SelectValue placeholder="Thành phố" />
+                            <SelectValue placeholder="City" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
                             <SelectItem
                                 value="ALL"
                                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                             >
-                                Tất cả thành phố
+                                All cities
                             </SelectItem>
                             <SelectItem
                                 value="TP.HCM"

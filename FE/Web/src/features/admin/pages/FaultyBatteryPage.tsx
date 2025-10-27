@@ -38,17 +38,17 @@ const FaultyBatteryCard: React.FC<FaultyBatteryCardProps> = ({ battery, onClick 
     const getStatusText = (status: BatteryStatus) => {
         switch (status) {
             case 'faulty':
-                return 'Lỗi';
+                return 'Faulty';
             case 'charging':
-                return 'Đang sạc';
+                return 'Charging';
             case 'full':
-                return 'Đầy';
+                return 'Full';
             case 'in-use':
-                return 'Đang sử dụng';
+                return 'In Use';
             case 'idle':
-                return 'Nhàn rỗi';
+                return 'Idle';
             default:
-                return 'Không xác định';
+                return 'Unknown';
         }
     };
 
@@ -88,7 +88,7 @@ const FaultyBatteryCard: React.FC<FaultyBatteryCardProps> = ({ battery, onClick 
                 <div className="space-y-3 mb-4">
                     <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-2 rounded-lg">
                         <MapPin className="h-4 w-4 mr-2 text-blue-500" />
-                        <span className="truncate font-medium">{battery.station?.stationName || 'Chưa gán'}</span>
+                        <span className="truncate font-medium">{battery.station?.stationName || 'Not assigned'}</span>
                     </div>
                     <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-2 rounded-lg">
                         <BatteryIcon className="h-4 w-4 mr-2 text-green-500" />
@@ -101,18 +101,18 @@ const FaultyBatteryCard: React.FC<FaultyBatteryCardProps> = ({ battery, onClick 
 
                 <div className="space-y-2 pt-4 border-t border-slate-100">
                     <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Điện áp:</span>
+                        <span className="text-slate-600">Voltage:</span>
                         <span className="font-medium">{battery.voltage || 'N/A'}V</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Nhà SX:</span>
+                        <span className="text-slate-600">Manufacturer:</span>
                         <span className="font-medium">{battery.manufacturer || 'N/A'}</span>
                     </div>
                     <div className="mt-3 pt-2 border-t border-red-100">
                         <div className="flex items-center space-x-2">
                             <AlertCircle className="h-4 w-4 text-red-500" />
                             <span className="text-sm text-red-600 font-medium">
-                                Pin cần được kiểm tra và sửa chữa
+                                Battery needs inspection and repair
                             </span>
                         </div>
                     </div>
@@ -149,17 +149,17 @@ const FaultyBatteryDetailModal: React.FC<{
     const getStatusText = (status: BatteryStatus) => {
         switch (status) {
             case 'faulty':
-                return 'Lỗi';
+                return 'Faulty';
             case 'charging':
-                return 'Đang sạc';
+                return 'Charging';
             case 'full':
-                return 'Đầy';
+                return 'Full';
             case 'in-use':
-                return 'Đang sử dụng';
+                return 'In Use';
             case 'idle':
-                return 'Nhàn rỗi';
+                return 'Idle';
             default:
-                return 'Không xác định';
+                return 'Unknown';
         }
     };
 
@@ -174,10 +174,10 @@ const FaultyBatteryDetailModal: React.FC<{
                             </div>
                             <div>
                                 <h2 className="text-2xl font-bold text-slate-800">
-                                    Chi tiết pin lỗi
+                                    Faulty Battery Details
                                 </h2>
                                 <p className="text-slate-500">
-                                    Pin #{battery.serial}
+                                    Battery #{battery.serial}
                                 </p>
                             </div>
                         </div>
@@ -195,23 +195,23 @@ const FaultyBatteryDetailModal: React.FC<{
                         {/* Thông tin cơ bản */}
                         <div className="bg-slate-50 rounded-xl p-4">
                             <h3 className="text-lg font-semibold text-slate-800 mb-4">
-                                Thông tin cơ bản
+                                Basic Information
                             </h3>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-sm text-slate-500 mb-1">Serial Pin</p>
+                                    <p className="text-sm text-slate-500 mb-1">Serial Number</p>
                                     <p className="font-medium text-slate-800">
                                         {battery.serial}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-slate-500 mb-1">Trạm</p>
+                                    <p className="text-sm text-slate-500 mb-1">Station</p>
                                     <p className="font-medium text-slate-800">
-                                        {battery.station?.stationName || 'Chưa gán'}
+                                        {battery.station?.stationName || 'Not assigned'}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-slate-500 mb-1">Trạng thái</p>
+                                    <p className="text-sm text-slate-500 mb-1">Status</p>
                                     <Badge className={`${getStatusColor(battery.status)} border`}>
                                         {getStatusText(battery.status)}
                                     </Badge>
@@ -223,13 +223,13 @@ const FaultyBatteryDetailModal: React.FC<{
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-slate-500 mb-1">Dung lượng</p>
+                                    <p className="text-sm text-slate-500 mb-1">Capacity</p>
                                     <p className="font-medium text-slate-800">
                                         {battery.capacity_kWh || 'N/A'} kWh
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-slate-500 mb-1">Điện áp</p>
+                                    <p className="text-sm text-slate-500 mb-1">Voltage</p>
                                     <p className="font-medium text-slate-800">
                                         {battery.voltage || 'N/A'}V
                                     </p>
@@ -241,7 +241,7 @@ const FaultyBatteryDetailModal: React.FC<{
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-slate-500 mb-1">Nhà sản xuất</p>
+                                    <p className="text-sm text-slate-500 mb-1">Manufacturer</p>
                                     <p className="font-medium text-slate-800">
                                         {battery.manufacturer || 'N/A'}
                                     </p>
@@ -254,29 +254,29 @@ const FaultyBatteryDetailModal: React.FC<{
                             <div className="flex items-center space-x-2 mb-4">
                                 <AlertTriangle className="h-5 w-5 text-red-600" />
                                 <h3 className="text-lg font-semibold text-red-800">
-                                    Thông tin lỗi
+                                    Error Information
                                 </h3>
                             </div>
                             <div className="space-y-3">
                                 <div>
-                                    <p className="text-sm text-red-600 mb-1">Loại lỗi</p>
+                                    <p className="text-sm text-red-600 mb-1">Error Type</p>
                                     <p className="font-medium text-red-800">
-                                        Pin bị lỗi hệ thống
+                                        System battery error
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-red-600 mb-1">Mô tả lỗi</p>
+                                    <p className="text-sm text-red-600 mb-1">Error Description</p>
                                     <p className="text-red-700">
-                                        Pin có SOH thấp ({battery.soh}%) và cần được kiểm tra kỹ thuật.
-                                        Có thể do quá trình sạc/xả không đúng cách hoặc lỗi phần cứng.
+                                        Battery has low SOH ({battery.soh}%) and needs technical inspection.
+                                        May be due to improper charging/discharging or hardware failure.
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-red-600 mb-1">Khuyến nghị</p>
+                                    <p className="text-sm text-red-600 mb-1">Recommendation</p>
                                     <p className="text-red-700">
-                                        • Kiểm tra hệ thống sạc<br />
-                                        • Thay thế pin nếu cần thiết<br />
-                                        • Báo cáo cho kỹ thuật viên
+                                        • Check charging system<br />
+                                        • Replace battery if necessary<br />
+                                        • Report to technician
                                     </p>
                                 </div>
                             </div>
@@ -285,17 +285,17 @@ const FaultyBatteryDetailModal: React.FC<{
                         {/* Thông tin thời gian */}
                         <div className="bg-slate-50 rounded-xl p-4">
                             <h3 className="text-lg font-semibold text-slate-800 mb-4">
-                                Thông tin thời gian
+                                Time Information
                             </h3>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-sm text-slate-500 mb-1">Ngày tạo</p>
+                                    <p className="text-sm text-slate-500 mb-1">Created Date</p>
                                     <p className="font-medium text-slate-800">
                                         {new Date(battery.createdAt).toLocaleDateString('vi-VN')}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-slate-500 mb-1">Cập nhật cuối</p>
+                                    <p className="text-sm text-slate-500 mb-1">Last Updated</p>
                                     <p className="font-medium text-slate-800">
                                         {new Date(battery.updatedAt).toLocaleDateString('vi-VN')}
                                     </p>
@@ -310,12 +310,12 @@ const FaultyBatteryDetailModal: React.FC<{
                             onClick={onClose}
                             className="px-6 py-2"
                         >
-                            Đóng
+                            Close
                         </Button>
                         <Button
                             className="px-6 py-2 bg-red-600 hover:bg-red-700"
                         >
-                            Báo cáo sửa chữa
+                            Report Repair
                         </Button>
                     </div>
                 </div>
@@ -359,7 +359,7 @@ const FaultyBatteryPage: React.FC = () => {
             setBatteries(response.data);
             setFilteredBatteries(response.data);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Có lỗi xảy ra khi tải danh sách pin lỗi');
+            setError(err instanceof Error ? err.message : 'Error loading faulty battery list');
         } finally {
             setLoading(false);
         }
@@ -415,14 +415,14 @@ const FaultyBatteryPage: React.FC = () => {
         <div className="p-6 space-y-8">
             {/* Header */}
             <PageHeader
-                title="Pin lỗi"
-                description="Quản lý và theo dõi các pin bị lỗi trong hệ thống"
+                title="Faulty Batteries"
+                description="Manage and track faulty batteries in the system"
             />
 
             {/* Quick Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <StatsCard
-                    title="Tổng pin lỗi"
+                    title="Total Faulty Batteries"
                     value={batteries.length}
                     icon={BatteryIcon}
                     gradientFrom="from-red-50"
@@ -431,7 +431,7 @@ const FaultyBatteryPage: React.FC = () => {
                     iconBg="bg-red-500"
                 />
                 <StatsCard
-                    title="Cần sửa chữa"
+                    title="Need Repair"
                     value={batteries.length}
                     icon={AlertCircle}
                     gradientFrom="from-orange-50"
@@ -440,7 +440,7 @@ const FaultyBatteryPage: React.FC = () => {
                     iconBg="bg-orange-500"
                 />
                 <StatsCard
-                    title="Đã kiểm tra"
+                    title="Inspected"
                     value={0}
                     icon={Eye}
                     gradientFrom="from-green-50"
@@ -449,7 +449,7 @@ const FaultyBatteryPage: React.FC = () => {
                     iconBg="bg-green-500"
                 />
                 <StatsCard
-                    title="SOH trung bình"
+                    title="Average SOH"
                     value={`${batteries.length > 0 ? Math.round(batteries.reduce((sum, b) => sum + b.soh, 0) / batteries.length) : 0}%`}
                     icon={TrendingUp}
                     gradientFrom="from-purple-50"
@@ -466,7 +466,7 @@ const FaultyBatteryPage: React.FC = () => {
                         <div className="p-2 bg-blue-100 rounded-xl">
                             <Search className="h-5 w-5 text-blue-600" />
                         </div>
-                        <h3 className="text-lg font-semibold text-slate-800">Tìm kiếm & Lọc</h3>
+                        <h3 className="text-lg font-semibold text-slate-800">Search & Filter</h3>
                     </div>
 
                     <div className="flex flex-col lg:flex-row gap-4">
@@ -475,7 +475,7 @@ const FaultyBatteryPage: React.FC = () => {
                             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
                             <input
                                 type="text"
-                                placeholder="Tìm theo ID pin hoặc tên trạm..."
+                                placeholder="Search by battery ID or station name..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full pl-12 pr-4 h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl text-slate-700 placeholder:text-slate-400"
@@ -487,14 +487,14 @@ const FaultyBatteryPage: React.FC = () => {
                             {/* Station Filter */}
                             <Select value={selectedStation} onValueChange={setSelectedStation}>
                                 <SelectTrigger className="w-full sm:w-[200px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
-                                    <SelectValue placeholder="Chọn trạm" />
+                                    <SelectValue placeholder="Select station" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 max-h-[300px] overflow-y-auto [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
                                     <SelectItem
                                         value="ALL"
                                         className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                                     >
-                                        Tất cả trạm
+                                        All stations
                                     </SelectItem>
                                     {stations.map(station => (
                                         <SelectItem
@@ -511,44 +511,44 @@ const FaultyBatteryPage: React.FC = () => {
                             {/* Status Filter */}
                             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as BatteryStatus | 'ALL')}>
                                 <SelectTrigger className="w-full sm:w-[180px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
-                                    <SelectValue placeholder="Trạng thái" />
+                                    <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
                                     <SelectItem
                                         value="ALL"
                                         className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                                     >
-                                        Tất cả trạng thái
+                                        All status
                                     </SelectItem>
                                     <SelectItem
                                         value="faulty"
                                         className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                                     >
-                                        Pin lỗi
+                                        Faulty
                                     </SelectItem>
                                     <SelectItem
                                         value="charging"
                                         className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                                     >
-                                        Đang sạc
+                                        Charging
                                     </SelectItem>
                                     <SelectItem
                                         value="full"
                                         className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                                     >
-                                        Đầy
+                                        Full
                                     </SelectItem>
                                     <SelectItem
                                         value="in-use"
                                         className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                                     >
-                                        Đang sử dụng
+                                        In Use
                                     </SelectItem>
                                     <SelectItem
                                         value="idle"
                                         className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                                     >
-                                        Nhàn rỗi
+                                        Idle
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
@@ -563,7 +563,7 @@ const FaultyBatteryPage: React.FC = () => {
                                 }}
                                 className="h-12 px-4 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl"
                             >
-                                Xóa bộ lọc
+                                Clear Filters
                             </Button>
 
                             {/* Filter Button */}
@@ -592,7 +592,7 @@ const FaultyBatteryPage: React.FC = () => {
                         onClick={() => setError(null)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 hover:shadow-sm"
                     >
-                        Đóng
+                        Close
                     </Button>
                 </div>
             )}
@@ -605,7 +605,7 @@ const FaultyBatteryPage: React.FC = () => {
                             <div className="p-2 bg-red-100 rounded-xl mr-3">
                                 <BatteryIcon className="h-6 w-6 text-red-600" />
                             </div>
-                            Danh sách pin lỗi
+                            Faulty Battery List
                             <span className="ml-3 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-semibold">
                                 {filteredBatteries.length}
                             </span>
@@ -638,17 +638,17 @@ const FaultyBatteryPage: React.FC = () => {
                 </CardHeader>
                 <CardContent className="m-0 p-6 max-h-[600px] overflow-y-auto custom-scrollbar">
                     {loading ? (
-                        <PageLoadingSpinner text="Đang tải danh sách pin lỗi..." />
+                        <PageLoadingSpinner text="Loading faulty battery list..." />
                     ) : filteredBatteries.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12">
                             <BatteryIcon className="h-12 w-12 text-slate-400 mb-4" />
                             <h3 className="text-lg font-medium text-slate-900 mb-2">
-                                {batteries.length === 0 ? 'Không có pin lỗi' : 'Không tìm thấy pin phù hợp'}
+                                {batteries.length === 0 ? 'No faulty batteries' : 'No matching batteries found'}
                             </h3>
                             <p className="text-slate-600 text-center mb-6">
                                 {batteries.length === 0
-                                    ? 'Hiện tại không có pin nào bị lỗi trong hệ thống.'
-                                    : 'Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc để xem thêm kết quả.'
+                                    ? 'Currently no batteries are faulty in the system.'
+                                    : 'Try changing the search keyword or filters to see more results.'
                                 }
                             </p>
                         </div>
@@ -666,7 +666,7 @@ const FaultyBatteryPage: React.FC = () => {
                         <div className="overflow-hidden rounded-xl border border-slate-200">
                             {/* Table view will be implemented here */}
                             <div className="text-center py-8 text-slate-500">
-                                Chế độ xem bảng sẽ được triển khai
+                                Table view will be implemented
                             </div>
                         </div>
                     )}

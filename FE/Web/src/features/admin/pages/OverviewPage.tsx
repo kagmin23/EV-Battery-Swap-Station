@@ -68,9 +68,9 @@ export const OverviewPage: React.FC = () => {
         averageTransactionCost: 0
     });
     const [chartData, setChartData] = useState({
-        stations: { labels: ['Trạm'], active: [0], maintenance: [0] },
-        staff: { labels: ['Hoạt động', 'Tạm khóa'], data: [0, 0] },
-        complaints: { labels: ['Khiếu nại'], pending: [0], resolved: [0] }
+        stations: { labels: ['Stations'], active: [0], maintenance: [0] },
+        staff: { labels: ['Active', 'Suspended'], data: [0, 0] },
+        complaints: { labels: ['Complaints'], pending: [0], resolved: [0] }
     });
 
     const loadOverviewData = async () => {
@@ -124,24 +124,24 @@ export const OverviewPage: React.FC = () => {
             // Set chart data
             setChartData({
                 stations: {
-                    labels: ['Tổng số'],
+                    labels: ['Total'],
                     active: [activeStations],
                     maintenance: [maintenanceStations]
                 },
                 staff: {
-                    labels: ['Hoạt động', 'Tạm khóa'],
+                    labels: ['Active', 'Suspended'],
                     data: [activeStaff, suspendedStaff]
                 },
                 complaints: {
-                    labels: ['Khiếu nại'],
+                    labels: ['Complaints'],
                     pending: [activeComplaints.length],
                     resolved: [resolvedComplaints.length]
                 }
             });
 
-            toast.success('Tải dữ liệu tổng quan thành công');
+            toast.success('Successfully loaded overview data');
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tải dữ liệu tổng quan';
+            const errorMessage = err instanceof Error ? err.message : 'Error loading overview data';
             setError(errorMessage);
             console.error('Error loading overview:', err);
             toast.error(errorMessage);
@@ -155,7 +155,7 @@ export const OverviewPage: React.FC = () => {
     }, []);
 
     if (isLoading) {
-        return <PageLoadingSpinner text="Đang tải dữ liệu tổng quan..." />;
+        return <PageLoadingSpinner text="Loading overview data..." />;
     }
 
     if (error) {
@@ -170,7 +170,7 @@ export const OverviewPage: React.FC = () => {
                         onClick={loadOverviewData}
                         className="px-4 py-2 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
                     >
-                        Thử lại
+                        Retry
                     </button>
                 </div>
             </div>
@@ -182,15 +182,15 @@ export const OverviewPage: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900">Tổng quan hệ thống</h1>
-                    <p className="text-slate-600 mt-2">Thống kê và phân tích dữ liệu tổng thể</p>
+                    <h1 className="text-3xl font-bold text-slate-900">System Overview</h1>
+                    <p className="text-slate-600 mt-2">Statistics and overall data analysis</p>
                 </div>
                 <button
                     onClick={loadOverviewData}
                     className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                     <RefreshCw className="h-4 w-4" />
-                    <span>Làm mới</span>
+                    <span>Refresh</span>
                 </button>
             </div>
 
@@ -199,21 +199,21 @@ export const OverviewPage: React.FC = () => {
                 <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-slate-700 text-sm font-medium">Tổng số trạm</CardTitle>
+                            <CardTitle className="text-slate-700 text-sm font-medium">Total Stations</CardTitle>
                             <MapPin className="h-5 w-5 text-blue-600" />
                         </div>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-blue-900">{stats.totalStations}</div>
-                        <p className="text-sm text-slate-600 mt-2">Trạm đổi pin</p>
+                        <p className="text-sm text-slate-600 mt-2">Battery swap stations</p>
                         <div className="flex items-center space-x-3 mt-3 pt-3 border-t border-blue-200">
                             <div className="flex items-center space-x-1">
                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                <span className="text-xs text-slate-600">Hoạt động: {detailedStats.activeStations}</span>
+                                <span className="text-xs text-slate-600">Active: {detailedStats.activeStations}</span>
                             </div>
                             <div className="flex items-center space-x-1">
                                 <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                                <span className="text-xs text-slate-600">Bảo trì: {detailedStats.maintenanceStations}</span>
+                                <span className="text-xs text-slate-600">Maintenance: {detailedStats.maintenanceStations}</span>
                             </div>
                         </div>
                     </CardContent>
@@ -222,21 +222,21 @@ export const OverviewPage: React.FC = () => {
                 <Card className="bg-gradient-to-br from-green-50 to-green-100/50 border-green-200">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-slate-700 text-sm font-medium">Tổng nhân viên</CardTitle>
+                            <CardTitle className="text-slate-700 text-sm font-medium">Total Staff</CardTitle>
                             <Users className="h-5 w-5 text-green-600" />
                         </div>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-green-900">{stats.totalStaff}</div>
-                        <p className="text-sm text-slate-600 mt-2">Nhân viên hệ thống</p>
+                        <p className="text-sm text-slate-600 mt-2">System staff</p>
                         <div className="flex items-center space-x-3 mt-3 pt-3 border-t border-green-200">
                             <div className="flex items-center space-x-1">
                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                <span className="text-xs text-slate-600">Hoạt động: {detailedStats.activeStaff}</span>
+                                <span className="text-xs text-slate-600">Active: {detailedStats.activeStaff}</span>
                             </div>
                             <div className="flex items-center space-x-1">
                                 <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                <span className="text-xs text-slate-600">Tạm khóa: {detailedStats.suspendedStaff}</span>
+                                <span className="text-xs text-slate-600">Suspended: {detailedStats.suspendedStaff}</span>
                             </div>
                         </div>
                     </CardContent>
@@ -245,17 +245,17 @@ export const OverviewPage: React.FC = () => {
                 <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-slate-700 text-sm font-medium">Tổng giao dịch</CardTitle>
+                            <CardTitle className="text-slate-700 text-sm font-medium">Total Transactions</CardTitle>
                             <FileText className="h-5 w-5 text-purple-600" />
                         </div>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-purple-900">{stats.totalTransactions}</div>
-                        <p className="text-sm text-slate-600 mt-2">Giao dịch đổi pin</p>
+                        <p className="text-sm text-slate-600 mt-2">Battery swap transactions</p>
                         <div className="flex items-center space-x-2 mt-3 pt-3 border-t border-purple-200">
                             <TrendingUp className="h-4 w-4 text-purple-600" />
                             <span className="text-xs text-slate-600">
-                                TB: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', notation: 'compact' }).format(detailedStats.averageTransactionCost)}/giao dịch
+                                Avg: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'VND', notation: 'compact' }).format(detailedStats.averageTransactionCost)}/transaction
                             </span>
                         </div>
                     </CardContent>
@@ -264,21 +264,21 @@ export const OverviewPage: React.FC = () => {
                 <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-slate-700 text-sm font-medium">Khiếu nại</CardTitle>
+                            <CardTitle className="text-slate-700 text-sm font-medium">Complaints</CardTitle>
                             <MessageSquareText className="h-5 w-5 text-orange-600" />
                         </div>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-orange-900">{stats.pendingComplaints}</div>
-                        <p className="text-sm text-slate-600 mt-2">Chờ xử lý</p>
+                        <p className="text-sm text-slate-600 mt-2">Pending</p>
                         <div className="flex items-center space-x-3 mt-3 pt-3 border-t border-orange-200">
                             <div className="flex items-center space-x-1">
                                 <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                                <span className="text-xs text-slate-600">Chờ: {stats.pendingComplaints}</span>
+                                <span className="text-xs text-slate-600">Pending: {stats.pendingComplaints}</span>
                             </div>
                             <div className="flex items-center space-x-1">
                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                <span className="text-xs text-slate-600">Đã xử lý: {detailedStats.resolvedComplaints}</span>
+                                <span className="text-xs text-slate-600">Resolved: {detailedStats.resolvedComplaints}</span>
                             </div>
                         </div>
                     </CardContent>
@@ -290,40 +290,40 @@ export const OverviewPage: React.FC = () => {
                 <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-slate-700 text-sm font-medium">Tổng doanh thu</CardTitle>
+                            <CardTitle className="text-slate-700 text-sm font-medium">Total Revenue</CardTitle>
                             <DollarSign className="h-5 w-5 text-emerald-600" />
                         </div>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-emerald-900">
-                            {new Intl.NumberFormat('vi-VN', {
+                            {new Intl.NumberFormat('en-US', {
                                 style: 'currency',
                                 currency: 'VND',
                                 notation: 'compact'
                             }).format(stats.totalRevenue)}
                         </div>
-                        <p className="text-sm text-slate-600 mt-2">Từ các giao dịch</p>
+                        <p className="text-sm text-slate-600 mt-2">From transactions</p>
                     </CardContent>
                 </Card>
 
                 <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 border-indigo-200">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-slate-700 text-sm font-medium">Trung bình / giao dịch</CardTitle>
+                            <CardTitle className="text-slate-700 text-sm font-medium">Average / Transaction</CardTitle>
                             <TrendingUp className="h-5 w-5 text-indigo-600" />
                         </div>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-indigo-900">
                             {stats.totalTransactions > 0
-                                ? new Intl.NumberFormat('vi-VN', {
+                                ? new Intl.NumberFormat('en-US', {
                                     style: 'currency',
                                     currency: 'VND',
                                     notation: 'compact'
                                 }).format(stats.totalRevenue / stats.totalTransactions)
                                 : '0'}
                         </div>
-                        <p className="text-sm text-slate-600 mt-2">Chi phí trung bình</p>
+                        <p className="text-sm text-slate-600 mt-2">Average cost</p>
                     </CardContent>
                 </Card>
             </div>
@@ -334,11 +334,11 @@ export const OverviewPage: React.FC = () => {
                     <CardHeader>
                         <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
                             <Battery className="h-6 w-6 mr-2 text-blue-600" />
-                            Kho pin
+                            Battery Inventory
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-sm text-slate-600">Quản lý kho pin</p>
+                        <p className="text-sm text-slate-600">Manage battery inventory</p>
                     </CardContent>
                 </Card>
 
@@ -346,11 +346,11 @@ export const OverviewPage: React.FC = () => {
                     <CardHeader>
                         <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
                             <UserCheck className="h-6 w-6 mr-2 text-green-600" />
-                            Quản lý nhân viên
+                            Staff Management
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-sm text-slate-600">Quản lý đội ngũ nhân viên</p>
+                        <p className="text-sm text-slate-600">Manage staff team</p>
                     </CardContent>
                 </Card>
 
@@ -358,18 +358,18 @@ export const OverviewPage: React.FC = () => {
                     <CardHeader>
                         <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
                             <Brain className="h-6 w-6 mr-2 text-purple-600" />
-                            Dự đoán AI
+                            AI Predictions
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-sm text-slate-600">Xem dự đoán và đề xuất</p>
+                        <p className="text-sm text-slate-600">View predictions and suggestions</p>
                     </CardContent>
                 </Card>
             </div>
 
             {/* Charts Section */}
             <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6">
-                <h2 className="text-2xl font-bold text-slate-900 mb-6">Biểu đồ thống kê</h2>
+                <h2 className="text-2xl font-bold text-slate-900 mb-6">Statistics Charts</h2>
                 <OverviewCharts
                     stationsData={chartData.stations}
                     staffData={chartData.staff}

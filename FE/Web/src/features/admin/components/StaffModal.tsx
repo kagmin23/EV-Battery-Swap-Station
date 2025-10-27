@@ -123,7 +123,7 @@ export const StaffModal: React.FC<StaffModalProps> = ({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {staff ? 'Chỉnh sửa nhân viên' : 'Thêm nhân viên mới'}
+            {staff ? 'Edit Staff' : 'Add New Staff'}
           </DialogTitle>
         </DialogHeader>
 
@@ -133,12 +133,12 @@ export const StaffModal: React.FC<StaffModalProps> = ({
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Họ và tên *</Label>
+                  <Label htmlFor="name">Full Name *</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Nhập họ và tên"
+                    placeholder="Enter full name"
                     className={errors.name ? 'border-red-500' : ''}
                   />
                   {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
@@ -151,49 +151,49 @@ export const StaffModal: React.FC<StaffModalProps> = ({
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="Nhập email"
+                    placeholder="Enter email"
                     className={errors.email ? 'border-red-500' : ''}
                   />
                   {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Số điện thoại *</Label>
+                  <Label htmlFor="phone">Phone Number *</Label>
                   <Input
                     id="phone"
                     value={formData.phone}
                     onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="Nhập số điện thoại"
+                    placeholder="Enter phone number"
                     className={errors.phone ? 'border-red-500' : ''}
                   />
                   {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="role">Vai trò *</Label>
+                  <Label htmlFor="role">Role *</Label>
                   <Select
                     value={formData.role}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, role: value as StaffRole }))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Chọn vai trò" />
+                      <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent className="z-[9999]">
-                      <SelectItem value="STAFF">Nhân viên</SelectItem>
-                      <SelectItem value="SUPERVISOR">Giám sát</SelectItem>
-                      <SelectItem value="MANAGER">Quản lý</SelectItem>
+                      <SelectItem value="STAFF">Staff</SelectItem>
+                      <SelectItem value="SUPERVISOR">Supervisor</SelectItem>
+                      <SelectItem value="MANAGER">Manager</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="station">Trạm làm việc *</Label>
+                  <Label htmlFor="station">Working Station *</Label>
                   <Select
                     value={formData.stationId}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, stationId: value }))}
                   >
                     <SelectTrigger className={errors.stationId ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Chọn trạm" />
+                      <SelectValue placeholder="Select station" />
                     </SelectTrigger>
                     <SelectContent className="z-[9999]">
                       {stations.map((station) => (
@@ -211,13 +211,13 @@ export const StaffModal: React.FC<StaffModalProps> = ({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose} disabled={isSaving}>
-              Hủy
+              Cancel
             </Button>
             <Button type="submit" disabled={isSaving}>
               {isSaving ? (
-                <ButtonLoadingSpinner size="sm" variant="default" text="Đang lưu..." />
+                <ButtonLoadingSpinner size="sm" variant="default" text="Saving..." />
               ) : (
-                staff ? 'Cập nhật' : 'Thêm mới'
+                staff ? 'Update' : 'Add New'
               )}
             </Button>
           </DialogFooter>

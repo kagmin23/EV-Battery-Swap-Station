@@ -101,9 +101,9 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
             }));
 
             setStations(convertedStations);
-            toast.success('Tải danh sách trạm thành công');
+            toast.success('Successfully loaded station list');
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tải danh sách trạm';
+            const errorMessage = err instanceof Error ? err.message : 'Error loading station list';
             setError(errorMessage);
             console.error('Error loading stations:', err);
         } finally {
@@ -169,7 +169,7 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                     : `Đã tạm dừng trạm ${suspendingStation.name}`
             );
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi thay đổi trạng thái trạm';
+            const errorMessage = err instanceof Error ? err.message : 'Error changing station status';
             setError(errorMessage);
             console.error('Error changing station status:', err);
         } finally {
@@ -236,9 +236,9 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                 s.id === staffId ? { ...s, stationId: 'default', stationName: 'Chưa phân trạm' } : s
             ));
 
-            toast.success('Đã xóa nhân viên khỏi trạm');
+            toast.success('Successfully removed staff from station');
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi xóa nhân viên khỏi trạm';
+            const errorMessage = err instanceof Error ? err.message : 'Error removing staff from station';
             toast.error(errorMessage);
             console.error('Error removing staff from station:', err);
         } finally {
@@ -358,8 +358,8 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
         <div className="p-6 space-y-8">
             {/* Header */}
             <PageHeader
-                title="Danh sách trạm đổi pin"
-                description="Quản lý thông tin các trạm đổi pin xe điện"
+                title="Battery Swap Station List"
+                description="Manage battery swap station information"
             />
 
             {/* Error Alert */}
@@ -375,7 +375,7 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                         onClick={() => setError(null)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 hover:shadow-sm"
                     >
-                        Đóng
+                        Close
                     </Button>
                 </div>
             )}
@@ -383,7 +383,7 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
             {/* Quick Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <StatsCard
-                    title="Tổng trạm"
+                    title="Total Stations"
                     value={stations.length}
                     icon={MapPin}
                     gradientFrom="from-blue-50"
@@ -410,7 +410,7 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                     iconBg="bg-orange-500"
                 />
                 <StatsCard
-                    title="Tổng pin"
+                    title="Total Batteries"
                     value={stations.reduce((sum, s) => sum + s.availableBatteries, 0)}
                     icon={Battery}
                     gradientFrom="from-purple-50"
@@ -442,7 +442,7 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                             <div className="p-2 bg-blue-100 rounded-xl mr-3">
                                 <MapPin className="h-6 w-6 text-blue-600" />
                             </div>
-                            Danh sách trạm đổi pin
+                            Battery Swap Station List
                             <span className="ml-3 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
                                 {filteredStations.length}
                             </span>
@@ -489,15 +489,15 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                 </CardHeader>
                 <CardContent className="m-0 p-6 max-h-[600px] overflow-y-auto custom-scrollbar">
                     {isLoading ? (
-                        <PageLoadingSpinner text="Đang tải danh sách trạm..." />
+                        <PageLoadingSpinner text="Loading station list..." />
                     ) : filteredStations.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12">
                             <MapPin className="h-12 w-12 text-slate-400 mb-4" />
-                            <h3 className="text-lg font-medium text-slate-900 mb-2">Không có trạm nào</h3>
+                            <h3 className="text-lg font-medium text-slate-900 mb-2">No stations found</h3>
                             <p className="text-slate-600 text-center mb-6">
                                 {filters.search || filters.city !== 'ALL' || filters.district !== 'ALL' || filters.status !== 'ALL'
-                                    ? 'Không tìm thấy trạm phù hợp với bộ lọc hiện tại.'
-                                    : 'Chưa có trạm nào được thêm vào hệ thống.'}
+                                    ? 'No stations found matching the current filters.'
+                                    : 'No stations have been added to the system yet.'}
                             </p>
                             {(!filters.search && filters.city === 'ALL' && filters.district === 'ALL' && filters.status === 'ALL') && (
                                 <Button
@@ -585,13 +585,13 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                 isOpen={isConfirmationModalOpen}
                 onClose={handleCancelSuspend}
                 onConfirm={handleConfirmSuspend}
-                title={`Xác nhận ${suspendingStation?.status === 'ACTIVE' ? 'tạm dừng' : 'kích hoạt'} trạm`}
+                title={`Confirm ${suspendingStation?.status === 'ACTIVE' ? 'suspend' : 'activate'} station`}
                 message={
                     <div>
-                        Bạn có chắc chắn muốn {suspendingStation?.status === 'ACTIVE' ? 'tạm dừng' : 'kích hoạt'} trạm <span className="font-bold text-slate-800">{suspendingStation?.name}</span>?
+                        Are you sure you want to {suspendingStation?.status === 'ACTIVE' ? 'suspend' : 'activate'} station <span className="font-bold text-slate-800">{suspendingStation?.name}</span>?
                     </div>
                 }
-                confirmText={suspendingStation?.status === 'ACTIVE' ? 'Tạm dừng' : 'Kích hoạt'}
+                confirmText={suspendingStation?.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
                 type="delete"
                 isLoading={suspendingStationId === suspendingStation?.id}
             />

@@ -127,9 +127,9 @@ export const TransactionPage: React.FC = () => {
             });
 
             setTransactions(filteredTransactions);
-            toast.success('Tải danh sách giao dịch thành công');
+            toast.success('Successfully loaded transaction list');
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tải danh sách giao dịch';
+            const errorMessage = err instanceof Error ? err.message : 'Error loading transaction list';
             setError(errorMessage);
             console.error('Error loading transactions:', err);
         } finally {
@@ -193,8 +193,8 @@ export const TransactionPage: React.FC = () => {
         <div className="p-6 space-y-8">
             {/* Header */}
             <PageHeader
-                title="Quản lý giao dịch"
-                description="Theo dõi và quản lý tất cả giao dịch đổi pin"
+                title="Transaction Management"
+                description="Track and manage all battery swap transactions"
             />
 
             {/* Error Alert */}
@@ -210,7 +210,7 @@ export const TransactionPage: React.FC = () => {
                         onClick={() => setError(null)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 hover:shadow-sm"
                     >
-                        Đóng
+                        Close
                     </Button>
                 </div>
             )}
@@ -218,7 +218,7 @@ export const TransactionPage: React.FC = () => {
             {/* Quick Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <StatsCard
-                    title="Tổng giao dịch"
+                    title="Total Transactions"
                     value={totalTransactions}
                     icon={CreditCard}
                     gradientFrom="from-blue-50"
@@ -227,7 +227,7 @@ export const TransactionPage: React.FC = () => {
                     iconBg="bg-blue-500"
                 />
                 <StatsCard
-                    title="Tổng doanh thu"
+                    title="Total Revenue"
                     value={new Intl.NumberFormat('vi-VN', {
                         style: 'currency',
                         currency: 'VND',
@@ -278,7 +278,7 @@ export const TransactionPage: React.FC = () => {
                         <div className="flex-1 relative">
                             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
                             <Input
-                                placeholder="Tìm kiếm theo ID giao dịch, người dùng, trạm, pin..."
+                                placeholder="Search by transaction ID, user, station, battery..."
                                 value={filters.search}
                                 onChange={(e) => handleFilterChange('search', e.target.value)}
                                 className="pl-12 h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl text-slate-700 placeholder:text-slate-400"
@@ -345,7 +345,7 @@ export const TransactionPage: React.FC = () => {
                             <div className="p-2 bg-green-100 rounded-xl mr-3">
                                 <CreditCard className="h-6 w-6 text-green-600" />
                             </div>
-                            Danh sách giao dịch
+                            Transaction List
                             <span className="ml-3 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
                                 {transactions.length}
                             </span>
@@ -354,15 +354,15 @@ export const TransactionPage: React.FC = () => {
                 </CardHeader>
                 <CardContent className="m-0 p-6 max-h-[600px] overflow-y-auto custom-scrollbar">
                     {isLoading ? (
-                        <PageLoadingSpinner text="Đang tải danh sách giao dịch..." />
+                        <PageLoadingSpinner text="Loading transaction list..." />
                     ) : transactions.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12">
                             <CreditCard className="h-12 w-12 text-slate-400 mb-4" />
-                            <h3 className="text-lg font-medium text-slate-900 mb-2">Không có giao dịch nào</h3>
+                            <h3 className="text-lg font-medium text-slate-900 mb-2">No transactions found</h3>
                             <p className="text-slate-600 text-center mb-6">
                                 {filters.search || filters.userId || filters.stationId
-                                    ? 'Không tìm thấy giao dịch phù hợp với bộ lọc hiện tại.'
-                                    : 'Chưa có giao dịch nào trong hệ thống.'}
+                                    ? 'No transactions found matching the current filters.'
+                                    : 'No transactions in the system yet.'}
                             </p>
                         </div>
                     ) : (

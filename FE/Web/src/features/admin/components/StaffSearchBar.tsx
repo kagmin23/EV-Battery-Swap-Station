@@ -40,7 +40,7 @@ export const StaffSearchBar: React.FC<StaffSearchBarProps> = ({
         <div className="p-2 bg-blue-100 rounded-xl">
           <Search className="h-5 w-5 text-blue-600" />
         </div>
-        <h3 className="text-lg font-semibold text-slate-800">Tìm kiếm & Lọc</h3>
+        <h3 className="text-lg font-semibold text-slate-800">Search & Filter</h3>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4">
@@ -48,7 +48,7 @@ export const StaffSearchBar: React.FC<StaffSearchBarProps> = ({
         <div className="flex-1 relative">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
           <Input
-            placeholder="Tìm kiếm nhân viên theo tên, email..."
+            placeholder="Search staff by name, email..."
             value={filters.search}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-12 h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl text-slate-700 placeholder:text-slate-400"
@@ -60,14 +60,14 @@ export const StaffSearchBar: React.FC<StaffSearchBarProps> = ({
           {/* Station Filter */}
           <Select value={filters.stationId} onValueChange={handleStationChange}>
             <SelectTrigger className="w-full sm:w-[200px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
-              <SelectValue placeholder="Chọn trạm" />
+              <SelectValue placeholder="Select station" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 max-h-[300px] overflow-y-auto [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
               <SelectItem
                 value="ALL"
                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
               >
-                Tất cả trạm
+                All stations
               </SelectItem>
               {stations.map((station) => (
                 <SelectItem
@@ -84,32 +84,32 @@ export const StaffSearchBar: React.FC<StaffSearchBarProps> = ({
           {/* Role Filter */}
           <Select value={filters.role} onValueChange={handleRoleChange}>
             <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
-              <SelectValue placeholder="Vai trò" />
+              <SelectValue placeholder="Role" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
               <SelectItem
                 value="ALL"
                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
               >
-                Tất cả vai trò
+                All roles
               </SelectItem>
               <SelectItem
                 value="STAFF"
                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
               >
-                Nhân viên
+                Staff
               </SelectItem>
               <SelectItem
                 value="SUPERVISOR"
                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
               >
-                Giám sát
+                Supervisor
               </SelectItem>
               <SelectItem
                 value="MANAGER"
                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
               >
-                Quản lý
+                Manager
               </SelectItem>
             </SelectContent>
           </Select>
@@ -117,26 +117,26 @@ export const StaffSearchBar: React.FC<StaffSearchBarProps> = ({
           {/* Status Filter */}
           <Select value={filters.status} onValueChange={handleStatusChange}>
             <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
-              <SelectValue placeholder="Trạng thái" />
+              <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
               <SelectItem
                 value="ALL"
                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
               >
-                Tất cả trạng thái
+                All status
               </SelectItem>
               <SelectItem
                 value="active"
                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
               >
-                Hoạt động
+                Active
               </SelectItem>
               <SelectItem
                 value="locked"
                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
               >
-                Tạm khóa
+                Locked
               </SelectItem>
             </SelectContent>
           </Select>

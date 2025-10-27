@@ -159,9 +159,9 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
             }));
 
             setDrivers(convertedDrivers);
-            toast.success('Tải danh sách tài xế thành công');
+            toast.success('Successfully loaded driver list');
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tải danh sách tài xế';
+            const errorMessage = err instanceof Error ? err.message : 'Error loading driver list';
             setError(errorMessage);
             console.error('Error loading drivers:', err);
         } finally {
@@ -221,7 +221,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
             console.log('Add driver:', formData);
             handleCloseModal();
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi thêm tài xế';
+            const errorMessage = err instanceof Error ? err.message : 'Error adding driver';
             setError(errorMessage);
             console.error('Error adding driver:', err);
         } finally {
@@ -267,7 +267,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                         : d
                 ));
 
-                toast.success(`Đã tạm khóa tài xế ${targetDriver.name}`);
+                toast.success(`Successfully locked driver ${targetDriver.name}`);
             } else {
                 setActivatingDriverId(targetDriver.id);
                 await DriverService.changeDriverStatus(targetDriver.id, 'active');
@@ -279,10 +279,10 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                         : d
                 ));
 
-                toast.success(`Đã kích hoạt tài xế ${targetDriver.name}`);
+                toast.success(`Successfully activated driver ${targetDriver.name}`);
             }
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : `Có lỗi xảy ra khi ${actionType === 'suspend' ? 'tạm khóa' : 'kích hoạt'} tài xế`;
+            const errorMessage = err instanceof Error ? err.message : `Error ${actionType === 'suspend' ? 'locking' : 'activating'} driver`;
             setError(errorMessage);
             console.error(`Error ${actionType}ing driver:`, err);
         } finally {
@@ -312,10 +312,10 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
 
     const getStatusText = (status: string) => {
         switch (status) {
-            case 'ACTIVE': return 'Hoạt động';
-            case 'INACTIVE': return 'Không hoạt động';
-            case 'SUSPENDED': return 'Tạm khóa';
-            case 'PENDING_VERIFICATION': return 'Chờ xác thực';
+            case 'ACTIVE': return 'Active';
+            case 'INACTIVE': return 'Inactive';
+            case 'SUSPENDED': return 'Suspended';
+            case 'PENDING_VERIFICATION': return 'Pending Verification';
             default: return status;
         }
     };
@@ -324,8 +324,8 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
         <div className="p-6 space-y-8">
             {/* Header */}
             <PageHeader
-                title="Danh sách tài xế"
-                description="Quản lý thông tin tài xế và phương tiện"
+                title="Driver List"
+                description="Manage driver and vehicle information"
                 showBackButton={false}
             />
 
@@ -342,7 +342,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                         onClick={() => setError(null)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200"
                     >
-                        Đóng
+                        Close
                     </Button>
                 </div>
             )}
@@ -350,7 +350,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatsCard
-                    title="Tổng số tài xế"
+                    title="Total Drivers"
                     value={drivers.length.toLocaleString()}
                     icon={Users}
                     gradientFrom="from-blue-50"
@@ -359,7 +359,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                     iconBg="bg-blue-500"
                 />
                 <StatsCard
-                    title="Tài xế hoạt động"
+                    title="Active Drivers"
                     value={drivers.filter(d => d.status === 'ACTIVE').length.toLocaleString()}
                     icon={Activity}
                     gradientFrom="from-green-50"
@@ -368,7 +368,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                     iconBg="bg-green-500"
                 />
                 <StatsCard
-                    title="Tổng lượt đổi pin"
+                    title="Total Swaps"
                     value={drivers.reduce((sum, d) => sum + d.totalSwaps, 0).toLocaleString()}
                     icon={Car}
                     gradientFrom="from-purple-50"
@@ -377,7 +377,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                     iconBg="bg-purple-500"
                 />
                 <StatsCard
-                    title="Đánh giá trung bình"
+                    title="Average Rating"
                     value={drivers.length > 0 ? `${(drivers.reduce((sum, d) => sum + d.rating, 0) / drivers.length).toFixed(1)}/5` : '0/5'}
                     icon={Star}
                     gradientFrom="from-orange-50"
@@ -411,7 +411,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                             <div className="p-2 bg-blue-100 rounded-xl mr-3">
                                 <Users className="h-6 w-6 text-blue-600" />
                             </div>
-                            Danh sách tài xế
+                            Driver List
                             <span className="ml-3 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
                                 {filteredDrivers.length}
                             </span>
@@ -445,11 +445,11 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed border border-blue-600 hover:border-blue-700"
                             >
                                 {isSubmitting ? (
-                                    <ButtonLoadingSpinner size="sm" variant="white" text="Đang thêm..." />
+                                    <ButtonLoadingSpinner size="sm" variant="white" text="Adding..." />
                                 ) : (
                                     <>
                                         <Plus className="h-4 w-4 mr-2" />
-                                        Thêm tài xế
+                                        Add Driver
                                     </>
                                 )}
                             </Button>
@@ -458,15 +458,15 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                 </CardHeader>
                 <CardContent className="m-0 p-6 max-h-[600px] overflow-y-auto custom-scrollbar">
                     {isLoading ? (
-                        <PageLoadingSpinner text="Đang tải danh sách tài xế..." />
+                        <PageLoadingSpinner text="Loading driver list..." />
                     ) : filteredDrivers.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12">
                             <Users className="h-12 w-12 text-slate-400 mb-4" />
-                            <h3 className="text-lg font-medium text-slate-900 mb-2">Không có tài xế nào</h3>
+                            <h3 className="text-lg font-medium text-slate-900 mb-2">No drivers found</h3>
                             <p className="text-slate-600 text-center mb-6">
                                 {filters.search || filters.status !== 'ALL' || filters.subscriptionPlan !== 'ALL' || filters.licenseType !== 'ALL' || filters.city !== 'ALL'
-                                    ? 'Không tìm thấy tài xế phù hợp với bộ lọc hiện tại.'
-                                    : 'Chưa có tài xế nào được thêm vào hệ thống.'}
+                                    ? 'No drivers found matching the current filters.'
+                                    : 'No drivers have been added to the system yet.'}
                             </p>
                             {(!filters.search && filters.status === 'ALL' && filters.subscriptionPlan === 'ALL' && filters.licenseType === 'ALL' && filters.city === 'ALL') && (
                                 <Button
@@ -474,7 +474,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                     className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
                                 >
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Thêm tài xế đầu tiên
+                                    Add First Driver
                                 </Button>
                             )}
                         </div>
@@ -517,21 +517,21 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                                 <span className="text-sm font-medium font-mono">{driver.id.slice(-8)}</span>
                                             </div>
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm text-slate-600">Trạng thái xác thực:</span>
+                                                <span className="text-sm text-slate-600">Verification status:</span>
                                                 <span className="text-sm font-medium text-yellow-600">
-                                                    Chưa xác thực
+                                                    Not verified
                                                 </span>
                                             </div>
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm text-slate-600">Ngày tham gia:</span>
+                                                <span className="text-sm text-slate-600">Join date:</span>
                                                 <span className="text-sm font-medium">{driver.joinDate.toLocaleDateString('vi-VN')}</span>
                                             </div>
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm text-slate-600">Lần hoạt động cuối:</span>
+                                                <span className="text-sm text-slate-600">Last active:</span>
                                                 <span className="text-sm font-medium">{driver.lastActive.toLocaleDateString('vi-VN')}</span>
                                             </div>
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm text-slate-600">Gói thuê:</span>
+                                                <span className="text-sm text-slate-600">Subscription:</span>
                                                 <span className="text-sm font-medium">{driver.subscriptionPlan.name}</span>
                                             </div>
                                         </div>
@@ -546,7 +546,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                                 }}
                                                 className="flex-1 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 border-slate-200 hover:shadow-sm"
                                             >
-                                                Xem chi tiết
+                                                View Details
                                             </Button>
                                             {driver.status === 'ACTIVE' ? (
                                                 <Button
@@ -560,9 +560,9 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                                     className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
                                                 >
                                                     {suspendingDriverId === driver.id ? (
-                                                        <ButtonLoadingSpinner size="sm" variant="default" text="Đang xử lý..." />
+                                                        <ButtonLoadingSpinner size="sm" variant="default" text="Processing..." />
                                                     ) : (
-                                                        'Khóa'
+                                                        'Lock'
                                                     )}
                                                 </Button>
                                             ) : (
@@ -577,9 +577,9 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                                     className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200 hover:border-green-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
                                                 >
                                                     {activatingDriverId === driver.id ? (
-                                                        <ButtonLoadingSpinner size="sm" variant="default" text="Đang xử lý..." />
+                                                        <ButtonLoadingSpinner size="sm" variant="default" text="Processing..." />
                                                     ) : (
-                                                        'Kích hoạt'
+                                                        'Activate'
                                                     )}
                                                 </Button>
                                             )}
@@ -593,13 +593,13 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                             <table className="w-full">
                                 <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Tài xế</th>
-                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Số điện thoại</th>
-                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Trạng thái</th>
-                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Xác thực</th>
-                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Ngày tham gia</th>
-                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Lần hoạt động cuối</th>
-                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Thao tác</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Driver</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Phone</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Status</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Verification</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Join Date</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Last Active</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200">
@@ -632,7 +632,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="text-sm font-medium text-yellow-600">
-                                                    Chưa xác thực
+                                                    Not verified
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-slate-800">{driver.joinDate.toLocaleDateString('vi-VN')}</td>
@@ -645,7 +645,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                                         onClick={() => handleDriverSelect(driver)}
                                                         className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 border-slate-200 hover:shadow-sm"
                                                     >
-                                                        Xem
+                                                        View
                                                     </Button>
                                                     {driver.status === 'ACTIVE' ? (
                                                         <Button
@@ -656,9 +656,9 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                                             className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
                                                         >
                                                             {suspendingDriverId === driver.id ? (
-                                                                <ButtonLoadingSpinner size="sm" variant="default" text="Đang xử lý..." />
+                                                                <ButtonLoadingSpinner size="sm" variant="default" text="Processing..." />
                                                             ) : (
-                                                                'Khóa'
+                                                                'Lock'
                                                             )}
                                                         </Button>
                                                     ) : (
@@ -670,9 +670,9 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                                             className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200 hover:border-green-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
                                                         >
                                                             {activatingDriverId === driver.id ? (
-                                                                <ButtonLoadingSpinner size="sm" variant="default" text="Đang xử lý..." />
+                                                                <ButtonLoadingSpinner size="sm" variant="default" text="Processing..." />
                                                             ) : (
-                                                                'Kích hoạt'
+                                                                'Activate'
                                                             )}
                                                         </Button>
                                                     )}
@@ -694,10 +694,10 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                             <User className="h-6 w-6" />
-                            Chi tiết tài xế
+                            Driver Details
                         </DialogTitle>
                         <DialogDescription>
-                            Thông tin chi tiết về tài xế {selectedDriver?.name}
+                            Detailed information about driver {selectedDriver?.name}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -707,7 +707,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
                                     <User className="h-5 w-5" />
-                                    Thông tin cá nhân
+                                    Personal Information
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="flex items-center space-x-3">
@@ -734,19 +734,19 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                             <span className="font-mono text-sm">{selectedDriver.id}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Trạng thái:</span>
+                                            <span className="text-slate-600">Status:</span>
                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedDriver.status)}`}>
                                                 {getStatusText(selectedDriver.status)}
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Vai trò:</span>
-                                            <span className="text-sm font-medium text-blue-600">Tài xế</span>
+                                            <span className="text-slate-600">Role:</span>
+                                            <span className="text-sm font-medium text-blue-600">Driver</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Xác thực:</span>
+                                            <span className="text-slate-600">Verification:</span>
                                             <span className="text-sm font-medium text-yellow-600">
-                                                Chưa xác thực
+                                                Not verified
                                             </span>
                                         </div>
                                     </div>
@@ -757,43 +757,43 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
                                     <Calendar className="h-5 w-5" />
-                                    Thông tin tài khoản
+                                    Account Information
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Ngày tham gia:</span>
+                                            <span className="text-slate-600">Join date:</span>
                                             <span className="font-medium">{selectedDriver.joinDate.toLocaleDateString('vi-VN')}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Lần hoạt động cuối:</span>
+                                            <span className="text-slate-600">Last active:</span>
                                             <span className="font-medium">{selectedDriver.lastActive.toLocaleDateString('vi-VN')}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Ngày tạo:</span>
+                                            <span className="text-slate-600">Created date:</span>
                                             <span className="font-medium">{selectedDriver.createdAt.toLocaleDateString('vi-VN')}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Cập nhật cuối:</span>
+                                            <span className="text-slate-600">Last updated:</span>
                                             <span className="font-medium">{selectedDriver.updatedAt.toLocaleDateString('vi-VN')}</span>
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Gói thuê:</span>
+                                            <span className="text-slate-600">Subscription:</span>
                                             <span className="font-medium">{selectedDriver.subscriptionPlan.name}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Loại gói:</span>
+                                            <span className="text-slate-600">Plan type:</span>
                                             <span className="font-medium">{selectedDriver.subscriptionPlan.type}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Giá:</span>
+                                            <span className="text-slate-600">Price:</span>
                                             <span className="font-medium">{selectedDriver.subscriptionPlan.price.toLocaleString('vi-VN')} VND</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Thời hạn:</span>
-                                            <span className="font-medium">{selectedDriver.subscriptionPlan.duration} ngày</span>
+                                            <span className="text-slate-600">Duration:</span>
+                                            <span className="font-medium">{selectedDriver.subscriptionPlan.duration} days</span>
                                         </div>
                                     </div>
                                 </div>
@@ -803,53 +803,53 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
                                     <Car className="h-5 w-5" />
-                                    Thông tin bổ sung
+                                    Additional Information
                                 </h3>
                                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                                     <div className="flex items-center space-x-2">
                                         <AlertCircle className="h-5 w-5 text-yellow-600" />
                                         <span className="text-sm text-yellow-800">
-                                            Thông tin chi tiết về bằng lái, địa chỉ, xe và hoạt động sẽ được cập nhật khi tài xế hoàn thiện hồ sơ.
+                                            Detailed information about driver's license, address, vehicle and activity will be updated when the driver completes their profile.
                                         </span>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Bằng lái:</span>
-                                            <span className="font-medium text-slate-400">Chưa cập nhật</span>
+                                            <span className="text-slate-600">License:</span>
+                                            <span className="font-medium text-slate-400">Not updated</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Loại bằng:</span>
-                                            <span className="font-medium text-slate-400">Chưa cập nhật</span>
+                                            <span className="text-slate-600">License type:</span>
+                                            <span className="font-medium text-slate-400">Not updated</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Địa chỉ:</span>
-                                            <span className="font-medium text-slate-400">Chưa cập nhật</span>
+                                            <span className="text-slate-600">Address:</span>
+                                            <span className="font-medium text-slate-400">Not updated</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Thành phố:</span>
-                                            <span className="font-medium text-slate-400">Chưa cập nhật</span>
+                                            <span className="text-slate-600">City:</span>
+                                            <span className="font-medium text-slate-400">Not updated</span>
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Xe:</span>
-                                            <span className="font-medium text-slate-400">Chưa cập nhật</span>
+                                            <span className="text-slate-600">Vehicle:</span>
+                                            <span className="font-medium text-slate-400">Not updated</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Biển số:</span>
-                                            <span className="font-medium text-slate-400">Chưa cập nhật</span>
+                                            <span className="text-slate-600">Plate number:</span>
+                                            <span className="font-medium text-slate-400">Not updated</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Lượt đổi pin:</span>
+                                            <span className="text-slate-600">Total swaps:</span>
                                             <span className="font-medium text-slate-400">0</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-600">Đánh giá:</span>
+                                            <span className="text-slate-600">Rating:</span>
                                             <div className="flex items-center space-x-1">
                                                 <Star className="h-4 w-4 text-gray-400" />
-                                                <span className="font-medium text-slate-400">Chưa có</span>
+                                                <span className="font-medium text-slate-400">None</span>
                                             </div>
                                         </div>
                                     </div>
@@ -864,7 +864,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                             onClick={() => setIsDetailsModalOpen(false)}
                             className="hover:bg-slate-50 border-slate-200 hover:border-slate-300 transition-all duration-200 hover:shadow-sm"
                         >
-                            Đóng
+                            Close
                         </Button>
                         {selectedDriver && (
                             <Button
@@ -873,11 +873,11 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                 className={`${selectedDriver.status === 'ACTIVE' ? 'bg-red-600 hover:bg-red-700 border-red-600 hover:border-red-700' : 'bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700'} text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-lg`}
                             >
                                 {suspendingDriverId === selectedDriver.id ? (
-                                    <ButtonLoadingSpinner size="sm" variant="white" text="Đang tạm khóa..." />
+                                    <ButtonLoadingSpinner size="sm" variant="white" text="Locking..." />
                                 ) : activatingDriverId === selectedDriver.id ? (
-                                    <ButtonLoadingSpinner size="sm" variant="white" text="Đang kích hoạt..." />
+                                    <ButtonLoadingSpinner size="sm" variant="white" text="Activating..." />
                                 ) : (
-                                    selectedDriver.status === 'ACTIVE' ? 'Tạm khóa' : 'Kích hoạt'
+                                    selectedDriver.status === 'ACTIVE' ? 'Lock' : 'Activate'
                                 )}
                             </Button>
                         )}
@@ -891,10 +891,10 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                             <Plus className="h-6 w-6" />
-                            Thêm tài xế mới
+                            Add New Driver
                         </DialogTitle>
                         <DialogDescription>
-                            Nhập thông tin tài xế để thêm vào hệ thống
+                            Enter driver information to add to the system
                         </DialogDescription>
                     </DialogHeader>
 
@@ -903,16 +903,16 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                         <div className="space-y-4">
                             <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
                                 <User className="h-5 w-5" />
-                                Thông tin cá nhân
+                                Personal Information
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="name">Họ và tên *</Label>
+                                    <Label htmlFor="name">Full Name *</Label>
                                     <Input
                                         id="name"
                                         value={formData.name}
                                         onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                                        placeholder="Nhập họ và tên"
+                                        placeholder="Enter full name"
                                         className="mt-1"
                                     />
                                 </div>
@@ -923,35 +923,35 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                         type="email"
                                         value={formData.email}
                                         onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                                        placeholder="Nhập email"
+                                        placeholder="Enter email"
                                         className="mt-1"
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="phone">Số điện thoại *</Label>
+                                    <Label htmlFor="phone">Phone Number *</Label>
                                     <Input
                                         id="phone"
                                         value={formData.phone}
                                         onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                                        placeholder="Nhập số điện thoại"
+                                        placeholder="Enter phone number"
                                         className="mt-1"
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="address">Địa chỉ</Label>
+                                    <Label htmlFor="address">Address</Label>
                                     <Input
                                         id="address"
                                         value={formData.address}
                                         onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                                        placeholder="Nhập địa chỉ"
+                                        placeholder="Enter address"
                                         className="mt-1"
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="city">Thành phố</Label>
+                                    <Label htmlFor="city">City</Label>
                                     <Select value={formData.city} onValueChange={(value) => setFormData(prev => ({ ...prev, city: value }))}>
                                         <SelectTrigger className="mt-1">
-                                            <SelectValue placeholder="Chọn thành phố" />
+                                            <SelectValue placeholder="Select city" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="Hà Nội">Hà Nội</SelectItem>
@@ -968,30 +968,30 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                         <div className="space-y-4">
                             <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
                                 <Car className="h-5 w-5" />
-                                Thông tin bằng lái
+                                License Information
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="licenseNumber">Số bằng lái *</Label>
+                                    <Label htmlFor="licenseNumber">License Number *</Label>
                                     <Input
                                         id="licenseNumber"
                                         value={formData.licenseNumber}
                                         onChange={(e) => setFormData(prev => ({ ...prev, licenseNumber: e.target.value }))}
-                                        placeholder="Nhập số bằng lái"
+                                        placeholder="Enter license number"
                                         className="mt-1"
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="licenseType">Loại bằng lái *</Label>
+                                    <Label htmlFor="licenseType">License Type *</Label>
                                     <Select value={formData.licenseType} onValueChange={(value) => setFormData(prev => ({ ...prev, licenseType: value }))}>
                                         <SelectTrigger className="mt-1">
-                                            <SelectValue placeholder="Chọn loại bằng lái" />
+                                            <SelectValue placeholder="Select license type" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="A1">A1 - Xe máy dưới 175cc</SelectItem>
-                                            <SelectItem value="A2">A2 - Xe máy trên 175cc</SelectItem>
-                                            <SelectItem value="B1">B1 - Ô tô số tự động</SelectItem>
-                                            <SelectItem value="B2">B2 - Ô tô số sàn</SelectItem>
+                                            <SelectItem value="A1">A1 - Motorcycle under 175cc</SelectItem>
+                                            <SelectItem value="A2">A2 - Motorcycle over 175cc</SelectItem>
+                                            <SelectItem value="B1">B1 - Automatic car</SelectItem>
+                                            <SelectItem value="B2">B2 - Manual car</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -1002,26 +1002,26 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                         <div className="space-y-4">
                             <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
                                 <Car className="h-5 w-5" />
-                                Thông tin phương tiện
+                                Vehicle Information
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="vehicleModel">Model xe</Label>
+                                    <Label htmlFor="vehicleModel">Vehicle Model</Label>
                                     <Input
                                         id="vehicleModel"
                                         value={formData.vehicleModel}
                                         onChange={(e) => setFormData(prev => ({ ...prev, vehicleModel: e.target.value }))}
-                                        placeholder="Nhập model xe"
+                                        placeholder="Enter vehicle model"
                                         className="mt-1"
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="vehiclePlate">Biển số xe</Label>
+                                    <Label htmlFor="vehiclePlate">Plate Number</Label>
                                     <Input
                                         id="vehiclePlate"
                                         value={formData.vehiclePlate}
                                         onChange={(e) => setFormData(prev => ({ ...prev, vehiclePlate: e.target.value }))}
-                                        placeholder="Nhập biển số xe"
+                                        placeholder="Enter plate number"
                                         className="mt-1"
                                     />
                                 </div>
@@ -1032,13 +1032,13 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                         <div className="space-y-4">
                             <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
                                 <Calendar className="h-5 w-5" />
-                                Gói thuê
+                                Subscription Plan
                             </h3>
                             <div>
-                                <Label htmlFor="subscriptionPlan">Chọn gói thuê *</Label>
+                                <Label htmlFor="subscriptionPlan">Select Subscription Plan *</Label>
                                 <Select value={formData.subscriptionPlan} onValueChange={(value) => setFormData(prev => ({ ...prev, subscriptionPlan: value }))}>
                                     <SelectTrigger className="mt-1">
-                                        <SelectValue placeholder="Chọn gói thuê" />
+                                        <SelectValue placeholder="Select subscription plan" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {mockSubscriptionPlans.map(plan => (
@@ -1059,7 +1059,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                             disabled={isSubmitting}
                             className="hover:bg-slate-50 border-slate-200 hover:border-slate-300 transition-all duration-200 hover:shadow-sm disabled:opacity-50"
                         >
-                            Hủy
+                            Cancel
                         </Button>
                         <Button
                             onClick={handleSubmit}
@@ -1067,9 +1067,9 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                             className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed border border-blue-600 hover:border-blue-700 transition-all duration-200 hover:shadow-lg"
                         >
                             {isSubmitting ? (
-                                <ButtonLoadingSpinner size="sm" variant="white" text="Đang thêm..." />
+                                <ButtonLoadingSpinner size="sm" variant="white" text="Adding..." />
                             ) : (
-                                'Thêm tài xế'
+                                'Add Driver'
                             )}
                         </Button>
                     </DialogFooter>
@@ -1081,13 +1081,13 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                 isOpen={isConfirmationModalOpen}
                 onClose={handleCancelAction}
                 onConfirm={handleConfirmAction}
-                title={`Xác nhận ${actionType === 'suspend' ? 'tạm khóa' : 'kích hoạt'} tài xế`}
+                title={`Confirm ${actionType === 'suspend' ? 'lock' : 'activate'} driver`}
                 message={
                     <div>
-                        Bạn có chắc chắn muốn {actionType === 'suspend' ? 'tạm khóa' : 'kích hoạt'} tài xế <span className="font-bold text-slate-800">{targetDriver?.name}</span>?
+                        Are you sure you want to {actionType === 'suspend' ? 'lock' : 'activate'} driver <span className="font-bold text-slate-800">{targetDriver?.name}</span>?
                     </div>
                 }
-                confirmText={actionType === 'suspend' ? 'Tạm khóa' : 'Kích hoạt'}
+                confirmText={actionType === 'suspend' ? 'Lock' : 'Activate'}
                 type="delete"
                 isLoading={suspendingDriverId === targetDriver?.id || activatingDriverId === targetDriver?.id}
             />

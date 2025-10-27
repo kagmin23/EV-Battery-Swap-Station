@@ -38,7 +38,7 @@ export const StationSearchBar: React.FC<StationSearchBarProps> = ({
                 <div className="p-2 bg-blue-100 rounded-xl">
                     <Search className="h-5 w-5 text-blue-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-800">Tìm kiếm & Lọc</h3>
+                <h3 className="text-lg font-semibold text-slate-800">Search & Filter</h3>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-4">
@@ -46,7 +46,7 @@ export const StationSearchBar: React.FC<StationSearchBarProps> = ({
                 <div className="flex-1 relative">
                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
                     <Input
-                        placeholder="Tìm kiếm trạm theo tên, địa chỉ, thành phố, quận..."
+                        placeholder="Search station by name, address, city, district..."
                         value={filters.search}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="pl-12 h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl text-slate-700 placeholder:text-slate-400"
@@ -58,10 +58,10 @@ export const StationSearchBar: React.FC<StationSearchBarProps> = ({
                     {/* City Filter */}
                     <Select value={filters.city} onValueChange={handleCityChange}>
                         <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl">
-                            <SelectValue placeholder="Thành phố" />
+                            <SelectValue placeholder="City" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                            <SelectItem value="ALL">Tất cả thành phố</SelectItem>
+                            <SelectItem value="ALL">All cities</SelectItem>
                             <SelectItem value="Ho Chi Minh City">TP.HCM</SelectItem>
                             <SelectItem value="Hanoi">Hà Nội</SelectItem>
                             <SelectItem value="Da Nang">Đà Nẵng</SelectItem>
@@ -72,10 +72,10 @@ export const StationSearchBar: React.FC<StationSearchBarProps> = ({
                     {/* District Filter */}
                     <Select value={filters.district} onValueChange={handleDistrictChange}>
                         <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl">
-                            <SelectValue placeholder="Quận/Huyện" />
+                            <SelectValue placeholder="District" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                            <SelectItem value="ALL">Tất cả quận</SelectItem>
+                            <SelectItem value="ALL">All districts</SelectItem>
                             <SelectItem value="District 1">Quận 1</SelectItem>
                             <SelectItem value="District 2">Quận 2</SelectItem>
                             <SelectItem value="District 3">Quận 3</SelectItem>
@@ -94,13 +94,13 @@ export const StationSearchBar: React.FC<StationSearchBarProps> = ({
                     {/* Status Filter */}
                     <Select value={filters.status} onValueChange={handleStatusChange}>
                         <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl">
-                            <SelectValue placeholder="Trạng thái" />
+                            <SelectValue placeholder="Status" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                            <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-                            <SelectItem value="ACTIVE">Hoạt động</SelectItem>
-                            <SelectItem value="MAINTENANCE">Bảo trì</SelectItem>
-                            <SelectItem value="INACTIVE">Ngừng hoạt động</SelectItem>
+                            <SelectItem value="ALL">All status</SelectItem>
+                            <SelectItem value="ACTIVE">Active</SelectItem>
+                            <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                            <SelectItem value="INACTIVE">Inactive</SelectItem>
                         </SelectContent>
                     </Select>
 

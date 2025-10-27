@@ -44,9 +44,9 @@ export const ComplaintManagementPage: React.FC = () => {
             setError(null);
             const data = await AdminService.getAllComplaints();
             setComplaints(data);
-            toast.success('Tải danh sách khiếu nại thành công');
+            toast.success('Successfully loaded complaints list');
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tải danh sách khiếu nại';
+            const errorMessage = err instanceof Error ? err.message : 'Error loading complaints list';
             setError(errorMessage);
             console.error('Error loading complaints:', err);
             toast.error(errorMessage);
@@ -88,7 +88,7 @@ export const ComplaintManagementPage: React.FC = () => {
 
     const handleResolveComplaint = async () => {
         if (!selectedComplaint || !responseText.trim()) {
-            toast.error('Vui lòng nhập phản hồi');
+            toast.error('Please enter a response');
             return;
         }
 
@@ -103,12 +103,12 @@ export const ComplaintManagementPage: React.FC = () => {
                     : c
             ));
 
-            toast.success('Đã giải quyết khiếu nại thành công');
+            toast.success('Successfully resolved complaint');
             setIsResolveModalOpen(false);
             setSelectedComplaint(null);
             setResponseText('');
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi giải quyết khiếu nại';
+            const errorMessage = err instanceof Error ? err.message : 'Error resolving complaint';
             toast.error(errorMessage);
             console.error('Error resolving complaint:', err);
         } finally {
@@ -124,9 +124,9 @@ export const ComplaintManagementPage: React.FC = () => {
 
     const getStatusBadge = (status: string) => {
         if (status === 'resolved') {
-            return <Badge className="bg-green-100 text-green-700 hover:bg-green-200">Đã xử lý</Badge>;
+            return <Badge className="bg-green-100 text-green-700 hover:bg-green-200">Resolved</Badge>;
         }
-        return <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200">Chờ xử lý</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200">Pending</Badge>;
     };
 
     const getStatusIcon = (status: string) => {
@@ -140,7 +140,7 @@ export const ComplaintManagementPage: React.FC = () => {
     const resolvedCount = complaints.filter(c => c.status === 'resolved').length;
 
     if (isLoading) {
-        return <PageLoadingSpinner text="Đang tải danh sách khiếu nại..." />;
+        return <PageLoadingSpinner text="Loading complaints list..." />;
     }
 
     if (error) {
@@ -152,7 +152,7 @@ export const ComplaintManagementPage: React.FC = () => {
                         <span className="text-red-600">{error}</span>
                     </div>
                     <Button onClick={loadComplaints} variant="outline" size="sm">
-                        Thử lại
+                        Retry
                     </Button>
                 </div>
             </div>
@@ -164,12 +164,12 @@ export const ComplaintManagementPage: React.FC = () => {
             {/* Page Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900">Quản lý khiếu nại</h1>
-                    <p className="text-slate-600 mt-2">Quản lý và xử lý khiếu nại của khách hàng</p>
+                    <h1 className="text-3xl font-bold text-slate-900">Complaint Management</h1>
+                    <p className="text-slate-600 mt-2">Manage and handle customer complaints</p>
                 </div>
                 <Button onClick={loadComplaints} className="bg-blue-600 hover:bg-blue-700">
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    Làm mới
+                    Refresh
                 </Button>
             </div>
 
@@ -178,7 +178,7 @@ export const ComplaintManagementPage: React.FC = () => {
                 <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-slate-700 text-sm font-medium">Tổng khiếu nại</CardTitle>
+                            <CardTitle className="text-slate-700 text-sm font-medium">Total Complaints</CardTitle>
                             <MessageSquareText className="h-5 w-5 text-blue-600" />
                         </div>
                     </CardHeader>
@@ -190,7 +190,7 @@ export const ComplaintManagementPage: React.FC = () => {
                 <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100/50 border-yellow-200">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-slate-700 text-sm font-medium">Chờ xử lý</CardTitle>
+                            <CardTitle className="text-slate-700 text-sm font-medium">Pending</CardTitle>
                             <Clock className="h-5 w-5 text-yellow-600" />
                         </div>
                     </CardHeader>
@@ -202,7 +202,7 @@ export const ComplaintManagementPage: React.FC = () => {
                 <Card className="bg-gradient-to-br from-green-50 to-green-100/50 border-green-200">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-slate-700 text-sm font-medium">Đã xử lý</CardTitle>
+                            <CardTitle className="text-slate-700 text-sm font-medium">Resolved</CardTitle>
                             <CheckCircle className="h-5 w-5 text-green-600" />
                         </div>
                     </CardHeader>
@@ -219,14 +219,14 @@ export const ComplaintManagementPage: React.FC = () => {
                         <div className="p-2 bg-blue-100 rounded-xl">
                             <Search className="h-5 w-5 text-blue-600" />
                         </div>
-                        <h3 className="text-lg font-semibold text-slate-800">Tìm kiếm & Lọc</h3>
+                        <h3 className="text-lg font-semibold text-slate-800">Search & Filter</h3>
                     </div>
 
                     <div className="flex flex-col lg:flex-row gap-4">
                         <div className="flex-1 relative">
                             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
                             <Input
-                                placeholder="Tìm kiếm theo mô tả, danh mục, người dùng..."
+                                placeholder="Search by description, category, user..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-12 h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl text-slate-700 placeholder:text-slate-400"
@@ -239,21 +239,21 @@ export const ComplaintManagementPage: React.FC = () => {
                                 onClick={() => setStatusFilter('all')}
                                 className="h-12"
                             >
-                                Tất cả
+                                All
                             </Button>
                             <Button
                                 variant={statusFilter === 'pending' ? 'default' : 'outline'}
                                 onClick={() => setStatusFilter('pending')}
                                 className="h-12"
                             >
-                                Chờ xử lý
+                                Pending
                             </Button>
                             <Button
                                 variant={statusFilter === 'resolved' ? 'default' : 'outline'}
                                 onClick={() => setStatusFilter('resolved')}
                                 className="h-12"
                             >
-                                Đã xử lý
+                                Resolved
                             </Button>
                         </div>
                     </div>
@@ -267,7 +267,7 @@ export const ComplaintManagementPage: React.FC = () => {
                         <div className="p-2 bg-blue-100 rounded-xl mr-3">
                             <MessageSquareText className="h-6 w-6 text-blue-600" />
                         </div>
-                        Danh sách khiếu nại
+                        Complaints List
                         <span className="ml-3 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
                             {filteredComplaints.length}
                         </span>
@@ -277,8 +277,8 @@ export const ComplaintManagementPage: React.FC = () => {
                     {filteredComplaints.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12">
                             <MessageSquareText className="h-12 w-12 text-slate-400 mb-4" />
-                            <h3 className="text-lg font-medium text-slate-900 mb-2">Không có khiếu nại nào</h3>
-                            <p className="text-slate-600">Không tìm thấy khiếu nại phù hợp với bộ lọc.</p>
+                            <h3 className="text-lg font-medium text-slate-900 mb-2">No complaints found</h3>
+                            <p className="text-slate-600">No complaints found matching the filters.</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -291,17 +291,17 @@ export const ComplaintManagementPage: React.FC = () => {
                                                     {getStatusIcon(complaint.status)}
                                                     <span className="font-semibold text-slate-900">User: {complaint.userId}</span>
                                                     {getStatusBadge(complaint.status)}
-                                                    <span className="text-sm text-slate-500">Danh mục: {complaint.category}</span>
+                                                    <span className="text-sm text-slate-500">Category: {complaint.category}</span>
                                                 </div>
                                                 <p className="text-slate-700 mb-3">{complaint.description}</p>
                                                 {complaint.response && (
                                                     <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                                        <p className="text-sm text-green-900 font-medium mb-1">Phản hồi:</p>
+                                                        <p className="text-sm text-green-900 font-medium mb-1">Response:</p>
                                                         <p className="text-sm text-green-700">{complaint.response}</p>
                                                     </div>
                                                 )}
                                                 <p className="text-xs text-slate-500">
-                                                    Tạo lúc: {new Date(complaint.createdAt).toLocaleString('vi-VN')}
+                                                    Created: {new Date(complaint.createdAt).toLocaleString('en-US')}
                                                 </p>
                                             </div>
                                             {complaint.status === 'pending' && (
@@ -310,7 +310,7 @@ export const ComplaintManagementPage: React.FC = () => {
                                                     className="bg-green-600 hover:bg-green-700"
                                                 >
                                                     <CheckCheck className="h-4 w-4 mr-2" />
-                                                    Xử lý
+                                                    Resolve
                                                 </Button>
                                             )}
                                         </div>
@@ -326,23 +326,23 @@ export const ComplaintManagementPage: React.FC = () => {
             <Dialog open={isResolveModalOpen} onOpenChange={setIsResolveModalOpen}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                        <DialogTitle>Xử lý khiếu nại</DialogTitle>
+                        <DialogTitle>Resolve Complaint</DialogTitle>
                         <DialogDescription>
-                            Nhập phản hồi cho khiếu nại của khách hàng
+                            Enter response for the customer complaint
                         </DialogDescription>
                     </DialogHeader>
 
                     {selectedComplaint && (
                         <div className="space-y-4">
                             <div>
-                                <p className="text-sm font-medium text-slate-700 mb-2">Mô tả khiếu nại:</p>
+                                <p className="text-sm font-medium text-slate-700 mb-2">Complaint Description:</p>
                                 <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg">{selectedComplaint.description}</p>
                             </div>
 
                             <div>
-                                <p className="text-sm font-medium text-slate-700 mb-2">Phản hồi:</p>
+                                <p className="text-sm font-medium text-slate-700 mb-2">Response:</p>
                                 <Textarea
-                                    placeholder="Nhập phản hồi của bạn..."
+                                    placeholder="Enter your response..."
                                     value={responseText}
                                     onChange={(e) => setResponseText(e.target.value)}
                                     className="min-h-[100px]"
@@ -358,7 +358,7 @@ export const ComplaintManagementPage: React.FC = () => {
                             disabled={isResolving}
                         >
                             <X className="h-4 w-4 mr-2" />
-                            Hủy
+                            Cancel
                         </Button>
                         <Button
                             onClick={handleResolveComplaint}
@@ -367,12 +367,12 @@ export const ComplaintManagementPage: React.FC = () => {
                         >
                             {isResolving ? (
                                 <>
-                                    <ButtonLoadingSpinner size="sm" variant="white" text="Đang xử lý..." />
+                                    <ButtonLoadingSpinner size="sm" variant="white" text="Resolving..." />
                                 </>
                             ) : (
                                 <>
                                     <CheckCheck className="h-4 w-4 mr-2" />
-                                    Xử lý
+                                    Resolve
                                 </>
                             )}
                         </Button>

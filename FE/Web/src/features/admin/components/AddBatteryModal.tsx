@@ -63,7 +63,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
             setStations(stationList);
         } catch (err) {
             console.error('Error loading stations:', err);
-            toast.error('Không thể tải danh sách trạm');
+            toast.error('Unable to load station list');
         }
     };
 
@@ -71,31 +71,31 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
         const newErrors: Record<string, string> = {};
 
         if (!formData.serial.trim()) {
-            newErrors.serial = 'Số serial pin là bắt buộc';
+            newErrors.serial = 'Battery serial number is required';
         }
 
         if (!formData.model.trim()) {
-            newErrors.model = 'Model pin là bắt buộc';
+            newErrors.model = 'Battery model is required';
         }
 
         if (formData.soh < 0 || formData.soh > 100) {
-            newErrors.soh = 'SOH phải từ 0 đến 100';
+            newErrors.soh = 'SOH must be between 0 and 100';
         }
 
         if (!formData.stationId) {
-            newErrors.stationId = 'Vui lòng chọn trạm';
+            newErrors.stationId = 'Please select a station';
         }
 
         if (!formData.manufacturer.trim()) {
-            newErrors.manufacturer = 'Nhà sản xuất là bắt buộc';
+            newErrors.manufacturer = 'Manufacturer is required';
         }
 
         if (formData.capacity_kWh <= 0) {
-            newErrors.capacity_kWh = 'Dung lượng phải lớn hơn 0';
+            newErrors.capacity_kWh = 'Capacity must be greater than 0';
         }
 
         if (formData.voltage <= 0) {
-            newErrors.voltage = 'Điện áp phải lớn hơn 0';
+            newErrors.voltage = 'Voltage must be greater than 0';
         }
 
         setErrors(newErrors);
@@ -125,11 +125,11 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
 
             await BatteryService.createBattery(batteryData);
 
-            toast.success('Thêm pin mới thành công');
+            toast.success('Successfully added new battery');
             onSuccess();
             handleClose();
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi thêm pin';
+            const errorMessage = err instanceof Error ? err.message : 'Error adding battery';
             toast.error(errorMessage);
             console.error('Error creating battery:', err);
         } finally {
@@ -167,7 +167,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                         <div className="p-2 bg-green-100 rounded-xl mr-3">
                             <BatteryIcon className="h-6 w-6 text-green-600" />
                         </div>
-                        Thêm pin mới
+                        Add New Battery
                     </DialogTitle>
                 </DialogHeader>
 
@@ -176,14 +176,14 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                         {/* Serial Number */}
                         <div className="space-y-2">
                             <Label htmlFor="serial" className="text-sm font-medium text-slate-700">
-                                Số serial pin <span className="text-red-500">*</span>
+                                Battery Serial Number <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="serial"
                                 type="text"
                                 value={formData.serial}
                                 onChange={(e) => handleInputChange('serial', e.target.value)}
-                                placeholder="Nhập số serial pin"
+                                placeholder="Enter battery serial number"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.serial ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
@@ -198,14 +198,14 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                         {/* Model */}
                         <div className="space-y-2">
                             <Label htmlFor="model" className="text-sm font-medium text-slate-700">
-                                Model pin <span className="text-red-500">*</span>
+                                Battery Model <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="model"
                                 type="text"
                                 value={formData.model}
                                 onChange={(e) => handleInputChange('model', e.target.value)}
-                                placeholder="Nhập model pin"
+                                placeholder="Enter battery model"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.model ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
@@ -235,7 +235,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                                         }
                                     }
                                 }}
-                                placeholder="Nhập SOH (0-100)"
+                                placeholder="Enter SOH (0-100)"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.soh ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
@@ -250,7 +250,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                         {/* Status */}
                         <div className="space-y-2">
                             <Label htmlFor="status" className="text-sm font-medium text-slate-700">
-                                Trạng thái <span className="text-red-500">*</span>
+                                Status <span className="text-red-500">*</span>
                             </Label>
                             <Select
                                 value={formData.status}
@@ -258,23 +258,23 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                             >
                                 <SelectTrigger className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.status ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}>
-                                    <SelectValue placeholder="Chọn trạng thái" />
+                                    <SelectValue placeholder="Select status" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-[9999]">
                                     <SelectItem value="idle" className="rounded-lg hover:bg-green-50 hover:text-green-700 focus:bg-green-50 focus:text-green-700 transition-colors duration-200 cursor-pointer">
-                                        Nhàn rỗi
+                                        Idle
                                     </SelectItem>
                                     <SelectItem value="charging" className="rounded-lg hover:bg-green-50 hover:text-green-700 focus:bg-green-50 focus:text-green-700 transition-colors duration-200 cursor-pointer">
-                                        Đang sạc
+                                        Charging
                                     </SelectItem>
                                     <SelectItem value="full" className="rounded-lg hover:bg-green-50 hover:text-green-700 focus:bg-green-50 focus:text-green-700 transition-colors duration-200 cursor-pointer">
-                                        Đầy
+                                        Full
                                     </SelectItem>
                                     <SelectItem value="in-use" className="rounded-lg hover:bg-green-50 hover:text-green-700 focus:bg-green-50 focus:text-green-700 transition-colors duration-200 cursor-pointer">
-                                        Đang sử dụng
+                                        In Use
                                     </SelectItem>
                                     <SelectItem value="faulty" className="rounded-lg hover:bg-green-50 hover:text-green-700 focus:bg-green-50 focus:text-green-700 transition-colors duration-200 cursor-pointer">
-                                        Lỗi
+                                        Faulty
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
@@ -289,7 +289,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                         {/* Station */}
                         <div className="space-y-2">
                             <Label htmlFor="stationId" className="text-sm font-medium text-slate-700">
-                                Trạm <span className="text-red-500">*</span>
+                                Station <span className="text-red-500">*</span>
                             </Label>
                             <Select
                                 value={formData.stationId}
@@ -297,7 +297,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                             >
                                 <SelectTrigger className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.stationId ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}>
-                                    <SelectValue placeholder="Chọn trạm" />
+                                    <SelectValue placeholder="Select station" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-[9999] max-h-[300px] overflow-y-auto">
                                     {stations.map(station => (
@@ -322,14 +322,14 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                         {/* Manufacturer */}
                         <div className="space-y-2">
                             <Label htmlFor="manufacturer" className="text-sm font-medium text-slate-700">
-                                Nhà sản xuất <span className="text-red-500">*</span>
+                                Manufacturer <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="manufacturer"
                                 type="text"
                                 value={formData.manufacturer}
                                 onChange={(e) => handleInputChange('manufacturer', e.target.value)}
-                                placeholder="Nhập nhà sản xuất"
+                                placeholder="Enter manufacturer"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.manufacturer ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
@@ -344,7 +344,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                         {/* Capacity */}
                         <div className="space-y-2">
                             <Label htmlFor="capacity_kWh" className="text-sm font-medium text-slate-700">
-                                Dung lượng (kWh) <span className="text-red-500">*</span>
+                                Capacity (kWh) <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="capacity_kWh"
@@ -356,7 +356,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                                         handleInputChange('capacity_kWh', value === '' ? 0 : parseFloat(value) || 0);
                                     }
                                 }}
-                                placeholder="Nhập dung lượng (VD: 50.5)"
+                                placeholder="Enter capacity (e.g., 50.5)"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.capacity_kWh ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
@@ -371,7 +371,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                         {/* Voltage */}
                         <div className="space-y-2">
                             <Label htmlFor="voltage" className="text-sm font-medium text-slate-700">
-                                Điện áp (V) <span className="text-red-500">*</span>
+                                Voltage (V) <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="voltage"
@@ -383,7 +383,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                                         handleInputChange('voltage', value === '' ? 0 : parseFloat(value) || 0);
                                     }
                                 }}
-                                placeholder="Nhập điện áp (VD: 400.5)"
+                                placeholder="Enter voltage (e.g., 400.5)"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.voltage ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
@@ -403,7 +403,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                             onClick={handleClose}
                             className="px-6 py-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-lg transition-all duration-200"
                         >
-                            Hủy
+                            Cancel
                         </Button>
                         <Button
                             type="submit"
@@ -411,9 +411,9 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                             className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed border border-green-600 hover:border-green-700"
                         >
                             {isLoading ? (
-                                <ButtonLoadingSpinner size="sm" variant="white" text="Đang thêm..." />
+                                <ButtonLoadingSpinner size="sm" variant="white" text="Adding..." />
                             ) : (
-                                'Thêm pin'
+                                'Add Battery'
                             )}
                         </Button>
                     </DialogFooter>

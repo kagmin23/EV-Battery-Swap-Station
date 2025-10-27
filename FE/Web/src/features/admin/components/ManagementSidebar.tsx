@@ -3,12 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   Users,
-  Settings,
   UserPlus,
   Home,
   ChevronLeft,
   ChevronRight,
-  Car,
   CreditCard,
   FileText,
   UserCheck,
@@ -17,11 +15,8 @@ import {
   AlertTriangle,
   LayoutDashboard,
   RefreshCw,
-  Brain,
   FolderOpen,
   DollarSign,
-  BarChart3,
-  Activity,
   MessageSquareText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -56,13 +51,6 @@ const menuItems = [
     route: '/admin/battery-changes'
   },
   {
-    id: 'ai-forecast',
-    label: 'AI Forecast',
-    icon: Brain,
-    description: 'AI Forecast & Predictions',
-    route: '/admin/ai-forecast'
-  },
-  {
     id: 'report-management',
     label: 'Report Management',
     icon: FolderOpen,
@@ -82,20 +70,6 @@ const menuItems = [
     icon: Users,
     description: 'Manage staff',
     route: '/staff/list'
-  },
-  {
-    id: 'staff-distribution',
-    label: 'Staff Distribution',
-    icon: BarChart3,
-    description: 'Distribution analysis',
-    route: '/staff/distribution'
-  },
-  {
-    id: 'staff-activities',
-    label: 'Staff Activities',
-    icon: Activity,
-    description: 'Track activities',
-    route: '/staff/activities'
   },
   {
     id: 'driver-list',
@@ -126,13 +100,6 @@ const menuItems = [
     route: '/faulty-batteries'
   },
   {
-    id: 'vehicles',
-    label: 'Vehicles',
-    icon: Car,
-    description: 'Manage electric vehicles',
-    route: '/vehicles'
-  },
-  {
     id: 'subscriptions',
     label: 'Subscriptions',
     icon: CreditCard,
@@ -153,27 +120,6 @@ const menuItems = [
     icon: MessageSquareText,
     description: 'Manage complaints',
     route: '/complaints'
-  },
-  {
-    id: 'usage-report',
-    label: 'Usage Report',
-    icon: BarChart3,
-    description: 'Usage analysis',
-    route: '/usage-report'
-  },
-  {
-    id: 'ai-predictions',
-    label: 'AI Predictions',
-    icon: Brain,
-    description: 'AI predictions',
-    route: '/ai-predictions'
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    icon: Settings,
-    description: 'System settings',
-    route: '/settings'
   }
 ];
 
