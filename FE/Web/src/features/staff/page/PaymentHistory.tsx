@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 
 // Extended Transaction interface with payment details
 interface PaymentTransaction {
@@ -161,6 +162,7 @@ export default function PaymentHistory() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('all');
   const [selectedTransaction, setSelectedTransaction] = useState<PaymentTransaction | null>(null);
+  const [isLoading] = useState(false); // Set to true when integrating real API
 
   // Filter transactions
   const filteredTransactions = mockPaymentTransactions.filter(transaction => {
@@ -236,8 +238,19 @@ export default function PaymentHistory() {
     // Implement export functionality
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Spinner size="xl" className="mb-4" />
+          <p className="text-gray-600">Loading payment history...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -252,9 +265,9 @@ export default function PaymentHistory() {
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-green-100 to-green-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-green-900 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-green-800 flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
               Total Revenue
             </CardTitle>
@@ -263,13 +276,13 @@ export default function PaymentHistory() {
             <div className="text-2xl font-bold text-green-900">
               {formatCurrency(totalRevenue)}
             </div>
-            <p className="text-xs text-green-700 mt-1">From completed transactions</p>
+              <p className="text-xs text-green-700 mt-1">From completed transactions</p>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-100 to-blue-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-blue-900 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-blue-800 flex items-center gap-2">
               <CheckCircle className="h-4 w-4" />
               Completed
             </CardTitle>
@@ -278,28 +291,28 @@ export default function PaymentHistory() {
             <div className="text-2xl font-bold text-blue-900">
               {completedCount}
             </div>
-            <p className="text-xs text-blue-700 mt-1">Successful payments</p>
+              <p className="text-xs text-blue-700 mt-1">Successful payments</p>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-yellow-50 to-yellow-100">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-yellow-100 to-yellow-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-yellow-900 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-yellow-800 flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Pending Amount
+              Pending
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-900">
               {formatCurrency(pendingAmount)}
             </div>
-            <p className="text-xs text-yellow-700 mt-1">Awaiting confirmation</p>
+              <p className="text-xs text-yellow-700 mt-1">Awaiting confirmation</p>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-100 to-purple-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-purple-900 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-purple-800 flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Today's Transactions
             </CardTitle>
@@ -308,19 +321,19 @@ export default function PaymentHistory() {
             <div className="text-2xl font-bold text-purple-900">
               {todayTransactions}
             </div>
-            <p className="text-xs text-purple-700 mt-1">Transactions today</p>
+              <p className="text-xs text-purple-700 mt-1">Today's transactions</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card className="shadow-lg border-0">
+      <Card className="shadow-lg border-0 bg-white">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search by transaction ID, customer name, or reference..."
+                placeholder="Search by transaction ID, customer name or reference code..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -333,7 +346,7 @@ export default function PaymentHistory() {
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="all">All</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="failed">Failed</SelectItem>
@@ -344,10 +357,10 @@ export default function PaymentHistory() {
             <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
               <SelectTrigger className="w-full md:w-48">
                 <CreditCard className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Payment Method" />
+                <SelectValue placeholder="Method" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Methods</SelectItem>
+                <SelectItem value="all">All</SelectItem>
                 <SelectItem value="credit_card">Credit Card</SelectItem>
                 <SelectItem value="e_wallet">E-Wallet</SelectItem>
                 <SelectItem value="cash">Cash</SelectItem>
@@ -359,7 +372,7 @@ export default function PaymentHistory() {
       </Card>
 
       {/* Transactions Table */}
-      <Card className="shadow-lg border-0">
+      <Card className="shadow-lg border-0 bg-white">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Transaction History</span>
@@ -384,7 +397,7 @@ export default function PaymentHistory() {
                     Amount
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
-                    Payment Method
+                    Method
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
                     Status
@@ -461,7 +474,7 @@ export default function PaymentHistory() {
       {/* Transaction Detail Modal */}
       {selectedTransaction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-auto">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-auto bg-white">
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
                 <CardTitle>Transaction Details</CardTitle>
@@ -497,15 +510,15 @@ export default function PaymentHistory() {
                   <p className="font-semibold">{selectedTransaction.station_name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Transaction Time</p>
+                  <p className="text-sm text-slate-600">Time</p>
                   <p className="font-semibold">{formatDateTime(selectedTransaction.transaction_time)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Battery Given</p>
+                  <p className="text-sm text-slate-600">Battery Installed</p>
                   <p className="font-semibold">{selectedTransaction.battery_given}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Battery Returned</p>
+                  <p className="text-sm text-slate-600">Battery Removed</p>
                   <p className="font-semibold">{selectedTransaction.battery_returned}</p>
                 </div>
                 <div>
@@ -513,7 +526,7 @@ export default function PaymentHistory() {
                   <p className="font-semibold">{getPaymentMethodLabel(selectedTransaction.payment_method)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Payment Reference</p>
+                  <p className="text-sm text-slate-600">Reference Code</p>
                   <p className="font-semibold">{selectedTransaction.payment_reference}</p>
                 </div>
                 <div className="col-span-2">

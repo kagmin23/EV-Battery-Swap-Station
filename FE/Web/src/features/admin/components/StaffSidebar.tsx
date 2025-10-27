@@ -26,57 +26,60 @@ interface ManagementSidebarProps {
 const menuItems = [
   {
     id: 'overview',
-    label: 'Tổng quan',
+    label: 'Overview',
     icon: Home,
-    description: 'Thống kê tổng quan'
+    description: 'Overall statistics'
   },
   {
     id: 'staff-list',
-    label: 'Danh sách nhân viên',
+    label: 'Staff List',
     icon: Users,
-    description: 'Quản lý nhân viên'
+    description: 'Manage staff'
   },
   {
     id: 'staff-distribution',
-    label: 'Phân bố nhân viên',
+    label: 'Staff Distribution',
     icon: BarChart3,
-    description: 'Phân tích phân bố'
+    description: 'Distribution analysis'
   },
   {
     id: 'staff-activities',
-    label: 'Hoạt động nhân viên',
+    label: 'Staff Activities',
     icon: Activity,
-    description: 'Theo dõi hoạt động'
+    description: 'Track activities'
   },
   {
     id: 'driver-list',
-    label: 'Danh sách tài xế',
+    label: 'Driver List',
     icon: UserCheck,
-    description: 'Quản lý tài xế'
+    description: 'Manage drivers'
   },
   {
     id: 'vehicles',
-    label: 'Phương tiện',
+    label: 'Vehicles',
     icon: Car,
-    description: 'Quản lý xe điện'
+    description: 'Manage electric vehicles'
   },
   {
     id: 'subscriptions',
-    label: 'Gói thuê',
+    label: 'Subscriptions',
     icon: CreditCard,
-    description: 'Quản lý gói thuê pin'
+    description: 'Manage battery rental packages'
   },
   {
     id: 'transactions',
-    label: 'Giao dịch',
+    label: 'Transactions',
     icon: FileText,
-    description: 'Lịch sử giao dịch'
+    description: 'Transaction history'
   },
+
+
+
   {
     id: 'settings',
-    label: 'Cài đặt',
+    label: 'Settings',
     icon: Settings,
-    description: 'Cài đặt hệ thống'
+    description: 'System settings'
   }
 ];
 
@@ -97,9 +100,9 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
           {!isCollapsed && (
             <div className="space-y-1">
               <h2 className="text-2xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
-                Quản lý
+                Management
               </h2>
-              <p className="text-sm text-slate-500 font-medium">Hệ thống quản lý</p>
+              <p className="text-sm text-slate-500 font-medium">Management system</p>
             </div>
           )}
           <Button
@@ -154,7 +157,7 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
       {!isCollapsed && (
         <div className="p-4 border-t border-slate-200/60">
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-slate-700 mb-3">Thao tác nhanh</h3>
+            <h3 className="text-lg font-semibold text-slate-700 mb-3">Quick Actions</h3>
             <Button
               variant="outline"
               size="sm"
@@ -164,7 +167,7 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
                 className="h-6 w-6 mr-2 flex-shrink-0"
                 style={{ width: '24px', height: '24px' }}
               />
-              Thêm người dùng
+              Add User
             </Button>
           </div>
         </div>

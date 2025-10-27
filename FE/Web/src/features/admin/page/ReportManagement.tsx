@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   FileText,
   Search,
@@ -31,6 +31,9 @@ import { ReportCard } from '../components/ReportCard';
 import { ReportGeneratorModal } from '../components/ReportGeneratorModal';
 import { reportTemplates, recentReports, getCategoryLabel } from '@/mock/ReportData';
 import type { ReportTemplate } from '@/mock/ReportData';
+import { Spinner } from '@/components/ui/spinner';
+import { ReportsApi, type UsageReportResponse } from '../apis/reportsApi';
+import { toast } from 'sonner';
 
 const iconMap: Record<string, React.ElementType> = {
   'battery-charging': BatteryCharging,
@@ -67,6 +70,7 @@ const getIconColors = (category: string): { iconColor: string; iconBg: string } 
 };
 
 export default function ReportManagement() {
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(false);
@@ -75,6 +79,32 @@ export default function ReportManagement() {
   );
   const [selectedReport, setSelectedReport] = useState<ReportTemplate | null>(null);
   const [isGeneratorOpen, setIsGeneratorOpen] = useState<boolean>(false);
+  const [usageData, setUsageData] = useState<UsageReportResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch reports data on component mount
+  useEffect(() => {
+    const fetchReportsData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Fetch usage report for Report Management page
+        const usageResponse = await ReportsApi.getUsageReport();
+        setUsageData(usageResponse);
+        
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch reports data';
+        setError(errorMessage);
+        toast.error(errorMessage);
+        console.error('Error fetching reports data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchReportsData();
+  }, []);
 
   // Filter reports
   const filteredReports = useMemo(() => {
@@ -135,13 +165,41 @@ export default function ReportManagement() {
     { value: 'customer-service', label: 'Customer Service', count: reportTemplates.filter(r => r.category === 'customer-service').length },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Spinner size="xl" className="mb-4" />
+          <p className="text-gray-600">Loading reports...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">
+            <svg className="inline-block w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-gray-800 font-semibold mb-2">Error Loading Reports</p>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="p-6 min-h-screen"
-      style={{
-        background: 'linear-gradient(to bottom right, var(--color-bg-primary), var(--color-bg-secondary), var(--color-bg-tertiary))',
-      }}
-    >
+    <div className="p-6 min-h-screen">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3" style={{ color: 'var(--color-text-primary)' }}>
@@ -149,7 +207,7 @@ export default function ReportManagement() {
           Report Management
         </h1>
         <p style={{ color: 'var(--color-text-secondary)' }}>
-          Generate, view, and manage comprehensive reports for EV Battery Swap Station
+          Create, view and manage comprehensive reports for EV Battery Swap Station
         </p>
       </div>
 
@@ -192,6 +250,31 @@ export default function ReportManagement() {
           </div>
         </div>
       </div>
+
+      {/* API Data Overview */}
+      {usageData && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <FileText className="w-6 h-6" />
+            Live Usage Report Data
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6">
+              <h3 className="text-lg font-semibold text-slate-800 mb-3">Usage Report</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Frequency Data Points</span>
+                  <span className="font-semibold text-purple-600">{usageData.data.frequency.length}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Peak Hours Data</span>
+                  <span className="font-semibold text-orange-600">{usageData.data.peakHours.length}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters and Search */}
       <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6 mb-8">

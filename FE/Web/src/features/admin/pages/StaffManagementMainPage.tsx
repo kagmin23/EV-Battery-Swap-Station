@@ -23,14 +23,33 @@ export const StaffManagementMainPage: React.FC = () => {
         if (path.includes('/staff/activities')) return 'staff-activities';
         if (path.includes('/staff/settings')) return 'settings';
         if (path.includes('/staff/station-list')) return 'station-list';
+        if (path.includes('/admin/dashboard')) return 'dashboard';
+        if (path.includes('/admin/battery-changes')) return 'battery-changes';
+        if (path.includes('/admin/ai-forecast')) return 'ai-forecast';
+        if (path.includes('/admin/report-management')) return 'report-management';
+        if (path.includes('/admin/revenue-report')) return 'revenue-report';
         return 'overview';
     };
 
-    const [activeTab, setActiveTab] = useState(getCurrentTab());
+    const [activeTab, setActiveTab] = useState(() => getCurrentTab());
 
     // Cập nhật tab khi URL thay đổi
     useEffect(() => {
-        setActiveTab(getCurrentTab());
+        const path = location.pathname;
+        let newTab = 'overview';
+        if (path.includes('/staff/overview')) newTab = 'overview';
+        else if (path.includes('/staff/list')) newTab = 'staff-list';
+        else if (path.includes('/staff/distribution')) newTab = 'staff-distribution';
+        else if (path.includes('/staff/activities')) newTab = 'staff-activities';
+        else if (path.includes('/staff/settings')) newTab = 'settings';
+        else if (path.includes('/staff/station-list')) newTab = 'station-list';
+        else if (path.includes('/admin/dashboard')) newTab = 'dashboard';
+        else if (path.includes('/admin/battery-changes')) newTab = 'battery-changes';
+        else if (path.includes('/admin/ai-forecast')) newTab = 'ai-forecast';
+        else if (path.includes('/admin/report-management')) newTab = 'report-management';
+        else if (path.includes('/admin/revenue-report')) newTab = 'revenue-report';
+        
+        setActiveTab(newTab);
     }, [location.pathname]);
 
     const handleTabChange = (tab: string) => {
@@ -39,6 +58,21 @@ export const StaffManagementMainPage: React.FC = () => {
         switch (tab) {
             case 'overview':
                 navigate('/staff/overview');
+                break;
+            case 'dashboard':
+                navigate('/admin/dashboard');
+                break;
+            case 'battery-changes':
+                navigate('/admin/battery-changes');
+                break;
+            case 'ai-forecast':
+                navigate('/admin/ai-forecast');
+                break;
+            case 'report-management':
+                navigate('/admin/report-management');
+                break;
+            case 'revenue-report':
+                navigate('/admin/revenue-report');
                 break;
             case 'staff-list':
                 navigate('/staff/list');

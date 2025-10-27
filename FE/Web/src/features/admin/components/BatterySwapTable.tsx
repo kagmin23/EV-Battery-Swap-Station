@@ -63,6 +63,44 @@ const BatterySwapTable: React.FC<BatterySwapTableProps> = ({
     return 'text-red-600 font-semibold';
   };
 
+  // Empty state UI
+  if (transactions.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            📋 Battery Swap Transactions (0)
+          </h3>
+        </div>
+
+        <div className="flex flex-col items-center justify-center py-20 px-4">
+          <div className="w-24 h-24 mb-4 flex items-center justify-center rounded-full bg-gray-100">
+            <svg
+              className="w-12 h-12 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
+          </div>
+          <h4 className="text-xl font-semibold text-gray-900 mb-2">
+            No Battery Swap Transactions Yet
+          </h4>
+          <p className="text-sm text-gray-500 text-center max-w-md">
+            There are no battery swap transactions to display. Transactions will appear here once drivers start swapping batteries at the stations.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <div className="p-6">

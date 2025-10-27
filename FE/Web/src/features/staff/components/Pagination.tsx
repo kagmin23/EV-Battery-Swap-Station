@@ -82,11 +82,11 @@ export default function Pagination({
           type="button"
           onClick={handlePrevious}
           disabled={currentPage === 1}
-          className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-s-lg border border-button-primary text-text-primary hover:bg-button-hover focus:outline-none focus:bg-button-hover disabled:opacity-50 disabled:pointer-events-none dark:bg-button-secondary dark:border-button-secondary dark:text-white dark:hover:bg-button-secondary-hover dark:focus:bg-button-secondary-hover"
+          className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-s-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none transition-colors"
           aria-label="Previous"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span className="hidden sm:block">Previous</span>
+          <span className="hidden sm:block">Trước</span>
         </button>
 
         {getPageNumbers().map((page, index) => {
@@ -94,7 +94,7 @@ export default function Pagination({
             return (
               <div
                 key={`ellipsis-${index}`}
-                className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-200 text-text-primary py-2 px-3 text-sm dark:border-neutral-700 dark:text-white"
+                className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm"
               >
                 ...
               </div>
@@ -106,10 +106,10 @@ export default function Pagination({
               key={page}
               type="button"
               onClick={() => onPageChange(page as number)}
-              className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none ${
+              className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
                 currentPage === page
-                  ? "bg-button-primary text-text-primary border-button-primary hover:bg-button-hover dark:bg-button-secondary dark:border-button-secondary"
-                  : "border-button-primary text-text-primary hover:bg-button-hover dark:bg-button-secondary dark:border-button-secondary"
+                  ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                  : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
               }`}
               aria-current={currentPage === page ? "page" : undefined}
             >
@@ -122,20 +122,20 @@ export default function Pagination({
           type="button"
           onClick={handleNext}
           disabled={currentPage === totalPages}
-          className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-e-lg border border-button-primary text-text-primary hover:bg-button-hover focus:outline-none focus:bg-button-hover disabled:opacity-50 disabled:pointer-events-none dark:bg-button-secondary dark:border-button-secondary dark:text-white dark:hover:bg-button-secondary-hover dark:focus:bg-button-secondary-hover"
+          className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-e-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none transition-colors"
           aria-label="Next"
         >
-          <span className="hidden sm:block">Next</span>
+          <span className="hidden sm:block">Tiếp theo</span>
           <ChevronRight className="w-4 h-4" />
         </button>
       </nav>
 
       {/* Items info */}
       {totalItems && (
-        <div className="text-sm text-text-primary">
-          Showing <span className="font-medium">{startItem}</span> to{" "}
-          <span className="font-medium">{endItem}</span> of{" "}
-          <span className="font-medium">{totalItems}</span> results
+        <div className="text-sm text-gray-800">
+          Hiển thị <span className="font-semibold text-text-primary">{startItem}</span> đến{" "}
+          <span className="font-semibold text-text-primary">{endItem}</span> trên{" "}
+          <span className="font-semibold text-text-primary">{totalItems}</span> kết quả
         </div>
       )}
     </div>
