@@ -2,10 +2,8 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Users,
-  BarChart3,
   Settings,
   UserPlus,
-  Activity,
   Home,
   ChevronLeft,
   ChevronRight,
@@ -37,18 +35,6 @@ const menuItems = [
     description: 'Quản lý nhân viên'
   },
   {
-    id: 'staff-distribution',
-    label: 'Phân bố nhân viên',
-    icon: BarChart3,
-    description: 'Phân tích phân bố'
-  },
-  {
-    id: 'staff-activities',
-    label: 'Hoạt động nhân viên',
-    icon: Activity,
-    description: 'Theo dõi hoạt động'
-  },
-  {
     id: 'driver-list',
     label: 'Danh sách tài xế',
     icon: UserCheck,
@@ -72,12 +58,6 @@ const menuItems = [
     icon: FileText,
     description: 'Lịch sử giao dịch'
   },
-  {
-    id: 'settings',
-    label: 'Cài đặt',
-    icon: Settings,
-    description: 'Cài đặt hệ thống'
-  }
 ];
 
 export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
@@ -150,25 +130,6 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
         })}
       </nav>
 
-      {/* Quick Actions */}
-      {!isCollapsed && (
-        <div className="p-4 border-t border-slate-200/60">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-slate-700 mb-3">Thao tác nhanh</h3>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start text-slate-600 hover:text-slate-900 hover:bg-slate-50 text-base py-5 px-6"
-            >
-              <UserPlus
-                className="h-6 w-6 mr-2 flex-shrink-0"
-                style={{ width: '24px', height: '24px' }}
-              />
-              Thêm người dùng
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

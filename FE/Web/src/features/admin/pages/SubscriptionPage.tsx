@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { SubscriptionService } from '@/services/api/subscriptionService';
 import type { SubscriptionPlan, CreateSubscriptionPlanRequest, UpdateSubscriptionPlanRequest } from '@/services/api/subscriptionService';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 import { toast } from 'sonner';
 
 // Legacy interface for backward compatibility with UI
@@ -103,6 +104,8 @@ export const SubscriptionPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+  const [deletingSubscription, setDeletingSubscription] = useState<Subscription | null>(null);
 
   const filteredSubscriptions = subscriptions;
 
@@ -223,20 +226,32 @@ export const SubscriptionPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa gói này?')) {
-      try {
-        setActionLoading(true);
-        await SubscriptionService.deletePlan(id);
-        setSubscriptions(subscriptions.filter(sub => sub.id !== id));
-        toast.success('Xóa gói thuê thành công');
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Không thể xóa gói thuê';
-        toast.error(errorMessage);
-      } finally {
-        setActionLoading(false);
-      }
+  const handleDelete = (subscription: Subscription) => {
+    setDeletingSubscription(subscription);
+    setIsConfirmationModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingSubscription) return;
+
+    try {
+      setActionLoading(true);
+      await SubscriptionService.deletePlan(deletingSubscription.id);
+      setSubscriptions(subscriptions.filter(sub => sub.id !== deletingSubscription.id));
+      toast.success('Xóa gói thuê thành công');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Không thể xóa gói thuê';
+      toast.error(errorMessage);
+    } finally {
+      setActionLoading(false);
+      setIsConfirmationModalOpen(false);
+      setDeletingSubscription(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setIsConfirmationModalOpen(false);
+    setDeletingSubscription(null);
   };
 
   // Loading state
@@ -418,7 +433,7 @@ export const SubscriptionPage: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleDelete(subscription.id)}
+                onClick={() => handleDelete(subscription)}
                 disabled={actionLoading}
                 className="flex-1 hover:bg-red-50 hover:text-red-600 hover:border-red-300"
               >
@@ -501,7 +516,7 @@ export const SubscriptionPage: React.FC = () => {
                   id="price"
                   type="number"
                   placeholder="299000"
-                  value={formData.price}
+                  value={formData.price || ''}
                   onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
                   className="bg-white"
                 />
@@ -513,7 +528,7 @@ export const SubscriptionPage: React.FC = () => {
                   id="duration"
                   type="number"
                   placeholder="30"
-                  value={formData.duration}
+                  value={formData.duration || ''}
                   onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0 })}
                   className="bg-white"
                 />
@@ -525,7 +540,7 @@ export const SubscriptionPage: React.FC = () => {
                   id="swapLimit"
                   type="number"
                   placeholder="10 (-1 = không giới hạn)"
-                  value={formData.swapLimit}
+                  value={formData.swapLimit || ''}
                   onChange={(e) => setFormData({ ...formData, swapLimit: parseInt(e.target.value) || 0 })}
                   className="bg-white"
                 />
@@ -730,6 +745,23 @@ export const SubscriptionPage: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isConfirmationModalOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title={`Xác nhận xóa gói ${deletingSubscription?.name}`}
+        message={
+          <div>
+            Bạn có chắc chắn muốn xóa gói <span className="font-bold text-slate-800">{deletingSubscription?.name}</span>?<br />
+            <span className="text-red-600 font-medium">Hành động này không thể hoàn tác.</span>
+          </div>
+        }
+        confirmText="Xóa"
+        type="delete"
+        isLoading={actionLoading}
+      />
     </div>
   );
 };

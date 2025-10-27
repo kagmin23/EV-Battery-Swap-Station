@@ -29,12 +29,13 @@ export const StaffCard: React.FC<StaffCardProps> = ({
   const getStatusBadge = (status: StaffStatus) => {
     switch (status) {
       case 'ONLINE':
-        return <Badge variant="success">Trực tuyến</Badge>;
+      case 'SHIFT_ACTIVE':
+      case 'active':
+        return <Badge variant="success">Hoạt động</Badge>;
       case 'OFFLINE':
         return <Badge variant="secondary">Ngoại tuyến</Badge>;
-      case 'SHIFT_ACTIVE':
-        return <Badge variant="default">Đang ca</Badge>;
       case 'SUSPENDED':
+      case 'locked':
         return <Badge variant="destructive">Tạm khóa</Badge>;
       default:
         return <Badge variant="secondary">Không xác định</Badge>;
@@ -88,9 +89,9 @@ export const StaffCard: React.FC<StaffCardProps> = ({
                   {getInitials(staff.name)}
                 </AvatarFallback>
               </Avatar>
-              <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${staff.status === 'ONLINE' ? 'bg-green-500' :
-                staff.status === 'SHIFT_ACTIVE' ? 'bg-blue-500' :
-                  staff.status === 'OFFLINE' ? 'bg-gray-400' : 'bg-red-500'
+              <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${staff.status === 'ONLINE' || staff.status === 'SHIFT_ACTIVE' || staff.status === 'active' ? 'bg-green-500' :
+                staff.status === 'OFFLINE' ? 'bg-gray-400' :
+                  (staff.status === 'SUSPENDED' || staff.status === 'locked') ? 'bg-red-500' : 'bg-gray-400'
                 }`} />
             </div>
             <div className="flex-1 min-w-0">
@@ -160,7 +161,24 @@ export const StaffCard: React.FC<StaffCardProps> = ({
               'Chỉnh sửa'
             )}
           </Button>
-          {staff.status !== 'SUSPENDED' && (
+          {staff.status === 'SUSPENDED' || staff.status === 'locked' ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSuspend(staff);
+              }}
+              disabled={isSuspending || isSaving}
+              className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200 hover:border-green-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
+            >
+              {isSuspending ? (
+                <ButtonLoadingSpinner size="sm" variant="default" text="Đang xử lý..." />
+              ) : (
+                'Kích hoạt'
+              )}
+            </Button>
+          ) : (
             <Button
               variant="outline"
               size="sm"

@@ -11,6 +11,7 @@ interface StaffTableProps {
   onSelect: (staff: Staff) => void;
   onEdit: (staff: Staff) => void;
   onSuspend: (staff: Staff) => void;
+  onViewDetails?: (staff: Staff) => void;
   suspendingStaffId?: string | null;
   savingStaffId?: string | null;
 }
@@ -20,18 +21,20 @@ export const StaffTable: React.FC<StaffTableProps> = ({
   onSelect,
   onEdit,
   onSuspend,
+  onViewDetails,
   suspendingStaffId = null,
   savingStaffId = null
 }) => {
   const getStatusBadge = (status: StaffStatus) => {
     switch (status) {
       case 'ONLINE':
-        return <Badge variant="success">Trực tuyến</Badge>;
+      case 'SHIFT_ACTIVE':
+      case 'active':
+        return <Badge variant="success">Hoạt động</Badge>;
       case 'OFFLINE':
         return <Badge variant="secondary">Ngoại tuyến</Badge>;
-      case 'SHIFT_ACTIVE':
-        return <Badge variant="default">Đang ca</Badge>;
       case 'SUSPENDED':
+      case 'locked':
         return <Badge variant="destructive">Tạm khóa</Badge>;
       default:
         return <Badge variant="secondary">Không xác định</Badge>;
@@ -123,6 +126,20 @@ export const StaffTable: React.FC<StaffTableProps> = ({
               </td>
               <td className="py-3 px-4">
                 <div className="flex space-x-2">
+                  {onViewDetails && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewDetails(staffMember);
+                      }}
+                      disabled={savingStaffId === staffMember.id || suspendingStaffId === staffMember.id}
+                      className="flex-2 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 border-slate-200 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Xem chi tiết
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -139,7 +156,24 @@ export const StaffTable: React.FC<StaffTableProps> = ({
                       'Sửa'
                     )}
                   </Button>
-                  {staffMember.status !== 'SUSPENDED' && (
+                  {(staffMember.status === 'SUSPENDED' || staffMember.status === 'locked') ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSuspend(staffMember);
+                      }}
+                      disabled={suspendingStaffId === staffMember.id || savingStaffId === staffMember.id}
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200 hover:border-green-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
+                    >
+                      {suspendingStaffId === staffMember.id ? (
+                        <ButtonLoadingSpinner size="sm" variant="white" text="Đang xử lý..." />
+                      ) : (
+                        'Kích hoạt'
+                      )}
+                    </Button>
+                  ) : (
                     <Button
                       variant="outline"
                       size="sm"

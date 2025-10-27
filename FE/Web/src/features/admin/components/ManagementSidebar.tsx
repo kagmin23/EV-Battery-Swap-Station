@@ -2,10 +2,8 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Users,
-  BarChart3,
   Settings,
   UserPlus,
-  Activity,
   Home,
   ChevronLeft,
   ChevronRight,
@@ -15,7 +13,10 @@ import {
   UserCheck,
   Battery,
   MapPin,
-  AlertTriangle
+  AlertTriangle,
+  MessageSquareText,
+  BarChart3,
+  Brain
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -38,18 +39,6 @@ const menuItems = [
     label: 'Danh sách nhân viên',
     icon: Users,
     description: 'Quản lý nhân viên'
-  },
-  {
-    id: 'staff-distribution',
-    label: 'Phân bố nhân viên',
-    icon: BarChart3,
-    description: 'Phân tích phân bố'
-  },
-  {
-    id: 'staff-activities',
-    label: 'Hoạt động nhân viên',
-    icon: Activity,
-    description: 'Theo dõi hoạt động'
   },
   {
     id: 'driver-list',
@@ -76,12 +65,6 @@ const menuItems = [
     description: 'Quản lý pin lỗi'
   },
   {
-    id: 'vehicles',
-    label: 'Phương tiện',
-    icon: Car,
-    description: 'Quản lý xe điện'
-  },
-  {
     id: 'subscriptions',
     label: 'Gói thuê',
     icon: CreditCard,
@@ -94,11 +77,23 @@ const menuItems = [
     description: 'Lịch sử giao dịch'
   },
   {
-    id: 'settings',
-    label: 'Cài đặt',
-    icon: Settings,
-    description: 'Cài đặt hệ thống'
-  }
+    id: 'complaints',
+    label: 'Khiếu nại',
+    icon: MessageSquareText,
+    description: 'Quản lý khiếu nại'
+  },
+  {
+    id: 'usage-report',
+    label: 'Báo cáo sử dụng',
+    icon: BarChart3,
+    description: 'Phân tích sử dụng'
+  },
+  {
+    id: 'ai-predictions',
+    label: 'Dự đoán AI',
+    icon: Brain,
+    description: 'Dự đoán AI'
+  },
 ];
 
 export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
@@ -171,25 +166,6 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
         })}
       </nav>
 
-      {/* Quick Actions */}
-      {!isCollapsed && (
-        <div className="flex-shrink-0 px-4 py-6 border-t border-gray-200">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-700 mb-3">Thao tác nhanh</h3>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-base py-6 px-6"
-            >
-              <UserPlus
-                className="h-6 w-6 mr-2 flex-shrink-0"
-                style={{ width: '24px', height: '24px' }}
-              />
-              Thêm người dùng
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

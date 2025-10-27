@@ -1,349 +1,381 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PageHeader } from '../components/PageHeader';
-import { StatsCard } from '../components/StatsCard';
-import { Activity, TrendingUp, Users, Clock, Car, Star, CreditCard, UserCheck } from 'lucide-react';
-import type { StaffStats, StaffActivity } from '../types/staff';
-import type { DriverStats, DriverActivity } from '../types/driver';
+import {
+    Activity,
+    TrendingUp,
+    Users,
+    Clock,
+    Car,
+    Star,
+    CreditCard,
+    UserCheck,
+    Battery,
+    MapPin,
+    AlertCircle,
+    RefreshCw,
+    DollarSign,
+    FileText,
+    MessageSquareText,
+    Brain
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { PageLoadingSpinner } from '@/components/ui/loading-spinner';
+import { AdminService } from '@/services/api/adminService';
+import { StationService } from '@/services/api/stationService';
+import { StaffService } from '@/services/api/staffService';
+import { TransactionService } from '@/services/api/transactionService';
+import { OverviewCharts } from '../components/OverviewCharts';
 
-// Mock data - trong thực tế sẽ lấy từ API
-const mockStaffStats: StaffStats = {
-    totalStaff: 45,
-    onlineStaff: 32,
-    shiftActiveStaff: 28,
-    suspendedStaff: 2,
-    staffByStation: [
-        { stationId: '1', stationName: 'Trạm Hà Nội', count: 20 },
-        { stationId: '2', stationName: 'Trạm TP.HCM', count: 15 },
-        { stationId: '3', stationName: 'Trạm Đà Nẵng', count: 10 }
-    ],
-    recentActivities: []
-};
+interface OverviewStats {
+    totalStations: number;
+    totalStaff: number;
+    totalDrivers: number;
+    totalTransactions: number;
+    totalRevenue: number;
+    pendingComplaints: number;
+    activeBatteries: number;
+}
 
-const mockDriverStats: DriverStats = {
-    totalDrivers: 1250,
-    activeDrivers: 1100,
-    inactiveDrivers: 100,
-    suspendedDrivers: 30,
-    pendingVerification: 20,
-    driversByPlan: [
-        { planId: '1', planName: 'Premium', count: 400 },
-        { planId: '2', planName: 'Basic', count: 600 },
-        { planId: '3', planName: 'Unlimited', count: 100 }
-    ],
-    driversByCity: [
-        { city: 'TP.HCM', count: 600 },
-        { city: 'Hà Nội', count: 400 },
-        { city: 'Đà Nẵng', count: 150 },
-        { city: 'Khác', count: 100 }
-    ],
-    totalSwaps: 15680,
-    averageRating: 4.6,
-    recentActivities: []
-};
-
-const mockActivities: (StaffActivity | DriverActivity)[] = [
-    {
-        id: '1',
-        staffId: '1',
-        type: 'BATTERY_SWAP',
-        description: 'Nhân viên Nguyễn Văn A thực hiện đổi pin cho xe ABC-123',
-        timestamp: new Date(Date.now() - 10 * 60 * 1000),
-        stationId: '1',
-        customerId: 'customer-1',
-        batteryId: 'battery-1',
-    },
-    {
-        id: '2',
-        driverId: '1',
-        type: 'BATTERY_SWAP',
-        description: 'Tài xế Trần Thị B đổi pin tại trạm VinFast Quận 1',
-        timestamp: new Date(Date.now() - 30 * 60 * 1000),
-        stationId: 'station-1',
-        batteryId: 'battery-123',
-        amount: 50000,
-        currency: 'VND'
-    },
-    {
-        id: '3',
-        staffId: '2',
-        type: 'PAYMENT',
-        description: 'Nhân viên Lê Văn C xử lý thanh toán cho giao dịch #12345',
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        stationId: '1',
-        customerId: 'customer-2',
-    }
-];
+interface DetailedStats {
+    activeStations: number;
+    maintenanceStations: number;
+    activeStaff: number;
+    suspendedStaff: number;
+    totalComplaints: number;
+    resolvedComplaints: number;
+    averageTransactionCost: number;
+}
 
 export const OverviewPage: React.FC = () => {
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [stats, setStats] = useState<OverviewStats>({
+        totalStations: 0,
+        totalStaff: 0,
+        totalDrivers: 0,
+        totalTransactions: 0,
+        totalRevenue: 0,
+        pendingComplaints: 0,
+        activeBatteries: 0
+    });
+    const [detailedStats, setDetailedStats] = useState<DetailedStats>({
+        activeStations: 0,
+        maintenanceStations: 0,
+        activeStaff: 0,
+        suspendedStaff: 0,
+        totalComplaints: 0,
+        resolvedComplaints: 0,
+        averageTransactionCost: 0
+    });
+    const [chartData, setChartData] = useState({
+        stations: { labels: ['Trạm'], active: [0], maintenance: [0] },
+        staff: { labels: ['Hoạt động', 'Tạm khóa'], data: [0, 0] },
+        complaints: { labels: ['Khiếu nại'], pending: [0], resolved: [0] }
+    });
+
+    const loadOverviewData = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            // Fetch data from multiple APIs in parallel
+            const [stations, staff, complaints, transactions] = await Promise.all([
+                StationService.getAllStations().catch(() => []),
+                StaffService.getAllStaff().catch(() => []),
+                AdminService.getAllComplaints().catch(() => []),
+                TransactionService.getAllTransactions({}).catch(() => ({ data: [] }))
+            ]);
+
+            // Calculate detailed stats
+            const activeComplaints = complaints.filter((c: any) => c.status === 'pending');
+            const resolvedComplaints = complaints.filter((c: any) => c.status === 'resolved');
+            const totalRevenue = transactions.data.reduce((sum: number, t: any) => sum + (t.cost || 0), 0);
+            const averageTransactionCost = transactions.data.length > 0 ? totalRevenue / transactions.data.length : 0;
+
+            // Station stats
+            const activeStations = stations.filter((s: any) => s.status === 'ACTIVE').length;
+            const maintenanceStations = stations.filter((s: any) => s.status === 'MAINTENANCE').length;
+
+            // Staff stats
+            const activeStaff = staff.filter((s: any) => s.status === 'active').length;
+            const suspendedStaff = staff.filter((s: any) => s.status === 'locked').length;
+
+            setStats({
+                totalStations: stations.length,
+                totalStaff: staff.length,
+                totalDrivers: 0, // Would need driver service
+                totalTransactions: transactions.data.length,
+                totalRevenue,
+                pendingComplaints: activeComplaints.length,
+                activeBatteries: 0 // Would need battery service
+            });
+
+            // Set detailed stats for display
+            setDetailedStats({
+                activeStations,
+                maintenanceStations,
+                activeStaff,
+                suspendedStaff,
+                totalComplaints: complaints.length,
+                resolvedComplaints: resolvedComplaints.length,
+                averageTransactionCost
+            });
+
+            // Set chart data
+            setChartData({
+                stations: {
+                    labels: ['Tổng số'],
+                    active: [activeStations],
+                    maintenance: [maintenanceStations]
+                },
+                staff: {
+                    labels: ['Hoạt động', 'Tạm khóa'],
+                    data: [activeStaff, suspendedStaff]
+                },
+                complaints: {
+                    labels: ['Khiếu nại'],
+                    pending: [activeComplaints.length],
+                    resolved: [resolvedComplaints.length]
+                }
+            });
+
+            toast.success('Tải dữ liệu tổng quan thành công');
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tải dữ liệu tổng quan';
+            setError(errorMessage);
+            console.error('Error loading overview:', err);
+            toast.error(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadOverviewData();
+    }, []);
+
+    if (isLoading) {
+        return <PageLoadingSpinner text="Đang tải dữ liệu tổng quan..." />;
+    }
+
+    if (error) {
+        return (
+            <div className="p-6">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                        <AlertCircle className="h-5 w-5 text-red-600" />
+                        <span className="text-red-600">{error}</span>
+                    </div>
+                    <button
+                        onClick={loadOverviewData}
+                        className="px-4 py-2 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+                    >
+                        Thử lại
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="p-6 space-y-8">
+        <div className="p-6 space-y-6">
             {/* Header */}
-            <PageHeader
-                title="Tổng quan hệ thống"
-                description="Thống kê và phân tích dữ liệu tổng thể"
-                showBackButton={false}
-            />
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-900">Tổng quan hệ thống</h1>
+                    <p className="text-slate-600 mt-2">Thống kê và phân tích dữ liệu tổng thể</p>
+                </div>
+                <button
+                    onClick={loadOverviewData}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                    <RefreshCw className="h-4 w-4" />
+                    <span>Làm mới</span>
+                </button>
+            </div>
 
             {/* Main Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatsCard
-                    title="Tổng nhân viên"
-                    value={mockStaffStats.totalStaff.toLocaleString()}
-                    icon={Users}
-                    gradientFrom="from-blue-50"
-                    gradientTo="to-blue-100/50"
-                    textColor="text-blue-900"
-                    iconBg="bg-blue-500"
-                />
-                <StatsCard
-                    title="Tổng tài xế"
-                    value={mockDriverStats.totalDrivers.toLocaleString()}
-                    icon={UserCheck}
-                    gradientFrom="from-green-50"
-                    gradientTo="to-green-100/50"
-                    textColor="text-green-900"
-                    iconBg="bg-green-500"
-                />
-                <StatsCard
-                    title="Tổng lượt đổi pin"
-                    value={mockDriverStats.totalSwaps.toLocaleString()}
-                    icon={Car}
-                    gradientFrom="from-purple-50"
-                    gradientTo="to-purple-100/50"
-                    textColor="text-purple-900"
-                    iconBg="bg-purple-500"
-                />
-                <StatsCard
-                    title="Đánh giá trung bình"
-                    value={`${mockDriverStats.averageRating}/5`}
-                    icon={Star}
-                    gradientFrom="from-orange-50"
-                    gradientTo="to-orange-100/50"
-                    textColor="text-orange-900"
-                    iconBg="bg-orange-500"
-                />
-            </div>
-
-            {/* Staff and Driver Status */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Staff Status */}
-                <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                    <CardHeader>
-                        <CardTitle className="text-xl font-semibold text-slate-800 flex items-center">
-                            <Users className="h-6 w-6 mr-2 text-blue-600" />
-                            Trạng thái nhân viên
-                        </CardTitle>
+                <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-slate-700 text-sm font-medium">Tổng số trạm</CardTitle>
+                            <MapPin className="h-5 w-5 text-blue-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                    <span className="font-medium text-slate-700">Đang online</span>
-                                </div>
-                                <span className="text-2xl font-bold text-green-600">
-                                    {mockStaffStats.onlineStaff.toLocaleString()}
-                                </span>
+                        <div className="text-3xl font-bold text-blue-900">{stats.totalStations}</div>
+                        <p className="text-sm text-slate-600 mt-2">Trạm đổi pin</p>
+                        <div className="flex items-center space-x-3 mt-3 pt-3 border-t border-blue-200">
+                            <div className="flex items-center space-x-1">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span className="text-xs text-slate-600">Hoạt động: {detailedStats.activeStations}</span>
                             </div>
-                            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                                    <span className="font-medium text-slate-700">Đang ca</span>
-                                </div>
-                                <span className="text-2xl font-bold text-blue-600">
-                                    {mockStaffStats.shiftActiveStaff.toLocaleString()}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                                    <span className="font-medium text-slate-700">Tạm khóa</span>
-                                </div>
-                                <span className="text-2xl font-bold text-red-600">
-                                    {mockStaffStats.suspendedStaff.toLocaleString()}
-                                </span>
+                            <div className="flex items-center space-x-1">
+                                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                <span className="text-xs text-slate-600">Bảo trì: {detailedStats.maintenanceStations}</span>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Driver Status */}
-                <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+                <Card className="bg-gradient-to-br from-green-50 to-green-100/50 border-green-200">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-slate-700 text-sm font-medium">Tổng nhân viên</CardTitle>
+                            <Users className="h-5 w-5 text-green-600" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold text-green-900">{stats.totalStaff}</div>
+                        <p className="text-sm text-slate-600 mt-2">Nhân viên hệ thống</p>
+                        <div className="flex items-center space-x-3 mt-3 pt-3 border-t border-green-200">
+                            <div className="flex items-center space-x-1">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span className="text-xs text-slate-600">Hoạt động: {detailedStats.activeStaff}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                <span className="text-xs text-slate-600">Tạm khóa: {detailedStats.suspendedStaff}</span>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-slate-700 text-sm font-medium">Tổng giao dịch</CardTitle>
+                            <FileText className="h-5 w-5 text-purple-600" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold text-purple-900">{stats.totalTransactions}</div>
+                        <p className="text-sm text-slate-600 mt-2">Giao dịch đổi pin</p>
+                        <div className="flex items-center space-x-2 mt-3 pt-3 border-t border-purple-200">
+                            <TrendingUp className="h-4 w-4 text-purple-600" />
+                            <span className="text-xs text-slate-600">
+                                TB: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', notation: 'compact' }).format(detailedStats.averageTransactionCost)}/giao dịch
+                            </span>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-slate-700 text-sm font-medium">Khiếu nại</CardTitle>
+                            <MessageSquareText className="h-5 w-5 text-orange-600" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold text-orange-900">{stats.pendingComplaints}</div>
+                        <p className="text-sm text-slate-600 mt-2">Chờ xử lý</p>
+                        <div className="flex items-center space-x-3 mt-3 pt-3 border-t border-orange-200">
+                            <div className="flex items-center space-x-1">
+                                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                <span className="text-xs text-slate-600">Chờ: {stats.pendingComplaints}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span className="text-xs text-slate-600">Đã xử lý: {detailedStats.resolvedComplaints}</span>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Revenue and Transaction Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-slate-700 text-sm font-medium">Tổng doanh thu</CardTitle>
+                            <DollarSign className="h-5 w-5 text-emerald-600" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold text-emerald-900">
+                            {new Intl.NumberFormat('vi-VN', {
+                                style: 'currency',
+                                currency: 'VND',
+                                notation: 'compact'
+                            }).format(stats.totalRevenue)}
+                        </div>
+                        <p className="text-sm text-slate-600 mt-2">Từ các giao dịch</p>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 border-indigo-200">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-slate-700 text-sm font-medium">Trung bình / giao dịch</CardTitle>
+                            <TrendingUp className="h-5 w-5 text-indigo-600" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold text-indigo-900">
+                            {stats.totalTransactions > 0
+                                ? new Intl.NumberFormat('vi-VN', {
+                                    style: 'currency',
+                                    currency: 'VND',
+                                    notation: 'compact'
+                                }).format(stats.totalRevenue / stats.totalTransactions)
+                                : '0'}
+                        </div>
+                        <p className="text-sm text-slate-600 mt-2">Chi phí trung bình</p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200">
                     <CardHeader>
-                        <CardTitle className="text-xl font-semibold text-slate-800 flex items-center">
+                        <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
+                            <Battery className="h-6 w-6 mr-2 text-blue-600" />
+                            Kho pin
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-slate-600">Quản lý kho pin</p>
+                    </CardContent>
+                </Card>
+
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-green-50 to-green-100/50 border-green-200">
+                    <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
                             <UserCheck className="h-6 w-6 mr-2 text-green-600" />
-                            Trạng thái tài xế
+                            Quản lý nhân viên
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                    <span className="font-medium text-slate-700">Hoạt động</span>
-                                </div>
-                                <span className="text-2xl font-bold text-green-600">
-                                    {mockDriverStats.activeDrivers.toLocaleString()}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
-                                    <span className="font-medium text-slate-700">Không hoạt động</span>
-                                </div>
-                                <span className="text-2xl font-bold text-gray-600">
-                                    {mockDriverStats.inactiveDrivers.toLocaleString()}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                                    <span className="font-medium text-slate-700">Chờ xác thực</span>
-                                </div>
-                                <span className="text-2xl font-bold text-yellow-600">
-                                    {mockDriverStats.pendingVerification.toLocaleString()}
-                                </span>
-                            </div>
-                        </div>
+                        <p className="text-sm text-slate-600">Quản lý đội ngũ nhân viên</p>
+                    </CardContent>
+                </Card>
+
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200">
+                    <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
+                            <Brain className="h-6 w-6 mr-2 text-purple-600" />
+                            Dự đoán AI
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-slate-600">Xem dự đoán và đề xuất</p>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Distribution Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Staff by Station */}
-                <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                    <CardHeader>
-                        <CardTitle className="text-xl font-semibold text-slate-800 flex items-center">
-                            <TrendingUp className="h-6 w-6 mr-2 text-blue-600" />
-                            Phân bố nhân viên theo trạm
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {mockStaffStats.staffByStation.map((station, index) => {
-                                const colors = [
-                                    'bg-blue-500',
-                                    'bg-green-500',
-                                    'bg-purple-500',
-                                    'bg-orange-500'
-                                ];
-                                const bgColors = [
-                                    'bg-blue-50',
-                                    'bg-green-50',
-                                    'bg-purple-50',
-                                    'bg-orange-50'
-                                ];
-                                const textColors = [
-                                    'text-blue-600',
-                                    'text-green-600',
-                                    'text-purple-600',
-                                    'text-orange-600'
-                                ];
-
-                                return (
-                                    <div key={station.stationId} className={`flex items-center justify-between p-4 ${bgColors[index]} rounded-lg`}>
-                                        <div className="flex items-center space-x-3">
-                                            <div className={`w-3 h-3 ${colors[index]} rounded-full`}></div>
-                                            <span className="font-medium text-slate-700">{station.stationName}</span>
-                                        </div>
-                                        <span className={`text-2xl font-bold ${textColors[index]}`}>
-                                            {station.count.toLocaleString()}
-                                        </span>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Driver Subscription Plans */}
-                <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                    <CardHeader>
-                        <CardTitle className="text-xl font-semibold text-slate-800 flex items-center">
-                            <CreditCard className="h-6 w-6 mr-2 text-purple-600" />
-                            Phân bố gói thuê tài xế
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {mockDriverStats.driversByPlan.map((plan, index) => {
-                                const colors = [
-                                    'bg-blue-500',
-                                    'bg-green-500',
-                                    'bg-purple-500',
-                                    'bg-orange-500'
-                                ];
-                                const bgColors = [
-                                    'bg-blue-50',
-                                    'bg-green-50',
-                                    'bg-purple-50',
-                                    'bg-orange-50'
-                                ];
-                                const textColors = [
-                                    'text-blue-600',
-                                    'text-green-600',
-                                    'text-purple-600',
-                                    'text-orange-600'
-                                ];
-
-                                return (
-                                    <div key={plan.planId} className={`flex items-center justify-between p-4 ${bgColors[index]} rounded-lg`}>
-                                        <div className="flex items-center space-x-3">
-                                            <div className={`w-3 h-3 ${colors[index]} rounded-full`}></div>
-                                            <span className="font-medium text-slate-700">{plan.planName}</span>
-                                        </div>
-                                        <span className={`text-2xl font-bold ${textColors[index]}`}>
-                                            {plan.count.toLocaleString()}
-                                        </span>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </CardContent>
-                </Card>
+            {/* Charts Section */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6">
+                <h2 className="text-2xl font-bold text-slate-900 mb-6">Biểu đồ thống kê</h2>
+                <OverviewCharts
+                    stationsData={chartData.stations}
+                    staffData={chartData.staff}
+                    complaintsData={chartData.complaints}
+                />
             </div>
-
-            {/* Recent Activities */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                    <CardTitle className="text-xl font-semibold text-slate-800 flex items-center">
-                        <Clock className="h-6 w-6 mr-2 text-indigo-600" />
-                        Hoạt động gần đây
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        {mockActivities.map((activity) => (
-                            <div key={activity.id} className="flex items-center space-x-4 p-4 bg-slate-50 rounded-lg">
-                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <Activity className="h-5 w-5 text-blue-600" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="font-medium text-slate-800">{activity.description}</p>
-                                    <p className="text-sm text-slate-500">
-                                        {new Intl.DateTimeFormat('vi-VN', {
-                                            year: 'numeric',
-                                            month: '2-digit',
-                                            day: '2-digit',
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                        }).format(activity.timestamp)}
-                                    </p>
-                                </div>
-                                {'amount' in activity && activity.amount && (
-                                    <div className="text-right">
-                                        <p className="font-semibold text-green-600">
-                                            +{activity.amount.toLocaleString()} {activity.currency}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
         </div>
     );
 };

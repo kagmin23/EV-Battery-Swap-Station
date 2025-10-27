@@ -22,6 +22,7 @@ import { Plus, Grid, List, Users, Activity, Car, Star, Calendar, User, AlertCirc
 import { toast } from 'sonner';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 import { DriverSearchBar } from '../components/DriverSearchBar';
 import { PageLoadingSpinner, ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
 import { DriverService } from '@/services/api/driverService';
@@ -106,6 +107,9 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [suspendingDriverId, setSuspendingDriverId] = useState<string | null>(null);
     const [activatingDriverId, setActivatingDriverId] = useState<string | null>(null);
+    const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+    const [actionType, setActionType] = useState<'suspend' | 'activate' | null>(null);
+    const [targetDriver, setTargetDriver] = useState<Driver | null>(null);
 
     // Load drivers data from API
     const loadDrivers = async () => {
@@ -236,52 +240,64 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
     //   console.log('Update driver:', data);
     // };
 
-    const handleSuspendDriver = async (driver: Driver) => {
-        if (window.confirm(`Bạn có chắc chắn muốn tạm khóa tài xế ${driver.name}?`)) {
-            try {
-                setSuspendingDriverId(driver.id);
-                await DriverService.changeDriverStatus(driver.id, 'locked');
+    const handleSuspendDriver = (driver: Driver) => {
+        setTargetDriver(driver);
+        setActionType('suspend');
+        setIsConfirmationModalOpen(true);
+    };
+
+    const handleActivateDriver = (driver: Driver) => {
+        setTargetDriver(driver);
+        setActionType('activate');
+        setIsConfirmationModalOpen(true);
+    };
+
+    const handleConfirmAction = async () => {
+        if (!targetDriver || !actionType) return;
+
+        try {
+            if (actionType === 'suspend') {
+                setSuspendingDriverId(targetDriver.id);
+                await DriverService.changeDriverStatus(targetDriver.id, 'locked');
 
                 // Update local state
                 setDrivers(prev => prev.map(d =>
-                    d.id === driver.id
+                    d.id === targetDriver.id
                         ? { ...d, status: 'INACTIVE' as const, updatedAt: new Date() }
                         : d
                 ));
 
-                toast.success(`Đã tạm khóa tài xế ${driver.name}`);
-            } catch (err) {
-                const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tạm khóa tài xế';
-                setError(errorMessage);
-                console.error('Error suspending driver:', err);
-            } finally {
-                setSuspendingDriverId(null);
-            }
-        }
-    };
-
-    const handleActivateDriver = async (driver: Driver) => {
-        if (window.confirm(`Bạn có chắc chắn muốn kích hoạt tài xế ${driver.name}?`)) {
-            try {
-                setActivatingDriverId(driver.id);
-                await DriverService.changeDriverStatus(driver.id, 'active');
+                toast.success(`Đã tạm khóa tài xế ${targetDriver.name}`);
+            } else {
+                setActivatingDriverId(targetDriver.id);
+                await DriverService.changeDriverStatus(targetDriver.id, 'active');
 
                 // Update local state
                 setDrivers(prev => prev.map(d =>
-                    d.id === driver.id
+                    d.id === targetDriver.id
                         ? { ...d, status: 'ACTIVE' as const, updatedAt: new Date() }
                         : d
                 ));
 
-                toast.success(`Đã kích hoạt tài xế ${driver.name}`);
-            } catch (err) {
-                const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi kích hoạt tài xế';
-                setError(errorMessage);
-                console.error('Error activating driver:', err);
-            } finally {
-                setActivatingDriverId(null);
+                toast.success(`Đã kích hoạt tài xế ${targetDriver.name}`);
             }
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : `Có lỗi xảy ra khi ${actionType === 'suspend' ? 'tạm khóa' : 'kích hoạt'} tài xế`;
+            setError(errorMessage);
+            console.error(`Error ${actionType}ing driver:`, err);
+        } finally {
+            setSuspendingDriverId(null);
+            setActivatingDriverId(null);
+            setIsConfirmationModalOpen(false);
+            setTargetDriver(null);
+            setActionType(null);
         }
+    };
+
+    const handleCancelAction = () => {
+        setIsConfirmationModalOpen(false);
+        setTargetDriver(null);
+        setActionType(null);
     };
 
     const getStatusColor = (status: string) => {
@@ -377,6 +393,13 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                     filters={filters}
                     onFiltersChange={setFilters}
                     subscriptionPlans={mockSubscriptionPlans}
+                    onResetFilters={() => setFilters({
+                        search: '',
+                        status: 'ALL',
+                        subscriptionPlan: 'ALL',
+                        licenseType: 'ALL',
+                        city: 'ALL'
+                    })}
                 />
             </div>
 
@@ -1052,6 +1075,22 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={isConfirmationModalOpen}
+                onClose={handleCancelAction}
+                onConfirm={handleConfirmAction}
+                title={`Xác nhận ${actionType === 'suspend' ? 'tạm khóa' : 'kích hoạt'} tài xế`}
+                message={
+                    <div>
+                        Bạn có chắc chắn muốn {actionType === 'suspend' ? 'tạm khóa' : 'kích hoạt'} tài xế <span className="font-bold text-slate-800">{targetDriver?.name}</span>?
+                    </div>
+                }
+                confirmText={actionType === 'suspend' ? 'Tạm khóa' : 'Kích hoạt'}
+                type="delete"
+                isLoading={suspendingDriverId === targetDriver?.id || activatingDriverId === targetDriver?.id}
+            />
         </div>
     );
 };

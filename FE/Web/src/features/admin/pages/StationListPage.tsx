@@ -11,6 +11,7 @@ import { StationDetailModal } from '../components/StationDetailModal';
 import { StationStaffModal } from '../components/StationStaffModal';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PageLoadingSpinner, ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
 import { StationService, type CreateStationRequest, type UpdateStationRequest as ApiUpdateStationRequest, type Station as ApiStation } from '@/services/api/stationService';
 import { StaffService, type Staff as ApiStaff } from '@/services/api/staffService';
@@ -42,6 +43,8 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
     const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
     const [selectedStationForStaff, setSelectedStationForStaff] = useState<Station | null>(null);
     const [savingStaffId, setSavingStaffId] = useState<string | null>(null);
+    const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+    const [suspendingStation, setSuspendingStation] = useState<Station | null>(null);
 
     // Load staff data from API
     const loadStaff = async () => {
@@ -136,37 +139,49 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
         setIsModalOpen(true);
     };
 
-    const handleStationSuspend = async (station: Station) => {
-        if (window.confirm(`Bạn có chắc chắn muốn tạm dừng trạm ${station.name}?`)) {
-            try {
-                setSuspendingStationId(station.id);
-                const newStatus = station.status === 'ACTIVE' ? 'MAINTENANCE' : 'ACTIVE';
-                await StationService.changeStationStatus(station.id, newStatus);
+    const handleStationSuspend = (station: Station) => {
+        setSuspendingStation(station);
+        setIsConfirmationModalOpen(true);
+    };
 
-                // Update local state
-                setStations(prev => prev.map(s =>
-                    s.id === station.id
-                        ? {
-                            ...s,
-                            status: newStatus as StationStatus,
-                            updatedAt: new Date()
-                        }
-                        : s
-                ));
+    const handleConfirmSuspend = async () => {
+        if (!suspendingStation) return;
 
-                toast.success(
-                    newStatus === 'ACTIVE'
-                        ? `Đã kích hoạt trạm ${station.name}`
-                        : `Đã tạm dừng trạm ${station.name}`
-                );
-            } catch (err) {
-                const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi thay đổi trạng thái trạm';
-                setError(errorMessage);
-                console.error('Error changing station status:', err);
-            } finally {
-                setSuspendingStationId(null);
-            }
+        try {
+            setSuspendingStationId(suspendingStation.id);
+            const newStatus = suspendingStation.status === 'ACTIVE' ? 'MAINTENANCE' : 'ACTIVE';
+            await StationService.changeStationStatus(suspendingStation.id, newStatus);
+
+            // Update local state
+            setStations(prev => prev.map(s =>
+                s.id === suspendingStation.id
+                    ? {
+                        ...s,
+                        status: newStatus as StationStatus,
+                        updatedAt: new Date()
+                    }
+                    : s
+            ));
+
+            toast.success(
+                newStatus === 'ACTIVE'
+                    ? `Đã kích hoạt trạm ${suspendingStation.name}`
+                    : `Đã tạm dừng trạm ${suspendingStation.name}`
+            );
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi thay đổi trạng thái trạm';
+            setError(errorMessage);
+            console.error('Error changing station status:', err);
+        } finally {
+            setSuspendingStationId(null);
+            setIsConfirmationModalOpen(false);
+            setSuspendingStation(null);
         }
+    };
+
+    const handleCancelSuspend = () => {
+        setIsConfirmationModalOpen(false);
+        setSuspendingStation(null);
     };
 
     const handleAddStation = () => {
@@ -410,6 +425,12 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                 <StationSearchBar
                     filters={filters}
                     onFiltersChange={setFilters}
+                    onResetFilters={() => setFilters({
+                        search: '',
+                        city: 'ALL',
+                        district: 'ALL',
+                        status: 'ALL',
+                    })}
                 />
             </div>
 
@@ -557,6 +578,22 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                 onRemoveStaff={handleRemoveStaffFromStation}
                 onReloadStaff={handleReloadStaff}
                 savingStaffId={savingStaffId}
+            />
+
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={isConfirmationModalOpen}
+                onClose={handleCancelSuspend}
+                onConfirm={handleConfirmSuspend}
+                title={`Xác nhận ${suspendingStation?.status === 'ACTIVE' ? 'tạm dừng' : 'kích hoạt'} trạm`}
+                message={
+                    <div>
+                        Bạn có chắc chắn muốn {suspendingStation?.status === 'ACTIVE' ? 'tạm dừng' : 'kích hoạt'} trạm <span className="font-bold text-slate-800">{suspendingStation?.name}</span>?
+                    </div>
+                }
+                confirmText={suspendingStation?.status === 'ACTIVE' ? 'Tạm dừng' : 'Kích hoạt'}
+                type="delete"
+                isLoading={suspendingStationId === suspendingStation?.id}
             />
         </div>
     );

@@ -80,6 +80,24 @@ function App() {
             </ProtectedRoute>
           } />
 
+          <Route path="/complaints" element={
+            <ProtectedRoute requiredRole="admin">
+              <ManagementMainPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/usage-report" element={
+            <ProtectedRoute requiredRole="admin">
+              <ManagementMainPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/ai-predictions" element={
+            <ProtectedRoute requiredRole="admin">
+              <ManagementMainPage />
+            </ProtectedRoute>
+          } />
+
           <Route path="/settings" element={
             <ProtectedRoute requiredRole="admin">
               <ManagementMainPage />

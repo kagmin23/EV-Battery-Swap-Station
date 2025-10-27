@@ -58,12 +58,6 @@ const menuItems = [
         icon: Activity,
         description: 'Hỗ trợ khách hàng'
     },
-    {
-        id: 'settings',
-        label: 'Cài đặt',
-        icon: Settings,
-        description: 'Cài đặt hệ thống'
-    }
 ];
 
 export const DriverSidebar: React.FC<DriverSidebarProps> = ({
@@ -136,25 +130,6 @@ export const DriverSidebar: React.FC<DriverSidebarProps> = ({
                 })}
             </nav>
 
-            {/* Quick Actions */}
-            {!isCollapsed && (
-                <div className="p-4 border-t border-slate-200/60">
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-slate-700 mb-3">Thao tác nhanh</h3>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full justify-start text-slate-600 hover:text-slate-900 hover:bg-slate-50 text-base py-5 px-6"
-                        >
-                            <UserPlus
-                                className="h-6 w-6 mr-2 flex-shrink-0"
-                                style={{ width: '24px', height: '24px' }}
-                            />
-                            Thêm tài xế
-                        </Button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

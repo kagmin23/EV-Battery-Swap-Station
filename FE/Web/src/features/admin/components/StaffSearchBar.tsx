@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter } from 'lucide-react';
+import { Search, RotateCcw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,12 +9,14 @@ interface StaffSearchBarProps {
   filters: StaffFilters;
   onFiltersChange: (filters: StaffFilters) => void;
   stations: { id: string; name: string }[];
+  onResetFilters?: () => void;
 }
 
 export const StaffSearchBar: React.FC<StaffSearchBarProps> = ({
   filters,
   onFiltersChange,
-  stations
+  stations,
+  onResetFilters
 }) => {
   const handleSearchChange = (value: string) => {
     onFiltersChange({ ...filters, search: value });
@@ -125,25 +127,13 @@ export const StaffSearchBar: React.FC<StaffSearchBarProps> = ({
                 Tất cả trạng thái
               </SelectItem>
               <SelectItem
-                value="ONLINE"
+                value="active"
                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
               >
-                Trực tuyến
+                Hoạt động
               </SelectItem>
               <SelectItem
-                value="OFFLINE"
-                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
-              >
-                Ngoại tuyến
-              </SelectItem>
-              <SelectItem
-                value="SHIFT_ACTIVE"
-                className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
-              >
-                Đang ca
-              </SelectItem>
-              <SelectItem
-                value="SUSPENDED"
+                value="locked"
                 className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
               >
                 Tạm khóa
@@ -151,13 +141,14 @@ export const StaffSearchBar: React.FC<StaffSearchBarProps> = ({
             </SelectContent>
           </Select>
 
-          {/* Filter Button */}
+          {/* Reset Filter Button */}
           <Button
             variant="outline"
-            size="icon"
-            className="h-12 w-12 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl"
+            onClick={onResetFilters}
+            className="h-12 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl text-slate-700 px-4 whitespace-nowrap"
           >
-            <Filter className="h-5 w-5" />
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Reset
           </Button>
         </div>
       </div>

@@ -10,22 +10,13 @@ import { StaffModal } from '../components/StaffModal';
 import { StaffDetailModal } from '../components/StaffDetailModal';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PageLoadingSpinner, ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
 import { StaffService, type CreateStaffRequest, type UpdateStaffRequest as ApiUpdateStaffRequest, type Staff as ApiStaff } from '@/services/api/staffService';
 import { StationService, type Station as ApiStation } from '@/services/api/stationService';
-import type { Staff, StaffFilters, AddStaffRequest, UpdateStaffRequest, StaffPermission, Station } from '../types/staff';
+import type { Staff, StaffFilters, AddStaffRequest, UpdateStaffRequest, Station, StaffStatus } from '../types/staff';
 
 // Mock data removed - now using API data
-
-// Mock data removed - now using API data
-
-const mockPermissions: StaffPermission[] = [
-    { id: '1', name: 'Quản lý nhân viên', description: 'Có thể thêm, sửa, xóa nhân viên', enabled: false },
-    { id: '2', name: 'Xem báo cáo', description: 'Có thể xem các báo cáo thống kê', enabled: false },
-    { id: '3', name: 'Quản lý trạm', description: 'Có thể quản lý thông tin trạm', enabled: false },
-    { id: '4', name: 'Xử lý thanh toán', description: 'Có thể xử lý các giao dịch thanh toán', enabled: false },
-    { id: '5', name: 'Quản lý pin', description: 'Có thể quản lý tồn kho pin', enabled: false },
-];
 
 interface StaffListPageProps {
     onStaffSelect?: (staff: Staff) => void;
@@ -49,6 +40,8 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
     const [savingStaffId, setSavingStaffId] = useState<string | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
+    const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+    const [suspendingStaff, setSuspendingStaff] = useState<Staff | null>(null);
 
     // Load stations data from API
     const loadStations = async () => {
@@ -108,9 +101,17 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     status: 'ACTIVE' as const,
                 };
 
-                const stationInfo = apiStaffMember.station
-                    ? stations.find(s => s.id === apiStaffMember.station) || defaultStation
-                    : (stations.length > 0 ? stations[0] : defaultStation);
+                // Handle station - can be string ID or populated object
+                let stationInfo: Station = defaultStation;
+                if (apiStaffMember.station) {
+                    const stationId = typeof apiStaffMember.station === 'string'
+                        ? apiStaffMember.station
+                        : (apiStaffMember.station as any)._id;
+                    const foundStation = stations.find(s => s.id === stationId);
+                    if (foundStation) {
+                        stationInfo = foundStation;
+                    }
+                }
 
                 return {
                     id: apiStaffMember._id,
@@ -121,7 +122,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     stationId: stationInfo.id,
                     stationName: stationInfo.name,
                     status: apiStaffMember.status === 'active' ? 'ONLINE' : 'OFFLINE',
-                    permissions: mockPermissions.filter(p => p.enabled),
+                    permissions: [],
                     lastActive: new Date(apiStaffMember.updatedAt),
                     createdAt: new Date(apiStaffMember.createdAt),
                     updatedAt: new Date(apiStaffMember.updatedAt),
@@ -172,37 +173,53 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
         setIsModalOpen(true);
     };
 
-    const handleStaffSuspend = async (staffMember: Staff) => {
-        if (window.confirm(`Bạn có chắc chắn muốn tạm khóa nhân viên ${staffMember.name}?`)) {
-            try {
-                setSuspendingStaffId(staffMember.id);
-                const newStatus = staffMember.status === 'ONLINE' ? 'locked' : 'active';
-                await StaffService.changeStaffStatus(staffMember.id, newStatus);
+    const handleStaffSuspend = (staffMember: Staff) => {
+        setSuspendingStaff(staffMember);
+        setIsConfirmationModalOpen(true);
+    };
 
-                // Update local state
-                setStaff(prev => prev.map(s =>
-                    s.id === staffMember.id
-                        ? {
-                            ...s,
-                            status: newStatus === 'active' ? 'ONLINE' : 'OFFLINE' as const,
-                            updatedAt: new Date()
-                        }
-                        : s
-                ));
+    const handleConfirmSuspend = async () => {
+        if (!suspendingStaff) return;
 
-                toast.success(
-                    newStatus === 'active'
-                        ? `Đã kích hoạt nhân viên ${staffMember.name}`
-                        : `Đã tạm khóa nhân viên ${staffMember.name}`
-                );
-            } catch (err) {
-                const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi thay đổi trạng thái nhân viên';
-                setError(errorMessage);
-                console.error('Error changing staff status:', err);
-            } finally {
-                setSuspendingStaffId(null);
-            }
+        try {
+            setSuspendingStaffId(suspendingStaff.id);
+            // Determine new status: if staff is active/locked -> lock them, if locked -> activate them
+            const isCurrentlyActive = suspendingStaff.status === 'ONLINE' || suspendingStaff.status === 'SHIFT_ACTIVE' || suspendingStaff.status === 'active';
+            const newStatus = isCurrentlyActive ? 'locked' : 'active';
+
+            await StaffService.changeStaffStatus(suspendingStaff.id, newStatus);
+
+            // Update local state - map to UI status format
+            const newUISatus: StaffStatus = newStatus === 'active' ? 'ONLINE' : 'locked';
+            setStaff(prev => prev.map(s =>
+                s.id === suspendingStaff.id
+                    ? {
+                        ...s,
+                        status: newUISatus,
+                        updatedAt: new Date()
+                    }
+                    : s
+            ));
+
+            toast.success(
+                newStatus === 'active'
+                    ? `Đã kích hoạt nhân viên ${suspendingStaff.name}`
+                    : `Đã tạm khóa nhân viên ${suspendingStaff.name}`
+            );
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi thay đổi trạng thái nhân viên';
+            setError(errorMessage);
+            console.error('Error changing staff status:', err);
+        } finally {
+            setSuspendingStaffId(null);
+            setIsConfirmationModalOpen(false);
+            setSuspendingStaff(null);
         }
+    };
+
+    const handleCancelSuspend = () => {
+        setIsConfirmationModalOpen(false);
+        setSuspendingStaff(null);
     };
 
     const handleAddStaff = () => {
@@ -213,6 +230,15 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
     const handleViewStaffDetails = (staffMember: Staff) => {
         setSelectedStaff(staffMember);
         setIsDetailModalOpen(true);
+    };
+
+    const handleResetFilters = () => {
+        setFilters({
+            search: '',
+            stationId: 'ALL',
+            role: 'ALL',
+            status: 'ALL',
+        });
     };
 
     const handleSaveStaff = async (data: AddStaffRequest | UpdateStaffRequest): Promise<void> => {
@@ -242,7 +268,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     stationId: (data as UpdateStaffRequest).stationId || '1',
                     stationName: stations.find(s => s.id === (data as UpdateStaffRequest).stationId)?.name || '',
                     status: updatedStaff.status === 'active' ? 'ONLINE' : 'OFFLINE',
-                    permissions: mockPermissions.filter(p => (data as UpdateStaffRequest).permissions?.includes(p.id)),
+                    permissions: [],
                     lastActive: new Date(updatedStaff.updatedAt),
                     createdAt: new Date(updatedStaff.createdAt),
                     updatedAt: new Date(updatedStaff.updatedAt),
@@ -272,7 +298,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     stationId: (data as AddStaffRequest).stationId,
                     stationName: stations.find(s => s.id === (data as AddStaffRequest).stationId)?.name || '',
                     status: newStaff.status === 'active' ? 'ONLINE' : 'OFFLINE',
-                    permissions: mockPermissions.filter(p => (data as AddStaffRequest).permissions?.includes(p.id)),
+                    permissions: [],
                     lastActive: new Date(newStaff.createdAt),
                     createdAt: new Date(newStaff.createdAt),
                     updatedAt: new Date(newStaff.updatedAt),
@@ -331,18 +357,18 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     iconBg="bg-blue-500"
                 />
                 <StatsCard
-                    title="Đang online"
-                    value={staff.filter(s => s.status === 'ONLINE').length}
-                    icon={Clock}
+                    title="Hoạt động"
+                    value={staff.filter(s => s.status === 'active' || s.status === 'ONLINE').length}
+                    icon={Activity}
                     gradientFrom="from-green-50"
                     gradientTo="to-green-100/50"
                     textColor="text-green-900"
                     iconBg="bg-green-500"
                 />
                 <StatsCard
-                    title="Đang ca làm"
-                    value={staff.filter(s => s.status === 'SHIFT_ACTIVE').length}
-                    icon={Activity}
+                    title="Tạm khóa"
+                    value={staff.filter(s => s.status === 'locked' || s.status === 'SUSPENDED').length}
+                    icon={Clock}
                     gradientFrom="from-orange-50"
                     gradientTo="to-orange-100/50"
                     textColor="text-orange-900"
@@ -356,6 +382,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     filters={filters}
                     onFiltersChange={setFilters}
                     stations={stations}
+                    onResetFilters={handleResetFilters}
                 />
             </div>
 
@@ -456,6 +483,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                                 onSelect={onStaffSelect || (() => { })}
                                 onEdit={handleStaffEdit}
                                 onSuspend={handleStaffSuspend}
+                                onViewDetails={handleViewStaffDetails}
                                 suspendingStaffId={suspendingStaffId}
                                 savingStaffId={savingStaffId}
                             />
@@ -474,7 +502,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                 onSave={handleSaveStaff}
                 staff={editingStaff}
                 stations={stations}
-                permissions={mockPermissions}
+                isSaving={!!savingStaffId}
             />
 
             {/* Staff Detail Modal */}
@@ -485,6 +513,22 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     setSelectedStaff(null);
                 }}
                 staff={selectedStaff}
+            />
+
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={isConfirmationModalOpen}
+                onClose={handleCancelSuspend}
+                onConfirm={handleConfirmSuspend}
+                title={`Xác nhận ${suspendingStaff?.status === 'ONLINE' ? 'tạm khóa' : 'kích hoạt'} nhân viên`}
+                message={
+                    <div>
+                        Bạn có chắc chắn muốn {suspendingStaff?.status === 'ONLINE' ? 'tạm khóa' : 'kích hoạt'} nhân viên <span className="font-bold text-slate-800">{suspendingStaff?.name}</span>?
+                    </div>
+                }
+                confirmText={suspendingStaff?.status === 'ONLINE' ? 'Tạm khóa' : 'Kích hoạt'}
+                type="delete"
+                isLoading={suspendingStaffId === suspendingStaff?.id}
             />
         </div>
     );

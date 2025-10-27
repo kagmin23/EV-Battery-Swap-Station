@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ManagementLayout } from '../layout/ManagementLayout';
 import { StaffOverviewPage } from './StaffOverviewPage';
 import { StaffListPage } from './StaffListPage';
-import { StaffDistributionPage } from './StaffDistributionPage';
 import { StationListPage } from './StationListPage';
 import { StaffDetailModal } from '../components/StaffDetailModal';
 import type { Staff } from '../types/staff';
@@ -19,8 +18,6 @@ export const StaffManagementMainPage: React.FC = () => {
         const path = location.pathname;
         if (path.includes('/staff/overview')) return 'overview';
         if (path.includes('/staff/list')) return 'staff-list';
-        if (path.includes('/staff/distribution')) return 'staff-distribution';
-        if (path.includes('/staff/activities')) return 'staff-activities';
         if (path.includes('/staff/settings')) return 'settings';
         if (path.includes('/staff/station-list')) return 'station-list';
         return 'overview';
@@ -42,12 +39,6 @@ export const StaffManagementMainPage: React.FC = () => {
                 break;
             case 'staff-list':
                 navigate('/staff/list');
-                break;
-            case 'staff-distribution':
-                navigate('/staff/distribution');
-                break;
-            case 'staff-activities':
-                navigate('/staff/activities');
                 break;
             case 'station-list':
                 navigate('/staff/station-list');
@@ -72,17 +63,6 @@ export const StaffManagementMainPage: React.FC = () => {
                 return <StaffOverviewPage />;
             case 'staff-list':
                 return <StaffListPage onStaffSelect={handleStaffSelect} />;
-            case 'staff-distribution':
-                return <StaffDistributionPage />;
-            case 'staff-activities':
-                return (
-                    <div className="p-6">
-                        <div className="text-center py-12">
-                            <h2 className="text-2xl font-bold text-slate-800 mb-4">Trang hoạt động</h2>
-                            <p className="text-slate-600">Tính năng đang được phát triển</p>
-                        </div>
-                    </div>
-                );
             case 'station-list':
                 return <StationListPage />;
             case 'settings':

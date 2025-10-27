@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter } from 'lucide-react';
+import { Search, RotateCcw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,11 +8,13 @@ import type { StationFilters, StationStatus } from '../types/station';
 interface StationSearchBarProps {
     filters: StationFilters;
     onFiltersChange: (filters: StationFilters) => void;
+    onResetFilters?: () => void;
 }
 
 export const StationSearchBar: React.FC<StationSearchBarProps> = ({
     filters,
-    onFiltersChange
+    onFiltersChange,
+    onResetFilters
 }) => {
     const handleSearchChange = (value: string) => {
         onFiltersChange({ ...filters, search: value });
@@ -102,13 +104,14 @@ export const StationSearchBar: React.FC<StationSearchBarProps> = ({
                         </SelectContent>
                     </Select>
 
-                    {/* Filter Button */}
+                    {/* Reset Filter Button */}
                     <Button
                         variant="outline"
-                        size="icon"
-                        className="h-12 w-12 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl"
+                        onClick={onResetFilters}
+                        className="h-12 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl text-slate-700 px-4 whitespace-nowrap"
                     >
-                        <Filter className="h-5 w-5" />
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Reset
                     </Button>
                 </div>
             </div>

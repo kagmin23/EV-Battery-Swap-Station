@@ -18,7 +18,7 @@ export interface Staff {
 
 export type StaffRole = 'STAFF' | 'SUPERVISOR' | 'MANAGER';
 
-export type StaffStatus = 'ONLINE' | 'OFFLINE' | 'SHIFT_ACTIVE' | 'SUSPENDED';
+export type StaffStatus = 'ONLINE' | 'OFFLINE' | 'SHIFT_ACTIVE' | 'SUSPENDED' | 'active' | 'locked';
 
 export interface StaffPermission {
   id: string;
@@ -56,7 +56,7 @@ export interface StaffFilters {
   search: string;
   stationId: string;
   role: StaffRole | 'ALL';
-  status: StaffStatus | 'ALL';
+  status: StaffStatus | 'ALL' | 'active' | 'locked';
 }
 
 export interface StaffStats {
@@ -78,7 +78,6 @@ export interface AddStaffRequest {
   phone: string;
   role: StaffRole;
   stationId: string;
-  permissions: string[];
 }
 
 export interface UpdateStaffRequest {
@@ -89,5 +88,4 @@ export interface UpdateStaffRequest {
   role?: StaffRole;
   stationId?: string;
   status?: StaffStatus;
-  permissions?: string[];
 }

@@ -117,7 +117,7 @@ export const StationCard: React.FC<StationCardProps> = ({
                     </div>
                 </div>
 
-                <div className="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+                <div className="grid grid-cols-2 gap-2 pt-4 border-t border-slate-100">
                     {onViewDetails && (
                         <Button
                             variant="outline"
@@ -127,7 +127,7 @@ export const StationCard: React.FC<StationCardProps> = ({
                                 onViewDetails(station);
                             }}
                             disabled={isSaving || isSuspending}
-                            className="flex-2 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
+                            className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
                         >
                             Xem chi tiết
                         </Button>
@@ -141,7 +141,7 @@ export const StationCard: React.FC<StationCardProps> = ({
                                 onViewStaff(station);
                             }}
                             disabled={isSaving || isSuspending}
-                            className="flex-1 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
+                            className="hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
                         >
                             <Users className="h-4 w-4 mr-1" />
                             Nhân viên
@@ -155,7 +155,7 @@ export const StationCard: React.FC<StationCardProps> = ({
                             onEdit(station);
                         }}
                         disabled={isSaving || isSuspending}
-                        className="flex-1 hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
+                        className="hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
                     >
                         {isSaving ? (
                             <ButtonLoadingSpinner size="sm" variant="default" text="Đang lưu..." />
@@ -172,7 +172,7 @@ export const StationCard: React.FC<StationCardProps> = ({
                                 onSuspend(station);
                             }}
                             disabled={isSuspending || isSaving}
-                            className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
                         >
                             {isSuspending ? (
                                 <ButtonLoadingSpinner size="sm" variant="default" text="Đang xử lý..." />

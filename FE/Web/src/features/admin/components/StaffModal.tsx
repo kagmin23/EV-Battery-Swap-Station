@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
-import type { Staff, AddStaffRequest, UpdateStaffRequest, StaffRole, Station, StaffPermission } from '../types/staff';
+import { ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
+import type { Staff, AddStaffRequest, UpdateStaffRequest, StaffRole, Station } from '../types/staff';
 
 interface StaffModalProps {
   isOpen: boolean;
@@ -14,7 +14,7 @@ interface StaffModalProps {
   onSave: (data: AddStaffRequest | UpdateStaffRequest) => void;
   staff?: Staff | null;
   stations: Station[];
-  permissions: StaffPermission[];
+  isSaving?: boolean;
 }
 
 export const StaffModal: React.FC<StaffModalProps> = ({
@@ -23,7 +23,7 @@ export const StaffModal: React.FC<StaffModalProps> = ({
   onSave,
   staff,
   stations,
-  permissions
+  isSaving = false
 }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -31,7 +31,6 @@ export const StaffModal: React.FC<StaffModalProps> = ({
     phone: '',
     role: 'STAFF' as StaffRole,
     stationId: '',
-    permissions: [] as string[],
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -44,7 +43,6 @@ export const StaffModal: React.FC<StaffModalProps> = ({
         phone: staff.phone,
         role: staff.role,
         stationId: staff.stationId,
-        permissions: staff.permissions.filter(p => p.enabled).map(p => p.id),
       });
     } else {
       setFormData({
@@ -53,7 +51,6 @@ export const StaffModal: React.FC<StaffModalProps> = ({
         phone: '',
         role: 'STAFF',
         stationId: '',
-        permissions: [],
       });
     }
     setErrors({});
@@ -109,15 +106,6 @@ export const StaffModal: React.FC<StaffModalProps> = ({
     }
   };
 
-  const handlePermissionChange = (permissionId: string, enabled: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      permissions: enabled
-        ? [...prev.permissions, permissionId]
-        : prev.permissions.filter(id => id !== permissionId)
-    }));
-  };
-
   const handleClose = () => {
     setFormData({
       name: '',
@@ -125,7 +113,6 @@ export const StaffModal: React.FC<StaffModalProps> = ({
       phone: '',
       role: 'STAFF',
       stationId: '',
-      permissions: [],
     });
     setErrors({});
     onClose();
@@ -191,7 +178,7 @@ export const StaffModal: React.FC<StaffModalProps> = ({
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn vai trò" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[9999]">
                       <SelectItem value="STAFF">Nhân viên</SelectItem>
                       <SelectItem value="SUPERVISOR">Giám sát</SelectItem>
                       <SelectItem value="MANAGER">Quản lý</SelectItem>
@@ -208,7 +195,7 @@ export const StaffModal: React.FC<StaffModalProps> = ({
                     <SelectTrigger className={errors.stationId ? 'border-red-500' : ''}>
                       <SelectValue placeholder="Chọn trạm" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[9999]">
                       {stations.map((station) => (
                         <SelectItem key={station.id} value={station.id}>
                           {station.name} - {station.address}
@@ -222,32 +209,16 @@ export const StaffModal: React.FC<StaffModalProps> = ({
             </CardContent>
           </Card>
 
-          {/* Permissions */}
-          <Card className="border-0 shadow-none">
-            <CardContent>
-              <div className="space-y-4">
-                {permissions.map((permission) => (
-                  <div key={permission.id} className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">{permission.name}</div>
-                      <div className="text-sm text-gray-500">{permission.description}</div>
-                    </div>
-                    <Switch
-                      checked={formData.permissions.includes(permission.id)}
-                      onCheckedChange={(checked) => handlePermissionChange(permission.id, checked)}
-                    />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isSaving}>
               Hủy
             </Button>
-            <Button type="submit">
-              {staff ? 'Cập nhật' : 'Thêm mới'}
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? (
+                <ButtonLoadingSpinner size="sm" variant="default" text="Đang lưu..." />
+              ) : (
+                staff ? 'Cập nhật' : 'Thêm mới'
+              )}
             </Button>
           </DialogFooter>
         </form>
