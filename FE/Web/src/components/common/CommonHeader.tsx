@@ -31,6 +31,10 @@ export const CommonHeader: React.FC<CommonHeaderProps> = ({
     navigate('/login');
   };
 
+  const handleProfileClick = () => {
+    navigate('/profile/me');
+  };
+
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'admin':
@@ -105,7 +109,10 @@ export const CommonHeader: React.FC<CommonHeaderProps> = ({
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="cursor-pointer">
+                  <DropdownMenuItem 
+                    onClick={handleProfileClick}
+                    className="cursor-pointer"
+                  >
                     <User className="mr-2 h-4 w-4" />
                     <span>Hồ sơ</span>
                   </DropdownMenuItem>
