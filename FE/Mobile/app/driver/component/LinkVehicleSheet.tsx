@@ -1,13 +1,13 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, TextInput, TouchableOpacity, Pressable, Animated, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { getAllBattery, useBatteries } from '@/store/baterry';
-import { router, useFocusEffect } from 'expo-router';
 import { creatVehicle } from '@/store/vehicle';
+import { Ionicons } from '@expo/vector-icons';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Animated, Dimensions, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const { height } = Dimensions.get('window');
 
-type Option = { label: string; value: string };
+type Option = { label: string; value: string; key?: string };
 
 type Props = {
     visible: boolean;
@@ -58,9 +58,9 @@ const SearchableDropdown: React.FC<{
                         ) : null}
                     </View>
                     <ScrollView style={{ maxHeight: 180 }} keyboardShouldPersistTaps="handled">
-                        {filtered.map(opt => (
+                        {filtered.map((opt, idx) => (
                             <TouchableOpacity
-                                key={opt.value}
+                                key={opt.key ?? opt.value ?? String(idx)}
                                 style={styles.dropdownItem}
                                 onPress={() => {
                                     onSelect(opt.value);

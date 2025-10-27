@@ -1,5 +1,6 @@
 
 import { getAllStationInMap, initFavorites, sSelectedStation, Station, toggleFavorite, useFavorites, useSelectedStation } from '@/store/station';
+import { toCamelCase } from '@/utils/caseConverter';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -18,7 +19,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapComponent, { MapComponentHandle } from '../driver/component/MapComponent';
 import StationListView from '../driver/component/StationListView';
-import { toCamelCase } from '@/utils/caseConverter';
 
 const { width, height } = Dimensions.get('window');
 
@@ -314,7 +314,7 @@ const LocationSation: React.FC = () => {
                   </Text>
                 </View>
                 <TouchableOpacity style={styles.roundIconButton} onPress={() => handleNavigatePress(selectedStation)}>
-                  <Ionicons name="return-up-forward-sharp" size={18} color="#d6c7ff" />
+                  <Ionicons name="return-up-forward-sharp" size={18} color="white" />
                 </TouchableOpacity>
               </View>
             </Animated.View>
