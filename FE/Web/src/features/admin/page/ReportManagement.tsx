@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   FileText,
   Search,
@@ -31,7 +31,9 @@ import { ReportCard } from '../components/ReportCard';
 import { ReportGeneratorModal } from '../components/ReportGeneratorModal';
 import { reportTemplates, recentReports, getCategoryLabel } from '@/mock/ReportData';
 import type { ReportTemplate } from '@/mock/ReportData';
-import { CardSkeleton } from '@/components/ui/table-skeleton';
+import { Spinner } from '@/components/ui/spinner';
+import { ReportsApi, type UsageReportResponse } from '../apis/reportsApi';
+import { toast } from 'sonner';
 
 const iconMap: Record<string, React.ElementType> = {
   'battery-charging': BatteryCharging,
@@ -68,7 +70,7 @@ const getIconColors = (category: string): { iconColor: string; iconBg: string } 
 };
 
 export default function ReportManagement() {
-  const [isLoading] = useState(false); // Set to true when integrating real API
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(false);
@@ -77,6 +79,32 @@ export default function ReportManagement() {
   );
   const [selectedReport, setSelectedReport] = useState<ReportTemplate | null>(null);
   const [isGeneratorOpen, setIsGeneratorOpen] = useState<boolean>(false);
+  const [usageData, setUsageData] = useState<UsageReportResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch reports data on component mount
+  useEffect(() => {
+    const fetchReportsData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Fetch usage report for Report Management page
+        const usageResponse = await ReportsApi.getUsageReport();
+        setUsageData(usageResponse);
+        
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch reports data';
+        setError(errorMessage);
+        toast.error(errorMessage);
+        console.error('Error fetching reports data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchReportsData();
+  }, []);
 
   // Filter reports
   const filteredReports = useMemo(() => {
@@ -139,48 +167,32 @@ export default function ReportManagement() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        {/* Header Skeleton */}
-        <div className="mb-8 animate-pulse">
-          <div className="h-10 w-64 bg-gray-200 rounded dark:bg-gray-700 mb-2" />
-          <div className="h-5 w-96 bg-gray-200 rounded-full dark:bg-gray-700" />
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Spinner size="xl" className="mb-4" />
+          <p className="text-gray-600">Loading reports...</p>
         </div>
-        
-        {/* Search & Filters Skeleton */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="animate-pulse">
-            <div className="h-10 w-full bg-gray-200 rounded dark:bg-gray-700 mb-4" />
-            <div className="flex gap-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-10 w-32 bg-gray-200 rounded dark:bg-gray-700" />
-              ))}
-            </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">
+            <svg className="inline-block w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
-        </div>
-        
-        {/* Report Templates Grid Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-              <div className="animate-pulse">
-                <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700 mb-4" />
-                <div className="h-4 w-full bg-gray-200 rounded-full dark:bg-gray-700 mb-2" />
-                <div className="h-4 w-3/4 bg-gray-200 rounded-full dark:bg-gray-700" />
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        {/* Recent Reports Skeleton */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="animate-pulse mb-6">
-            <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700" />
-          </div>
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="animate-pulse h-20 bg-gray-200 rounded dark:bg-gray-700" />
-            ))}
-          </div>
+          <p className="text-gray-800 font-semibold mb-2">Error Loading Reports</p>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -192,10 +204,10 @@ export default function ReportManagement() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3" style={{ color: 'var(--color-text-primary)' }}>
           <FileText className="w-8 h-8" />
-          Quản lý Báo cáo
+          Report Management
         </h1>
         <p style={{ color: 'var(--color-text-secondary)' }}>
-          Tạo, xem và quản lý báo cáo toàn diện cho Trạm đổi Pin EV
+          Create, view and manage comprehensive reports for EV Battery Swap Station
         </p>
       </div>
 
@@ -204,7 +216,7 @@ export default function ReportManagement() {
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600 mb-1">Tổng báo cáo</p>
+              <p className="text-sm text-slate-600 mb-1">Total Reports</p>
               <p className="text-2xl font-bold text-slate-800">{reportTemplates.length}</p>
             </div>
             <FileText className="w-10 h-10 text-blue-500" />
@@ -213,7 +225,7 @@ export default function ReportManagement() {
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600 mb-1">Yêu thích</p>
+              <p className="text-sm text-slate-600 mb-1">Favorites</p>
               <p className="text-2xl font-bold text-slate-800">{favorites.size}</p>
             </div>
             <Star className="w-10 h-10 text-yellow-500" />
@@ -222,7 +234,7 @@ export default function ReportManagement() {
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600 mb-1">Tạo hôm nay</p>
+              <p className="text-sm text-slate-600 mb-1">Generated Today</p>
               <p className="text-2xl font-bold text-slate-800">{recentReports.filter(r => r.generatedDate.includes('2024-10-14')).length}</p>
             </div>
             <Calendar className="w-10 h-10 text-green-500" />
@@ -231,13 +243,38 @@ export default function ReportManagement() {
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600 mb-1">Tải xuống gần đây</p>
+              <p className="text-sm text-slate-600 mb-1">Recent Downloads</p>
               <p className="text-2xl font-bold text-slate-800">{recentReports.length}</p>
             </div>
             <Download className="w-10 h-10 text-purple-500" />
           </div>
         </div>
       </div>
+
+      {/* API Data Overview */}
+      {usageData && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <FileText className="w-6 h-6" />
+            Live Usage Report Data
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6">
+              <h3 className="text-lg font-semibold text-slate-800 mb-3">Usage Report</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Frequency Data Points</span>
+                  <span className="font-semibold text-purple-600">{usageData.data.frequency.length}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Peak Hours Data</span>
+                  <span className="font-semibold text-orange-600">{usageData.data.peakHours.length}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters and Search */}
       <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6 mb-8">
@@ -248,7 +285,7 @@ export default function ReportManagement() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Tìm báo cáo..."
+                placeholder="Search reports..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"

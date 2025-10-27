@@ -21,28 +21,28 @@ const menuItems = [
     id: 'dashboard',
     label: 'Dashboard',
     icon: Home,
-    description: 'Tổng quan',
+    description: 'Overview',
     path: '/staff/dashboard'
   },
   {
     id: 'confirm-exchange',
-    label: 'Xác nhận đổi pin',
+    label: 'Confirm Battery Swap',
     icon: RefreshCw,
-    description: 'Xác nhận giao dịch',
+    description: 'Confirm transaction',
     path: '/staff/confirm-exchange'
   },
   {
     id: 'payment-history',
-    label: 'Lịch sử',
+    label: 'Payment History',
     icon: ClipboardCheck,
-    description: 'Lịch sử giao dịch',
+    description: 'Transaction history',
     path: '/staff/payment-history'
   },
   {
     id: 'statistics',
-    label: 'Thống kê',
+    label: 'Statistics',
     icon: BarChart3,
-    description: 'Báo cáo thống kê',
+    description: 'Statistical reports',
     path: '/staff/statistics'
   }
 ];

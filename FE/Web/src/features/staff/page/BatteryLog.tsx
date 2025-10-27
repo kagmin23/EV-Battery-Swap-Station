@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { getBatteryDetail, getStationById } from '../apis/BatteryLogApi';
 import type { BatteryDetail, Station } from '../apis/BatteryLogApi';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function BatteryLog() {
   const { batteryId } = useParams<{ batteryId: string }>();
@@ -73,41 +74,10 @@ export default function BatteryLog() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen p-6">
-        <div className="max-w-6xl mx-auto">
-          {/* Back Button & Title Skeleton */}
-          <div className="mb-6 flex items-center gap-4 animate-pulse">
-            <div className="h-10 w-10 bg-gray-200 rounded dark:bg-gray-700" />
-            <div className="h-10 w-64 bg-gray-200 rounded dark:bg-gray-700" />
-          </div>
-          
-          {/* Stats Cards Skeleton */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                <div className="animate-pulse">
-                  <div className="h-4 w-24 bg-gray-200 rounded-full dark:bg-gray-700 mb-4" />
-                  <div className="h-8 w-20 bg-gray-200 rounded dark:bg-gray-700 mb-2" />
-                  <div className="h-3 w-32 bg-gray-200 rounded-full dark:bg-gray-700" />
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          {/* Details Card Skeleton */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-            <div className="animate-pulse mb-6">
-              <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700" />
-            </div>
-            <div className="space-y-4">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="animate-pulse flex justify-between items-center py-3 border-b border-gray-200">
-                  <div className="h-4 w-32 bg-gray-200 rounded-full dark:bg-gray-700" />
-                  <div className="h-4 w-48 bg-gray-200 rounded dark:bg-gray-700" />
-                </div>
-              ))}
-            </div>
-          </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Spinner size="xl" className="mb-4" />
+          <p className="text-gray-600">Loading battery data...</p>
         </div>
       </div>
     );
@@ -122,13 +92,13 @@ export default function BatteryLog() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p className="text-text-primary font-semibold mb-2">Lỗi tải dữ liệu</p>
-          <p className="text-text-secondary">{error || 'Không tìm thấy dữ liệu pin'}</p>
+          <p className="text-text-primary font-semibold mb-2">Data Loading Error</p>
+          <p className="text-text-secondary">{error || 'Battery data not found'}</p>
           <Button
             onClick={() => navigate(-1)}
             className="mt-4"
           >
-            Quay lại
+            Go Back
           </Button>
         </div>
       </div>
@@ -172,16 +142,16 @@ export default function BatteryLog() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Chi tiết Pin</h1>
+              <h1 className="text-3xl font-bold text-slate-900">Battery Details</h1>
               <p className="text-slate-600 mt-1">
-                Thông tin chi tiết cho {batteryData.serial}
+                Detailed information for {batteryData.serial}
               </p>
             </div>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={refreshData}>
               <RefreshCw className="h-4 w-4 mr-2" />
-              Làm mới
+              Refresh
             </Button>
           </div>
         </div>
@@ -192,7 +162,7 @@ export default function BatteryLog() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-blue-800 flex items-center gap-2">
                 <BatteryIcon className="h-4 w-4" />
-                Trạng thái Pin
+                Battery Status
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -206,7 +176,7 @@ export default function BatteryLog() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-green-800 flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
-                Sức khỏe Pin (SOH)
+                Battery Health (SOH)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -215,7 +185,7 @@ export default function BatteryLog() {
                   {batteryData.soh}%
                 </div>
                 <div className="text-sm text-green-700">
-                  {batteryData.soh >= 90 ? 'Tình trạng tốt' : batteryData.soh >= 70 ? 'Tình trạng trung bình' : 'Cần kiểm tra'}
+                  {batteryData.soh >= 90 ? 'Good condition' : batteryData.soh >= 70 ? 'Fair condition' : 'Needs inspection'}
                 </div>
               </div>
             </CardContent>
@@ -225,7 +195,7 @@ export default function BatteryLog() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-purple-800 flex items-center gap-2">
                 <Zap className="h-4 w-4" />
-                Điện áp
+                Voltage
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -244,57 +214,57 @@ export default function BatteryLog() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BatteryIcon className="h-5 w-5" />
-                Thông tin Chi tiết Pin
+                Detailed Battery Information
                   </CardTitle>
                 <CardDescription>
-                Tất cả thông tin kỹ thuật về pin
+                All technical information about the battery
                 </CardDescription>
               </CardHeader>
               <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-sm text-slate-600 mb-1">ID Pin</p>
+                  <p className="text-sm text-slate-600 mb-1">Battery ID</p>
                   <p className="font-semibold text-lg">{batteryData._id}</p>
                         </div>
                 <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-sm text-slate-600 mb-1">Số Serial</p>
+                  <p className="text-sm text-slate-600 mb-1">Serial Number</p>
                   <p className="font-semibold text-lg">{batteryData.serial}</p>
                       </div>
                 <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-sm text-slate-600 mb-1">Mẫu Pin</p>
+                  <p className="text-sm text-slate-600 mb-1">Battery Model</p>
                   <p className="font-semibold text-lg">{batteryData.model || 'N/A'}</p>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-sm text-slate-600 mb-1">Trạng thái</p>
+                  <p className="text-sm text-slate-600 mb-1">Status</p>
                   <div className="mt-2">{getStatusBadge(batteryData.status)}</div>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-sm text-slate-600 mb-1">Sức khỏe Pin (SOH)</p>
+                  <p className="text-sm text-slate-600 mb-1">Battery Health (SOH)</p>
                   <p className={`font-semibold text-lg ${getHealthColor(batteryData.soh)}`}>
                     {batteryData.soh}%
                   </p>
                 </div>
                 {station && (
                   <div className="p-4 bg-slate-50 rounded-lg">
-                    <p className="text-sm text-slate-600 mb-1">Trạm</p>
+                    <p className="text-sm text-slate-600 mb-1">Station</p>
                     <p className="font-semibold text-lg">{station.stationName}</p>
                   </div>
                 )}
                 {batteryData.manufacturer && (
                   <div className="p-4 bg-slate-50 rounded-lg">
-                    <p className="text-sm text-slate-600 mb-1">Nhà sản xuất</p>
+                    <p className="text-sm text-slate-600 mb-1">Manufacturer</p>
                     <p className="font-semibold text-lg">{batteryData.manufacturer}</p>
                   </div>
                 )}
                 {batteryData.capacity_kWh && (
                   <div className="p-4 bg-slate-50 rounded-lg">
-                    <p className="text-sm text-slate-600 mb-1">Dung lượng</p>
+                    <p className="text-sm text-slate-600 mb-1">Capacity</p>
                     <p className="font-semibold text-lg">{batteryData.capacity_kWh} kWh</p>
                   </div>
                 )}
                 {batteryData.voltage && (
                   <div className="p-4 bg-slate-50 rounded-lg">
-                    <p className="text-sm text-slate-600 mb-1">Điện áp</p>
+                    <p className="text-sm text-slate-600 mb-1">Voltage</p>
                     <p className="font-semibold text-lg">{batteryData.voltage} V</p>
                   </div>
                 )}

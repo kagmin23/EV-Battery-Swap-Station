@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { DollarSign, ShoppingCart, MapPin, Clock } from 'lucide-react';
 import { RevenueFilters } from '../components/RevenueFilters';
 import { RevenueStatsCard } from '../components/RevenueStatsCard';
@@ -15,15 +15,57 @@ import {
   mockRevenueBySource,
   calculateRevenueMetrics,
 } from '@/mock/RevenueData';
-import { CardSkeleton } from '@/components/ui/table-skeleton';
+import { Spinner } from '@/components/ui/spinner';
+import ReportsApi, { type RevenueData } from '../apis/reportsApi';
+import { toast } from 'sonner';
 
 export default function RevenueReport() {
-  const [isLoading] = useState(false); // Set to true when integrating real API
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [selectedStation, setSelectedStation] = useState<string>('ALL');
+  const [apiRevenueData, setApiRevenueData] = useState<RevenueData[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch revenue data on component mount and when period changes
+  useEffect(() => {
+    const fetchRevenueData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Fetch overview report for Revenue Report page
+        const overviewResponse = await ReportsApi.getOverviewReport();
+        // Convert overview data to revenue format
+        const revenueData: RevenueData[] = [{
+          date: new Date().toISOString().split('T')[0],
+          revenue: overviewResponse.data.revenue,
+          transactions: overviewResponse.data.swaps,
+          avgTransactionValue: overviewResponse.data.swaps > 0 ? overviewResponse.data.revenue / overviewResponse.data.swaps : 0
+        }];
+        setApiRevenueData(revenueData);
+        
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch revenue data';
+        setError(errorMessage);
+        toast.error(errorMessage);
+        console.error('Error fetching revenue data:', err);
+        // Fallback to mock data
+        setApiRevenueData([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRevenueData();
+  }, [selectedPeriod, selectedStation]);
 
   // Get data based on selected period
   const currentData = useMemo(() => {
+    // Use API data if available, otherwise fallback to mock data
+    if (apiRevenueData.length > 0) {
+      return apiRevenueData;
+    }
+    
     switch (selectedPeriod) {
       case 'weekly':
         return mockWeeklyRevenue;
@@ -32,7 +74,7 @@ export default function RevenueReport() {
       default:
         return mockDailyRevenue;
     }
-  }, [selectedPeriod]);
+  }, [selectedPeriod, apiRevenueData]);
 
   // Filter data by station if needed
   const filteredData = useMemo(() => {
@@ -79,41 +121,32 @@ export default function RevenueReport() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        {/* Header Skeleton */}
-        <div className="mb-8 animate-pulse">
-          <div className="h-10 w-64 bg-gray-200 rounded dark:bg-gray-700 mb-2" />
-          <div className="h-5 w-96 bg-gray-200 rounded-full dark:bg-gray-700" />
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Spinner size="xl" className="mb-4" />
+          <p className="text-gray-600">Loading revenue report...</p>
         </div>
-        
-        {/* Period Filter Skeleton */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="animate-pulse flex gap-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-10 w-32 bg-gray-200 rounded dark:bg-gray-700" />
-            ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">
+            <svg className="inline-block w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
-        </div>
-        
-        {/* Revenue Stats Cards Skeleton */}
-        <CardSkeleton count={4} />
-        
-        {/* Charts Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow p-6 col-span-2">
-            <div className="animate-pulse">
-              <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700 mb-4" />
-              <div className="h-80 bg-gray-200 rounded dark:bg-gray-700" />
-            </div>
-          </div>
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-lg shadow p-6">
-              <div className="animate-pulse">
-                <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700 mb-4" />
-                <div className="h-64 bg-gray-200 rounded dark:bg-gray-700" />
-              </div>
-            </div>
-          ))}
+          <p className="text-gray-800 font-semibold mb-2">Error Loading Revenue Report</p>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -124,10 +157,10 @@ export default function RevenueReport() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-          Báo cáo Doanh thu
+          Revenue Report
         </h1>
         <p style={{ color: 'var(--color-text-secondary)' }}>
-          Phân tích doanh thu toàn diện và thông tin chi tiết cho Trạm đổi Pin EV
+          Comprehensive revenue analysis and insights for EV Battery Swap Station
         </p>
       </div>
 
@@ -145,7 +178,7 @@ export default function RevenueReport() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <RevenueStatsCard
-          title="Tổng doanh thu"
+          title="Total Revenue"
           value={formatCurrency(metrics.totalRevenue)}
           icon={DollarSign}
           trend={metrics.growthRate}
@@ -154,27 +187,27 @@ export default function RevenueReport() {
           iconBg="bg-blue-500"
         />
         <RevenueStatsCard
-          title="Tổng giao dịch"
+          title="Total Transactions"
           value={metrics.totalTransactions.toLocaleString()}
-          subtitle={`Trung bình: ${formatCurrency(metrics.avgTransactionValue)}`}
+          subtitle={`Average: ${formatCurrency(metrics.avgTransactionValue)}`}
           icon={ShoppingCart}
           gradientFrom="from-green-50"
           gradientTo="to-green-100/50"
           iconBg="bg-green-500"
         />
         <RevenueStatsCard
-          title="Trạm hoạt động tốt nhất"
+          title="Best Performing Station"
           value={metrics.topStation}
-          subtitle="Doanh thu cao nhất"
+          subtitle="Highest revenue"
           icon={MapPin}
           gradientFrom="from-purple-50"
           gradientTo="to-purple-100/50"
           iconBg="bg-purple-500"
         />
         <RevenueStatsCard
-          title="Giờ cao điểm"
+          title="Peak Hours"
           value={metrics.peakHour}
-          subtitle="Hoạt động cao nhất"
+          subtitle="Highest activity"
           icon={Clock}
           gradientFrom="from-orange-50"
           gradientTo="to-orange-100/50"

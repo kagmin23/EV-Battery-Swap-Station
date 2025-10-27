@@ -6,283 +6,186 @@ export interface ForecastDataPoint {
   confidenceHigh: number;
 }
 
-export interface BatteryHealthPrediction {
-  batteryId: string;
-  currentSOH: number;
-  predictedSOH30Days: number;
-  predictedSOH90Days: number;
-  estimatedReplacementDate: string;
-  riskLevel: 'low' | 'medium' | 'high';
-}
-
-export interface MaintenancePrediction {
+export interface StationDemandForecast {
   stationId: string;
   stationName: string;
-  predictedMaintenanceDate: string;
+  currentUtilization: number;
+  predictedUtilization30Days: number;
+  predictedUtilization90Days: number;
+  recommendedAction: string;
+  status: 'critical' | 'warning' | 'optimal' | 'underutilized';
   confidence: number;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  estimatedDowntime: string;
-  reason: string;
 }
 
-export interface AIInsight {
+export interface StationInfrastructureInsight {
   id: string;
-  category: 'demand' | 'revenue' | 'battery' | 'maintenance' | 'optimization';
   title: string;
   description: string;
-  impact: 'positive' | 'negative' | 'neutral';
+  priority: 'critical' | 'high' | 'medium' | 'low';
   confidence: number;
-  actionRequired: boolean;
+  stationId?: string;
+  estimatedCost?: number;
+  estimatedBenefit?: string;
 }
 
-// Demand Forecast Data (Next 30 days)
-export const demandForecastData: ForecastDataPoint[] = Array.from({ length: 30 }, (_, i) => {
+// Station Demand Forecast Data (Next 30 days)
+export const stationDemandForecastData: ForecastDataPoint[] = Array.from({ length: 90 }, (_, i) => {
   const date = new Date();
   date.setDate(date.getDate() + i);
-  const baseValue = 120 + Math.sin(i / 7) * 20 + (i % 7 === 0 || i % 7 === 6 ? -15 : 10);
-  const variance = 15;
+  // Simulate demand growth with weekly patterns
+  const weeklyPattern = i % 7 === 0 || i % 7 === 6 ? -20 : 15; // Lower on weekends
+  const baseValue = 150 + Math.sin(i / 7) * 25 + weeklyPattern + (i / 90) * 15;
+  const variance = 20;
   
   return {
     date: date.toISOString().split('T')[0],
     predicted: Math.round(baseValue),
-    actual: i < 7 ? Math.round(baseValue + (Math.random() - 0.5) * 10) : undefined,
+    actual: i < 14 ? Math.round(baseValue + (Math.random() - 0.5) * 15) : undefined,
     confidenceLow: Math.round(baseValue - variance),
     confidenceHigh: Math.round(baseValue + variance),
   };
 });
 
-// Revenue Forecast Data (Next 90 days)
-export const revenueForecastData: ForecastDataPoint[] = Array.from({ length: 90 }, (_, i) => {
+// Station Capacity Utilization Forecast Data (Utilization percentage)
+export const stationCapacityUtilizationData: ForecastDataPoint[] = Array.from({ length: 90 }, (_, i) => {
   const date = new Date();
   date.setDate(date.getDate() + i);
-  const baseValue = 15000000 + Math.sin(i / 30) * 3000000 + i * 50000;
-  const variance = 2000000;
+  const baseValue = 75 + Math.sin(i / 7) * 10 + (i / 90) * 8;
+  const variance = 5;
   
   return {
     date: date.toISOString().split('T')[0],
     predicted: Math.round(baseValue),
-    actual: i < 14 ? Math.round(baseValue + (Math.random() - 0.5) * 1000000) : undefined,
+    actual: i < 14 ? Math.round(baseValue + (Math.random() - 0.5) * 5) : undefined,
     confidenceLow: Math.round(baseValue - variance),
     confidenceHigh: Math.round(baseValue + variance),
   };
 });
 
-// Battery Health Predictions
-export const batteryHealthPredictions: BatteryHealthPrediction[] = [
+// Station Capacity Forecast (Per station data)
+export const stationCapacityData: StationDemandForecast[] = [
   {
-    batteryId: 'BAT-001',
-    currentSOH: 92,
-    predictedSOH30Days: 90,
-    predictedSOH90Days: 86,
-    estimatedReplacementDate: '2025-04-15',
-    riskLevel: 'low',
-  },
-  {
-    batteryId: 'BAT-045',
-    currentSOH: 78,
-    predictedSOH30Days: 75,
-    predictedSOH90Days: 68,
-    estimatedReplacementDate: '2025-01-20',
-    riskLevel: 'high',
-  },
-  {
-    batteryId: 'BAT-032',
-    currentSOH: 84,
-    predictedSOH30Days: 82,
-    predictedSOH90Days: 78,
-    estimatedReplacementDate: '2025-03-10',
-    riskLevel: 'medium',
-  },
-  {
-    batteryId: 'BAT-067',
-    currentSOH: 71,
-    predictedSOH30Days: 68,
-    predictedSOH90Days: 62,
-    estimatedReplacementDate: '2024-12-25',
-    riskLevel: 'critical',
-  },
-  {
-    batteryId: 'BAT-089',
-    currentSOH: 95,
-    predictedSOH30Days: 94,
-    predictedSOH90Days: 92,
-    estimatedReplacementDate: '2025-08-30',
-    riskLevel: 'low',
-  },
-];
-
-// Maintenance Predictions
-export const maintenancePredictions: MaintenancePrediction[] = [
-  {
-    stationId: 'ST-001',
-    stationName: 'District 1 Station',
-    predictedMaintenanceDate: '2024-10-28',
-    confidence: 87,
-    priority: 'high',
-    estimatedDowntime: '4-6 hours',
-    reason: 'Charging system calibration needed',
-  },
-  {
-    stationId: 'ST-003',
-    stationName: 'District 7 Station',
-    predictedMaintenanceDate: '2024-11-05',
-    confidence: 92,
-    priority: 'critical',
-    estimatedDowntime: '8-10 hours',
-    reason: 'Battery slot mechanism wear detected',
-  },
-  {
-    stationId: 'ST-005',
-    stationName: 'Thu Duc Station',
-    predictedMaintenanceDate: '2024-11-15',
-    confidence: 75,
-    priority: 'medium',
-    estimatedDowntime: '2-3 hours',
-    reason: 'Software update and diagnostics',
-  },
-  {
-    stationId: 'ST-002',
-    stationName: 'District 3 Station',
-    predictedMaintenanceDate: '2024-12-01',
-    confidence: 68,
-    priority: 'low',
-    estimatedDowntime: '1-2 hours',
-    reason: 'Routine inspection recommended',
-  },
-];
-
-// AI Insights
-export const aiInsights: AIInsight[] = [
-  {
-    id: 'ins-1',
-    category: 'demand',
-    title: 'Peak Demand Shift Detected',
-    description: 'Analysis shows peak demand shifting from 8 AM to 7 AM on weekdays. Consider adjusting staff schedules and battery inventory.',
-    impact: 'neutral',
-    confidence: 89,
-    actionRequired: true,
-  },
-  {
-    id: 'ins-2',
-    category: 'revenue',
-    title: 'Revenue Growth Opportunity',
-    description: 'District 7 Station shows 23% higher demand than capacity. Expansion could increase revenue by ₫4.2M/month.',
-    impact: 'positive',
-    confidence: 94,
-    actionRequired: true,
-  },
-  {
-    id: 'ins-3',
-    category: 'battery',
-    title: 'Battery Replacement Alert',
-    description: '12 batteries predicted to fall below 70% SOH within 60 days. Schedule procurement to avoid service disruption.',
-    impact: 'negative',
-    confidence: 91,
-    actionRequired: true,
-  },
-  {
-    id: 'ins-4',
-    category: 'maintenance',
-    title: 'Preventive Maintenance Recommended',
-    description: 'District 1 Station charging system showing early wear patterns. Maintenance within 2 weeks can prevent costly repairs.',
-    impact: 'negative',
-    confidence: 87,
-    actionRequired: true,
-  },
-  {
-    id: 'ins-5',
-    category: 'optimization',
-    title: 'Battery Redistribution Suggested',
-    description: 'Thu Duc Station has 15% excess inventory while Binh Thanh is at 95% utilization. Redistribution recommended.',
-    impact: 'positive',
-    confidence: 82,
-    actionRequired: true,
-  },
-  {
-    id: 'ins-6',
-    category: 'demand',
-    title: 'Weekend Traffic Pattern Change',
-    description: 'Weekend swap demand increased 18% over past month. Current staffing may be insufficient for upcoming weekends.',
-    impact: 'neutral',
-    confidence: 76,
-    actionRequired: false,
-  },
-  {
-    id: 'ins-7',
-    category: 'revenue',
-    title: 'Subscription Plan Performance',
-    description: 'Premium subscription uptake is 34% higher than projected. Consider introducing additional tier options.',
-    impact: 'positive',
-    confidence: 88,
-    actionRequired: false,
-  },
-  {
-    id: 'ins-8',
-    category: 'optimization',
-    title: 'Energy Cost Optimization',
-    description: 'Shifting 30% of charging to off-peak hours (11 PM - 5 AM) could reduce electricity costs by ₫2.8M/month.',
-    impact: 'positive',
-    confidence: 93,
-    actionRequired: true,
-  },
-];
-
-// Station Capacity Forecast
-export const stationCapacityData = [
-  {
-    stationId: 'ST-001',
-    stationName: 'District 1',
+    stationId: 'ST001',
+    stationName: 'Downtown Swap Station',
     currentUtilization: 78,
     predictedUtilization30Days: 82,
     predictedUtilization90Days: 87,
-    recommendedAction: 'Monitor closely',
-    status: 'optimal',
+    recommendedAction: 'Monitor closely - expansion recommended',
+    status: 'warning',
+    confidence: 92,
   },
   {
-    stationId: 'ST-002',
-    stationName: 'District 3',
+    stationId: 'ST002',
+    stationName: 'Airport Battery Hub',
     currentUtilization: 65,
     predictedUtilization30Days: 68,
     predictedUtilization90Days: 72,
-    recommendedAction: 'No action needed',
+    recommendedAction: 'Optimize flow management',
     status: 'optimal',
+    confidence: 88,
   },
   {
-    stationId: 'ST-003',
-    stationName: 'District 7',
+    stationId: 'ST003',
+    stationName: 'Tech Park Station',
     currentUtilization: 94,
     predictedUtilization30Days: 97,
     predictedUtilization90Days: 99,
-    recommendedAction: 'Expand capacity',
+    recommendedAction: 'Urgent capacity expansion needed',
     status: 'critical',
+    confidence: 95,
   },
   {
-    stationId: 'ST-004',
-    stationName: 'Binh Thanh',
+    stationId: 'ST004',
+    stationName: 'University Swap Point',
     currentUtilization: 88,
     predictedUtilization30Days: 91,
     predictedUtilization90Days: 94,
-    recommendedAction: 'Consider expansion',
+    recommendedAction: 'Upgrade recommended',
     status: 'warning',
+    confidence: 90,
   },
   {
-    stationId: 'ST-005',
-    stationName: 'Thu Duc',
+    stationId: 'ST005',
+    stationName: 'Industrial Zone Battery Center',
     currentUtilization: 52,
     predictedUtilization30Days: 55,
     predictedUtilization90Days: 60,
-    recommendedAction: 'Optimize inventory',
-    status: 'underutilized',
+    recommendedAction: 'Relocate excess batteries',
+    status: 'optimal',
+    confidence: 85,
   },
 ];
 
+// AI Infrastructure Insights
+export const aiInfrastructureInsights: StationInfrastructureInsight[] = [
+  {
+    id: 'ins-1',
+    title: 'Tech Park Station - Urgent Expansion',
+    description: 'Tech Park Station is at 94% capacity, forecasted to reach 99% within 90 days. Need to expand by 30-50 battery slots to meet demand.',
+    priority: 'critical',
+    confidence: 95,
+    stationId: 'ST003',
+    estimatedCost: 120000000,
+    estimatedBenefit: 'Reduce 75% wait times and increase revenue by 28%',
+  },
+  {
+    id: 'ins-2',
+    title: 'University Swap Point - Needed Upgrade',
+    description: 'University Station is increasing from 88% to 94% in 90 days. Recommend adding 20 battery slots and optimizing layout.',
+    priority: 'high',
+    confidence: 90,
+    stationId: 'ST004',
+    estimatedCost: 65000000,
+    estimatedBenefit: 'Increase 35% capacity and improve user experience',
+  },
+  {
+    id: 'ins-3',
+    title: 'Downtown Station - Flow Optimization',
+    description: 'Downtown Station is at 78% and growing rapidly. Should adjust maintenance schedule and increase backup battery inventory.',
+    priority: 'high',
+    confidence: 87,
+    stationId: 'ST001',
+    estimatedCost: 30000000,
+    estimatedBenefit: 'Reduce 40% wait times',
+  },
+  {
+    id: 'ins-4',
+    title: 'Industrial Zone - Resource Redistribution',
+    description: 'Industrial Zone is only using 52% capacity. Recommend transferring 20-30 batteries to stations with capacity constraints.',
+    priority: 'medium',
+    confidence: 82,
+    stationId: 'ST005',
+    estimatedCost: 5000000,
+    estimatedBenefit: 'Optimize resource utilization efficiency',
+  },
+  {
+    id: 'ins-5',
+    title: 'Airport Hub - Peak Hours Improvement',
+    description: 'Airport Station has peak hours concentrated in 6-9 AM and 5-8 PM. Recommend adding waiting areas and more service channels.',
+    priority: 'medium',
+    confidence: 80,
+    stationId: 'ST002',
+    estimatedCost: 40000000,
+    estimatedBenefit: 'Improve 25% service time during peak hours',
+  },
+  {
+    id: 'ins-6',
+    title: 'Automated Alert System',
+    description: 'Deploy AI early warning system when stations approach 80% capacity to prepare for response.',
+    priority: 'low',
+    confidence: 85,
+    estimatedCost: 15000000,
+    estimatedBenefit: 'Timely preparation and reduce 60% of overload incidents',
+  },
+];
+
+// Export station capacity data
+export const stationCapacityForecastData: StationDemandForecast[] = stationCapacityData;
+
 // Forecast Metrics
 export const forecastMetrics = {
-  demandGrowth: 12.5, // percentage
-  revenueGrowth: 18.3,
-  avgAccuracy: 94.2,
-  totalPredictions: 1247,
-  criticalAlerts: 3,
-  actionableInsights: 5,
+  demandGrowth: 15.2, // percentage
+  avgAccuracy: 89.5,
+  criticalAlerts: 1, // Only Tech Park at critical
 };
 

@@ -1,39 +1,143 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { mockBatteries } from '../../../mock/BatteryData';
 import { mockStations } from '../../../mock/StationData';
-import { mockTransactions, mockRevenueData } from '../../../mock/TransactionData';
-import { getUsersByRole } from '../../../mock/UserData';
+import { mockRevenueData } from '../../../mock/TransactionData';
 import { getPendingSupportRequestsCount } from '../../../mock/SupportRequestData';
 import KPICard from '../components/KPICard';
 import BatteryStatusChart from '../components/BatteryStatusChart';
 import AlertsPanel from '../components/AlertsPanel';
 import RecentTransactionsTable from '../components/RecentTransactionsTable';
-import QuickActionsGrid from '../components/QuickActionsGrid';
-import { TableSkeleton, CardSkeleton } from '@/components/ui/table-skeleton';
+import { Spinner } from '@/components/ui/spinner';
+import { BatteryApi, type Battery } from '../apis/batteryApi';
+import { toast } from 'sonner';
+import { StaffService, type Staff } from '../../../services/api/staffService';
+import { DriverService, type Driver } from '../../../services/api/driverService';
+import { TransactionApi } from '../apis/transactionApi';
 
 export default function Dashboard() {
-  const [isLoading] = useState(false); // Set to true when integrating real API
+  const [isLoading, setIsLoading] = useState(true);
+  const [batteries, setBatteries] = useState<Battery[]>([]);
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<Array<{
+    transaction_id: string;
+    user_name: string;
+    station_name: string;
+    transaction_time: string;
+    cost: number;
+  }>>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch data on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Fetch batteries from API
+        try {
+          const batteryResponse = await BatteryApi.getAllBatteries();
+          setBatteries(batteryResponse.data);
+        } catch (err) {
+          console.error('Error fetching batteries data:', err);
+          // Fallback to mock data
+          const mockApiBatteries: Battery[] = mockBatteries.map(b => ({
+            _id: b.battery_id || '',
+            serial: b.battery_id || '',
+            model: b.battery_model || '',
+            soh: b.soh_percent || 0,
+            status: (b.status === 'in_use' ? 'in-use' : b.status) as 'charging' | 'faulty' | 'idle' | 'full' | 'in-use',
+            station: undefined,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }));
+          setBatteries(mockApiBatteries);
+        }
+        
+        // Fetch staff from API
+        try {
+          const staffData = await StaffService.getAllStaff();
+          setStaff(staffData);
+        } catch (err) {
+          console.error('Error fetching staff data:', err);
+          setStaff([]);
+        }
+        
+        // Fetch drivers from API
+        try {
+          const driverData = await DriverService.getAllDrivers();
+          setDrivers(driverData);
+        } catch (err) {
+          console.error('Error fetching drivers data:', err);
+          setDrivers([]);
+        }
+        
+        // Fetch recent transactions from API (limit to 5)
+        try {
+          const transactionData = await TransactionApi.getAllTransactions({ limit: 5 });
+          // Map API response to table format
+          const formattedTransactions = transactionData.map(t => {
+            // Helper to get user name safely
+            const getUserName = () => {
+              if (typeof t.user === 'string') return 'Unknown User';
+              return t.user?.fullName || 'Unknown User';
+            };
+
+            // Helper to get station name safely
+            const getStationName = () => {
+              if (typeof t.station === 'string') return 'Unknown Station';
+              return t.station?.stationName || 'Unknown Station';
+            };
+
+            return {
+              transaction_id: t._id,
+              user_name: getUserName(),
+              station_name: getStationName(),
+              transaction_time: t.createdAt || t.created_at || t.transaction_time || new Date().toISOString(),
+              cost: t.amount || t.cost || 0,
+            };
+          });
+          setRecentTransactions(formattedTransactions);
+        } catch (err) {
+          console.error('Error fetching transactions data:', err);
+          setRecentTransactions([]);
+        }
+        
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
+        setError(errorMessage);
+        toast.error(errorMessage);
+        console.error('Error fetching data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Calculate statistics
   const totalStations = mockStations.length;
-  const totalBatteries = mockBatteries.length;
-  const activeDrivers = getUsersByRole('driver').filter(u => u.status === 'active').length;
-  const activeStaff = getUsersByRole('staff').filter(u => u.status === 'active').length;
+  const totalBatteries = batteries.length;
+  // Count active users from API data
+  const activeDrivers = drivers.filter(u => u.status === 'active').length;
+  const activeStaff = staff.filter(u => u.status === 'active').length;
 
   const todayRevenue = mockRevenueData[mockRevenueData.length - 1]?.revenue || 0;
   const totalRevenue = mockRevenueData.reduce((sum, day) => sum + day.revenue, 0);
 
+  // Map API status to display status (in-use without dash for display)
   const batteryByStatus = {
-    available: mockBatteries.filter(b => b.status === 'available').length,
-    in_use: mockBatteries.filter(b => b.status === 'in_use').length,
-    charging: mockBatteries.filter(b => b.status === 'charging').length,
-    maintenance: mockBatteries.filter(b => b.status === 'maintenance').length,
-    retired: mockBatteries.filter(b => b.status === 'retired').length,
+    charging: batteries.filter(b => b.status === 'charging').length,
+    faulty: batteries.filter(b => b.status === 'faulty').length,
+    idle: batteries.filter(b => b.status === 'idle').length,
+    full: batteries.filter(b => b.status === 'full').length,
+    'in-use': batteries.filter(b => b.status === 'in-use').length,
   };
 
   const pendingSupport = getPendingSupportRequestsCount();
-  const lowHealthBatteries = mockBatteries.filter(b => b.soh_percent < 85).length;
-  const recentTransactions = mockTransactions.slice(0, 5);
+  const lowHealthBatteries = batteries.filter(b => b.soh < 85).length;
 
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('vi-VN', {
@@ -44,42 +148,32 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        {/* Header Skeleton */}
-        <div className="mb-8 animate-pulse">
-          <div className="h-9 w-80 bg-gray-200 rounded dark:bg-gray-700 mb-2" />
-          <div className="h-5 w-96 bg-gray-200 rounded-full dark:bg-gray-700" />
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Spinner size="xl" className="mb-4" />
+          <p className="text-gray-600">Loading dashboard...</p>
         </div>
-        
-        {/* KPI Cards Skeleton */}
-        <CardSkeleton count={4} />
-        
-        {/* Charts & Alerts Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="animate-pulse">
-              <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700 mb-4" />
-              <div className="h-64 bg-gray-200 rounded dark:bg-gray-700" />
-            </div>
+      </div>
+    );
+  }
+
+  if (error && batteries.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">
+            <svg className="inline-block w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="animate-pulse">
-              <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700 mb-4" />
-              <div className="space-y-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-16 bg-gray-200 rounded dark:bg-gray-700" />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Transactions Table Skeleton */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="animate-pulse mb-6">
-            <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700" />
-          </div>
-          <TableSkeleton rows={5} columns={6} />
+          <p className="text-gray-800 font-semibold mb-2">Error Loading Dashboard</p>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -90,40 +184,40 @@ export default function Dashboard() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-          Bảng điều khiển Admin
+          Admin Dashboard
         </h1>
         <p style={{ color: 'var(--color-text-secondary)' }}>
-          Chào mừng trở lại! Đây là tổng quan về Hệ thống đổi Pin EV
+          Welcome back! This is an overview of the EV Battery Swap System
         </p>
       </div>
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         <KPICard
-          title="Tổng doanh thu"
+          title="Total Revenue"
           value={formatCurrency(totalRevenue)}
-          subtitle={`Hôm nay: ${formatCurrency(todayRevenue)}`}
+          subtitle={`Today: ${formatCurrency(todayRevenue)}`}
           icon="💰"
           bgColor="bg-gray-100"
         />
         <KPICard
-          title="Tổng số Trạm"
+          title="Total Stations"
           value={totalStations}
-          subtitle="Đang hoạt động"
+          subtitle="Active"
           icon="🏢"
           bgColor="bg-blue-100"
         />
         <KPICard
-          title="Tổng số Pin"
+          title="Total Batteries"
           value={totalBatteries}
-          subtitle={`${batteryByStatus.available} sẵn sàng`}
+          subtitle={`${batteryByStatus.full} available`}
           icon="🔋"
           bgColor="bg-green-100"
         />
         <KPICard
-          title="Người dùng hoạt động"
+          title="Active Users"
           value={activeDrivers + activeStaff}
-          subtitle={`${activeDrivers} tài xế, ${activeStaff} nhân viên`}
+          subtitle={`${activeDrivers} drivers, ${activeStaff} staff`}
           icon="👥"
           bgColor="bg-red-100"
         />
@@ -142,9 +236,6 @@ export default function Dashboard() {
       <div className="mb-8">
         <RecentTransactionsTable transactions={recentTransactions} />
       </div>
-
-      {/* Quick Actions */}
-      <QuickActionsGrid />
     </div>
   );
 }

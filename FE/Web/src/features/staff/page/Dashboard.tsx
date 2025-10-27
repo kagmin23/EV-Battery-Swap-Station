@@ -9,7 +9,7 @@ import { Plus, ArrowRightLeft } from "lucide-react";
 import Pagination from "../components/Pagination";
 import { getStationBatteries, updateBattery } from "../apis/DashboardApi";
 import type { Battery, UpdateBatteryRequest } from "../apis/DashboardApi";
-import { TableSkeleton, CardSkeleton } from "@/components/ui/table-skeleton";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -86,7 +86,7 @@ export default function Dashboard() {
   const handleSaveBattery = async (batteryId: string, data: UpdateBatteryRequest) => {
     try {
       await updateBattery(batteryId, data);
-      toast.success('Cập nhật pin thành công!');
+      toast.success('Battery updated successfully!');
       
       // Refresh the battery list
       const userStr = localStorage.getItem('user');
@@ -99,7 +99,7 @@ export default function Dashboard() {
         }
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Không thể cập nhật pin');
+      toast.error(error instanceof Error ? error.message : 'Unable to update battery');
       throw error;
     }
   };
@@ -110,22 +110,10 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-8">
-        {/* Header Skeleton */}
-        <div className="mb-8 animate-pulse">
-          <div className="h-8 w-64 bg-gray-200 rounded dark:bg-gray-700 mb-2" />
-          <div className="h-4 w-48 bg-gray-200 rounded-full dark:bg-gray-700" />
-        </div>
-        
-        {/* Stats Cards Skeleton */}
-        <CardSkeleton count={4} />
-        
-        {/* Table Skeleton */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="animate-pulse mb-6">
-            <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700" />
-          </div>
-          <TableSkeleton rows={8} columns={6} />
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Spinner size="xl" className="mb-4" />
+          <p className="text-gray-600">Loading battery data...</p>
         </div>
       </div>
     );
@@ -140,13 +128,13 @@ export default function Dashboard() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p className="text-text-primary font-semibold mb-2">Lỗi tải dữ liệu</p>
+          <p className="text-text-primary font-semibold mb-2">Data Loading Error</p>
           <p className="text-text-secondary">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="mt-4 py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            Thử lại
+            Try Again
           </button>
         </div>
       </div>
@@ -165,14 +153,14 @@ export default function Dashboard() {
               className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 dark:active:bg-blue-800"
             >
               <ArrowRightLeft className="w-5 h-5" />
-              Chuyển đến Trạm
+              Transfer to Station
             </button>
             <button
               onClick={handleAddBattery}
               className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg bg-button-secondary text-text-primary hover:bg-button-secondary-hover active:bg-button-secondary-hover disabled:opacity-50 disabled:pointer-events-none dark:hover:bg-button-secondary-hover dark:focus:bg-button-secondary-hover"
             >
               <Plus className="w-5 h-5" />
-              Thêm Pin
+              Add Battery
             </button>
           </div>
         </div>
@@ -185,37 +173,37 @@ export default function Dashboard() {
                     scope="col"
                     className="px-6 py-3 text-start text-xs font-medium text-text-primary uppercase dark:text-text-primary"
                   >
-                    Mã Pin
+                    Battery Code
                   </th>
                   <th
                     scope="col"
                     className="px-6 py-3 text-start text-xs font-medium text-text-primary uppercase dark:text-text-primary"
                   >
-                    Mẫu
+                    Model
                   </th>
                   <th
                     scope="col"
                     className="px-6 py-3 text-start text-xs font-medium text-text-primary uppercase dark:text-text-primary"
                   >
-                    Dung lượng
+                    Capacity
                   </th>
                   <th
                     scope="col"
                       className="px-6 py-3 text-start text-xs font-medium text-text-primary uppercase dark:text-text-primary"
                   >
-                    Tình trạng
+                    Health
                   </th>
                   <th
                     scope="col"
                     className="px-6 py-3 text-start text-xs font-medium text-text-primary uppercase dark:text-text-primary"
                   >
-                    Trạng thái
+                    Status
                   </th>
                   <th
                     scope="col"
                     className="px-6 py-3 text-center text-xs font-medium text-text-primary uppercase dark:text-text-primary"
                   >
-                    Thao tác
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -223,7 +211,7 @@ export default function Dashboard() {
                 {currentBatteries.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-8 text-center text-text-secondary">
-                      Không có pin nào trong trạm
+                      No batteries in station
                     </td>
                   </tr>
                 ) : (

@@ -3,6 +3,7 @@ import { Battery, User, CheckCircle, ArrowRight, Clock, Zap, RefreshCw } from 'l
 import { toast } from 'sonner';
 import { getSwapRequests, confirmSwapRequest } from '../apis/SwapApi';
 import type { SwapRequest } from '../apis/SwapApi';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function ConfirmExchange() {
   const [swapRequests, setSwapRequests] = useState<SwapRequest[]>([]);
@@ -40,11 +41,11 @@ export default function ConfirmExchange() {
     try {
       setIsConfirming(true);
       await confirmSwapRequest(selectedRequest._id);
-      toast.success('Xác nhận đổi pin thành công!');
+      toast.success('Battery swap confirmed successfully!');
       // Refresh the list
       await fetchSwapRequests();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Không thể xác nhận đổi pin');
+      toast.error(err instanceof Error ? err.message : 'Unable to confirm battery swap');
     } finally {
       setIsConfirming(false);
     }
@@ -52,37 +53,10 @@ export default function ConfirmExchange() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen py-8">
-        <div className="container mx-auto px-4 max-w-7xl">
-          {/* Header Skeleton */}
-          <div className="mb-8 animate-pulse">
-            <div className="h-10 w-64 bg-gray-200 rounded dark:bg-gray-700 mb-2" />
-            <div className="h-4 w-48 bg-gray-200 rounded-full dark:bg-gray-700" />
-          </div>
-          
-          {/* Cards Skeleton */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-              <div className="animate-pulse">
-                <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700 mb-4" />
-                <div className="space-y-3">
-                  <div className="h-4 w-full bg-gray-200 rounded dark:bg-gray-700" />
-                  <div className="h-4 w-full bg-gray-200 rounded dark:bg-gray-700" />
-                  <div className="h-4 w-3/4 bg-gray-200 rounded dark:bg-gray-700" />
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-              <div className="animate-pulse">
-                <div className="h-6 w-48 bg-gray-200 rounded dark:bg-gray-700 mb-4" />
-                <div className="space-y-3">
-                  <div className="h-4 w-full bg-gray-200 rounded dark:bg-gray-700" />
-                  <div className="h-4 w-full bg-gray-200 rounded dark:bg-gray-700" />
-                  <div className="h-4 w-3/4 bg-gray-200 rounded dark:bg-gray-700" />
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Spinner size="xl" className="mb-4" />
+          <p className="text-gray-600">Loading battery swap requests...</p>
         </div>
       </div>
     );
@@ -97,13 +71,13 @@ export default function ConfirmExchange() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p className="text-gray-900 font-semibold mb-2">Lỗi tải dữ liệu</p>
+          <p className="text-gray-900 font-semibold mb-2">Data Loading Error</p>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={fetchSwapRequests}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            Thử lại
+            Try Again
           </button>
         </div>
       </div>
@@ -115,8 +89,8 @@ export default function ConfirmExchange() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <Battery className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-900 font-semibold mb-2">Không có yêu cầu đổi pin</p>
-          <p className="text-gray-600">Hiện tại không có yêu cầu đổi pin nào</p>
+          <p className="text-gray-900 font-semibold mb-2">No Battery Swap Requests</p>
+          <p className="text-gray-600">Currently there are no battery swap requests</p>
         </div>
       </div>
     );
@@ -128,22 +102,22 @@ export default function ConfirmExchange() {
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-text-primary mb-2">Xác nhận đổi Pin</h1>
-            <p className="text-text-secondary">Xem xét và xác nhận giao dịch đổi pin</p>
+            <h1 className="text-4xl font-bold text-text-primary mb-2">Confirm Battery Swap</h1>
+            <p className="text-text-secondary">Review and confirm battery swap transaction</p>
           </div>
           <button
             onClick={fetchSwapRequests}
             className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
           >
             <RefreshCw className="w-4 h-4" />
-            Làm mới
+            Refresh
           </button>
         </div>
 
         {/* Swap Requests List */}
         {swapRequests.length > 1 && (
           <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-3">Danh sách yêu cầu ({swapRequests.length})</h2>
+            <h2 className="text-lg font-semibold mb-3">Request List ({swapRequests.length})</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {swapRequests.map((request) => (
                 <div
@@ -187,15 +161,15 @@ export default function ConfirmExchange() {
                 <div className="p-2 bg-blue-600 rounded-lg">
                   <User className="w-6 h-6 text-white" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">Thông tin Tài xế</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Driver Information</h2>
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Tên</span>
+                  <span className="text-gray-600">Name</span>
                   <span className="text-gray-900 font-medium">{selectedRequest.driver.fullName}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Điện thoại</span>
+                  <span className="text-gray-600">Phone</span>
                   <span className="text-gray-900 font-medium">{selectedRequest.driver.phoneNumber}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-gray-200">
@@ -203,7 +177,7 @@ export default function ConfirmExchange() {
                   <span className="text-gray-900 font-medium">{selectedRequest.driver.email}</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-600">Trạng thái</span>
+                  <span className="text-gray-600">Status</span>
                   <span className={`px-2 py-1 text-xs rounded-full ${
                     selectedRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                     selectedRequest.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
@@ -222,25 +196,25 @@ export default function ConfirmExchange() {
                 <div className="p-2 bg-red-600 rounded-lg">
                   <Battery className="w-6 h-6 text-white" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">Pin cần tháo</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Battery to Remove</h2>
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Số Serial</span>
+                  <span className="text-gray-600">Serial Number</span>
                   <span className="text-gray-900 font-medium">{selectedRequest.oldBattery.serial}</span>
                 </div>
                 {selectedRequest.oldBattery.model && (
                   <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                    <span className="text-gray-600">Mẫu</span>
+                    <span className="text-gray-600">Model</span>
                     <span className="text-gray-900 font-medium">{selectedRequest.oldBattery.model}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Trạng thái</span>
+                  <span className="text-gray-600">Status</span>
                   <span className="text-gray-900 font-medium">{selectedRequest.oldBattery.status}</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-600">Tình trạng (SOH)</span>
+                  <span className="text-gray-600">Health (SOH)</span>
                   <span className={`font-bold text-lg ${
                     selectedRequest.oldBattery.soh >= 90 ? 'text-green-600' :
                     selectedRequest.oldBattery.soh >= 70 ? 'text-yellow-600' :
@@ -260,25 +234,25 @@ export default function ConfirmExchange() {
                 <div className="p-2 bg-green-600 rounded-lg">
                   <Zap className="w-6 h-6 text-white" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">Pin thay thế</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Replacement Battery</h2>
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Số Serial</span>
+                  <span className="text-gray-600">Serial Number</span>
                   <span className="text-gray-900 font-medium">{selectedRequest.newBattery.serial}</span>
                 </div>
                 {selectedRequest.newBattery.model && (
                   <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                    <span className="text-gray-600">Mẫu</span>
+                    <span className="text-gray-600">Model</span>
                     <span className="text-gray-900 font-medium">{selectedRequest.newBattery.model}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Trạng thái</span>
+                  <span className="text-gray-600">Status</span>
                   <span className="text-gray-900 font-medium">{selectedRequest.newBattery.status}</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-600">Tình trạng (SOH)</span>
+                  <span className="text-gray-600">Health (SOH)</span>
                   <span className={`font-bold text-lg ${
                     selectedRequest.newBattery.soh >= 90 ? 'text-green-600' :
                     selectedRequest.newBattery.soh >= 70 ? 'text-yellow-600' :
@@ -296,11 +270,11 @@ export default function ConfirmExchange() {
             <div className="bg-blue-50 border border-blue-300 rounded-xl p-6 shadow-lg mb-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <ArrowRight className="w-6 h-6 text-blue-600" />
-                Tóm tắt đổi Pin
+                Battery Swap Summary
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                 <div className="text-center">
-                  <p className="text-gray-600 text-sm mb-1">Tháo</p>
+                  <p className="text-gray-600 text-sm mb-1">Remove</p>
                   <p className="text-gray-900 font-bold text-lg">{selectedRequest.oldBattery.serial}</p>
                   <p className="text-red-600 text-sm">SOH: {selectedRequest.oldBattery.soh}%</p>
                 </div>
@@ -308,7 +282,7 @@ export default function ConfirmExchange() {
                   <ArrowRight className="w-8 h-8 text-blue-600" />
                 </div>
                 <div className="text-center">
-                  <p className="text-gray-600 text-sm mb-1">Lắp</p>
+                  <p className="text-gray-600 text-sm mb-1">Install</p>
                   <p className="text-gray-900 font-bold text-lg">{selectedRequest.newBattery.serial}</p>
                   <p className="text-green-600 text-sm">SOH: {selectedRequest.newBattery.soh}%</p>
                 </div>
@@ -322,7 +296,7 @@ export default function ConfirmExchange() {
                 onClick={() => window.history.back()}
                 className="px-6 py-3 rounded-lg border-2 border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                Quay lại
+                Go Back
               </button>
               <button
                 onClick={handleConfirmExchange}
@@ -332,12 +306,12 @@ export default function ConfirmExchange() {
                 {isConfirming ? (
                   <>
                     <Clock className="w-5 h-5 animate-spin" />
-                    Đang xử lý...
+                    Processing...
                   </>
                 ) : (
                   <>
                     <CheckCircle className="w-5 h-5" />
-                    Xác nhận đổi Pin
+                    Confirm Battery Swap
                   </>
                 )}
               </button>
