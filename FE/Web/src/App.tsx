@@ -12,6 +12,7 @@ import AdminRouter from './routes/adminRouter';
 import StaffRouter from './routes/staffRouter';
 import DriverRouter from './routes/driverRouter';
 import { ManagementMainPage } from './features/admin/pages/ManagementMainPage';
+import ProfileMe from './pages/ProfileMe';
 
 function App() {
   return (
@@ -36,6 +37,13 @@ function App() {
           } />
 
           {/* Protected Routes */}
+
+          {/* Profile Route - All authenticated users */}
+          <Route path="/profile/me" element={
+            <ProtectedRoute>
+              <ProfileMe />
+            </ProtectedRoute>
+          } />
 
           {/* Admin Routes */}
           <Route path="/admin/*" element={
