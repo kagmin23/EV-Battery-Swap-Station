@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   Users,
@@ -14,9 +15,14 @@ import {
   Battery,
   MapPin,
   AlertTriangle,
-  MessageSquareText,
+  LayoutDashboard,
+  RefreshCw,
+  Brain,
+  FolderOpen,
+  DollarSign,
   BarChart3,
-  Brain
+  Activity,
+  MessageSquareText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -30,70 +36,145 @@ interface ManagementSidebarProps {
 const menuItems = [
   {
     id: 'overview',
-    label: 'Tổng quan',
+    label: 'Overview',
     icon: Home,
-    description: 'Thống kê tổng quan'
+    description: 'Overall statistics',
+    route: '/staff/overview'
+  },
+  {
+    id: 'dashboard',
+    label: 'Dashboard',
+    icon: LayoutDashboard,
+    description: 'Admin dashboard',
+    route: '/admin/dashboard'
+  },
+  {
+    id: 'battery-changes',
+    label: 'Battery Changes',
+    icon: RefreshCw,
+    description: 'Manage battery changes',
+    route: '/admin/battery-changes'
+  },
+  {
+    id: 'ai-forecast',
+    label: 'AI Forecast',
+    icon: Brain,
+    description: 'AI Forecast & Predictions',
+    route: '/admin/ai-forecast'
+  },
+  {
+    id: 'report-management',
+    label: 'Report Management',
+    icon: FolderOpen,
+    description: 'System report management',
+    route: '/admin/report-management'
+  },
+  {
+    id: 'revenue-report',
+    label: 'Revenue Report',
+    icon: DollarSign,
+    description: 'Revenue report',
+    route: '/admin/revenue-report'
   },
   {
     id: 'staff-list',
-    label: 'Danh sách nhân viên',
+    label: 'Staff List',
     icon: Users,
-    description: 'Quản lý nhân viên'
+    description: 'Manage staff',
+    route: '/staff/list'
+  },
+  {
+    id: 'staff-distribution',
+    label: 'Staff Distribution',
+    icon: BarChart3,
+    description: 'Distribution analysis',
+    route: '/staff/distribution'
+  },
+  {
+    id: 'staff-activities',
+    label: 'Staff Activities',
+    icon: Activity,
+    description: 'Track activities',
+    route: '/staff/activities'
   },
   {
     id: 'driver-list',
-    label: 'Danh sách tài xế',
+    label: 'Driver List',
     icon: UserCheck,
-    description: 'Quản lý tài xế'
+    description: 'Manage drivers',
+    route: '/driver/list'
   },
   {
     id: 'station-list',
-    label: 'Danh sách trạm',
+    label: 'Station List',
     icon: MapPin,
-    description: 'Quản lý trạm đổi pin'
+    description: 'Manage battery swap stations',
+    route: '/staff/station-list'
   },
   {
     id: 'battery-inventory',
-    label: 'Kho pin',
+    label: 'Battery Inventory',
     icon: Battery,
-    description: 'Quản lý kho pin'
+    description: 'Manage battery inventory',
+    route: '/battery-inventory'
   },
   {
     id: 'faulty-batteries',
-    label: 'Pin lỗi',
+    label: 'Faulty Batteries',
     icon: AlertTriangle,
-    description: 'Quản lý pin lỗi'
+    description: 'Manage faulty batteries',
+    route: '/faulty-batteries'
+  },
+  {
+    id: 'vehicles',
+    label: 'Vehicles',
+    icon: Car,
+    description: 'Manage electric vehicles',
+    route: '/vehicles'
   },
   {
     id: 'subscriptions',
-    label: 'Gói thuê',
+    label: 'Subscriptions',
     icon: CreditCard,
-    description: 'Quản lý gói thuê pin'
+    description: 'Manage battery rental packages',
+    route: '/subscriptions'
   },
   {
     id: 'transactions',
-    label: 'Giao dịch',
+    label: 'Transactions',
     icon: FileText,
-    description: 'Lịch sử giao dịch'
+    description: 'Transaction history',
+    route: '/transactions'
   },
+
   {
     id: 'complaints',
-    label: 'Khiếu nại',
+    label: 'Complaints',
     icon: MessageSquareText,
-    description: 'Quản lý khiếu nại'
+    description: 'Manage complaints',
+    route: '/complaints'
   },
   {
     id: 'usage-report',
-    label: 'Báo cáo sử dụng',
+    label: 'Usage Report',
     icon: BarChart3,
-    description: 'Phân tích sử dụng'
+    description: 'Usage analysis',
+    route: '/usage-report'
   },
   {
     id: 'ai-predictions',
-    label: 'Dự đoán AI',
+    label: 'AI Predictions',
     icon: Brain,
-    description: 'Dự đoán AI'
+    description: 'AI predictions',
+    route: '/ai-predictions'
   },
+  {
+    id: 'settings',
+    label: 'Settings',
+    icon: Settings,
+    description: 'System settings',
+    route: '/settings'
+  }
 ];
 
 export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
@@ -102,6 +183,13 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
   isCollapsed,
   onToggleCollapse
 }) => {
+  const navigate = useNavigate();
+
+  const handleItemClick = (item: typeof menuItems[0]) => {
+    onTabChange(item.id);
+    navigate(item.route);
+  };
+
   return (
     <div className={cn(
       "bg-white border-r border-gray-200 shadow-sm transition-all duration-300 ease-in-out flex flex-col",
@@ -113,9 +201,9 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
           {!isCollapsed && (
             <div className="space-y-1">
               <h2 className="text-2xl font-bold text-gray-900">
-                Quản lý
+                Management
               </h2>
-              <p className="text-sm text-gray-500 font-medium">Hệ thống quản lý</p>
+              <p className="text-sm text-gray-500 font-medium">Management system</p>
             </div>
           )}
           <Button
@@ -143,7 +231,7 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
             <Button
               key={item.id}
               variant={isActive ? "default" : "ghost"}
-              onClick={() => onTabChange(item.id)}
+              onClick={() => handleItemClick(item)}
               className={cn(
                 "w-full justify-start transition-all duration-200 py-8",
                 isCollapsed ? "px-5" : "px-6",
@@ -166,6 +254,25 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
         })}
       </nav>
 
+      {/* Quick Actions */}
+      {!isCollapsed && (
+        <div className="flex-shrink-0 px-4 py-6 border-t border-gray-200">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-700 mb-3">Quick Actions</h3>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-base py-6 px-6"
+            >
+              <UserPlus
+                className="h-6 w-6 mr-2 flex-shrink-0"
+                style={{ width: '24px', height: '24px' }}
+              />
+              Add User
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

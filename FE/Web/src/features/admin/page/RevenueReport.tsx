@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { DollarSign, ShoppingCart, MapPin, Clock } from 'lucide-react';
 import { RevenueFilters } from '../components/RevenueFilters';
 import { RevenueStatsCard } from '../components/RevenueStatsCard';
@@ -15,13 +15,57 @@ import {
   mockRevenueBySource,
   calculateRevenueMetrics,
 } from '@/mock/RevenueData';
+import { Spinner } from '@/components/ui/spinner';
+import ReportsApi, { type RevenueData } from '../apis/reportsApi';
+import { toast } from 'sonner';
 
 export default function RevenueReport() {
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [selectedStation, setSelectedStation] = useState<string>('ALL');
+  const [apiRevenueData, setApiRevenueData] = useState<RevenueData[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch revenue data on component mount and when period changes
+  useEffect(() => {
+    const fetchRevenueData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Fetch overview report for Revenue Report page
+        const overviewResponse = await ReportsApi.getOverviewReport();
+        // Convert overview data to revenue format
+        const revenueData: RevenueData[] = [{
+          date: new Date().toISOString().split('T')[0],
+          revenue: overviewResponse.data.revenue,
+          transactions: overviewResponse.data.swaps,
+          avgTransactionValue: overviewResponse.data.swaps > 0 ? overviewResponse.data.revenue / overviewResponse.data.swaps : 0
+        }];
+        setApiRevenueData(revenueData);
+        
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch revenue data';
+        setError(errorMessage);
+        toast.error(errorMessage);
+        console.error('Error fetching revenue data:', err);
+        // Fallback to mock data
+        setApiRevenueData([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRevenueData();
+  }, [selectedPeriod, selectedStation]);
 
   // Get data based on selected period
   const currentData = useMemo(() => {
+    // Use API data if available, otherwise fallback to mock data
+    if (apiRevenueData.length > 0) {
+      return apiRevenueData;
+    }
+    
     switch (selectedPeriod) {
       case 'weekly':
         return mockWeeklyRevenue;
@@ -30,7 +74,7 @@ export default function RevenueReport() {
       default:
         return mockDailyRevenue;
     }
-  }, [selectedPeriod]);
+  }, [selectedPeriod, apiRevenueData]);
 
   // Filter data by station if needed
   const filteredData = useMemo(() => {
@@ -75,14 +119,41 @@ export default function RevenueReport() {
     document.body.removeChild(link);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Spinner size="xl" className="mb-4" />
+          <p className="text-gray-600">Loading revenue report...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">
+            <svg className="inline-block w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-gray-800 font-semibold mb-2">Error Loading Revenue Report</p>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="p-6 min-h-screen"
-      style={{
-        background:
-          'linear-gradient(to bottom right, var(--color-bg-primary), var(--color-bg-secondary), var(--color-bg-tertiary))',
-      }}
-    >
+    <div className="p-6 min-h-screen">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
@@ -118,14 +189,14 @@ export default function RevenueReport() {
         <RevenueStatsCard
           title="Total Transactions"
           value={metrics.totalTransactions.toLocaleString()}
-          subtitle={`Avg: ${formatCurrency(metrics.avgTransactionValue)}`}
+          subtitle={`Average: ${formatCurrency(metrics.avgTransactionValue)}`}
           icon={ShoppingCart}
           gradientFrom="from-green-50"
           gradientTo="to-green-100/50"
           iconBg="bg-green-500"
         />
         <RevenueStatsCard
-          title="Top Performing Station"
+          title="Best Performing Station"
           value={metrics.topStation}
           subtitle="Highest revenue"
           icon={MapPin}
@@ -134,7 +205,7 @@ export default function RevenueReport() {
           iconBg="bg-purple-500"
         />
         <RevenueStatsCard
-          title="Peak Hour"
+          title="Peak Hours"
           value={metrics.peakHour}
           subtitle="Highest activity"
           icon={Clock}

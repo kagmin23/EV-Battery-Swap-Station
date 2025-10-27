@@ -38,6 +38,9 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
         compactDisplay: 'short',
       }).format(value);
     }
+    if (unit === '%') {
+      return `${value.toFixed(0)}%`;
+    }
     return value.toString();
   };
 

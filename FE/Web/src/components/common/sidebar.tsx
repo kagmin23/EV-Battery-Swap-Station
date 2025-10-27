@@ -295,6 +295,50 @@ const Sidebar = () => {
               </li>
             </ul>
           </li>
+
+          <li className="my-1">
+            <div
+              onClick={() => toggleDropdown('admin')}
+              className={`flex items-center px-4 py-3 cursor-pointer transition-all duration-200 font-medium ${isSectionActive('admin')
+                  ? 'bg-blue-600 text-white'
+                  : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                }`}
+            >
+              <span className="flex-1">Admin Management</span>
+              <svg
+                className={`w-4 h-4 transition-transform duration-300 ${openDropdown === 'admin' ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+
+            <ul className={`list-none m-0 p-0 overflow-hidden transition-all duration-300 ${openDropdown === 'admin' ? 'max-h-[500px]' : 'max-h-0'
+              }`}>
+              <li>
+                <Link to="/admin/dashboard" className={`flex items-center pl-14 pr-4 py-2.5 text-sm no-underline transition-all duration-200 ${isActive('/admin/dashboard') ? 'bg-blue-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+                  }`}>Dashboard</Link>
+              </li>
+              <li>
+                <Link to="/admin/battery-changes" className={`flex items-center pl-14 pr-4 py-2.5 text-sm no-underline transition-all duration-200 ${isActive('/admin/battery-changes') ? 'bg-blue-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+                  }`}>Battery Changes</Link>
+              </li>
+              <li>
+                <Link to="/admin/ai-forecast" className={`flex items-center pl-14 pr-4 py-2.5 text-sm no-underline transition-all duration-200 ${isActive('/admin/ai-forecast') ? 'bg-blue-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+                  }`}>AI Forecast</Link>
+              </li>
+              <li>
+                <Link to="/admin/report-management" className={`flex items-center pl-14 pr-4 py-2.5 text-sm no-underline transition-all duration-200 ${isActive('/admin/report-management') ? 'bg-blue-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+                  }`}>Report Management</Link>
+              </li>
+              <li>
+                <Link to="/admin/revenue-report" className={`flex items-center pl-14 pr-4 py-2.5 text-sm no-underline transition-all duration-200 ${isActive('/admin/revenue-report') ? 'bg-blue-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+                  }`}>Revenue Report</Link>
+              </li>
+            </ul>
+          </li>
         </ul>
       </nav>
 

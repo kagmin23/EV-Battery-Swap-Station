@@ -1,7 +1,6 @@
-import { useState, useMemo } from 'react';
-import { mockBatterySwaps, getBatterySwapStats, mockBatteryHistory } from '../../../mock/BatterySwapData';
+import { useState, useMemo, useEffect } from 'react';
 import { mockStations } from '../../../mock/StationData';
-import type { BatterySwapFilters as FiltersType } from '../types/batteryChanges.types';
+import type { BatterySwapFilters as FiltersType, BatterySwapTransaction } from '../types/batteryChanges.types';
 import BatterySwapStats from '../components/BatterySwapStats';
 import BatterySwapFilters from '../components/BatterySwapFilters';
 import BatterySwapTable from '../components/BatterySwapTable';
@@ -16,10 +15,15 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
+import { TransactionApi } from '../apis/transactionApi';
 
 type ViewMode = 'table' | 'analytics';
 
 export default function BatteryChanges() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<BatterySwapTransaction[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [filters, setFilters] = useState<FiltersType>({
     dateFrom: '',
@@ -34,19 +38,105 @@ export default function BatteryChanges() {
   const [selectedBatteryId, setSelectedBatteryId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Fetch transactions from API
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const apiTransactions = await TransactionApi.getAllTransactions();
+        
+        // Map API response to BatterySwapTransaction format
+        const mappedTransactions: BatterySwapTransaction[] = apiTransactions
+          .filter(t => (t.batteryIdGiven || t.battery_given) && (t.batteryIdReturned || t.battery_returned)) // Only include battery swap transactions
+          .map((t) => {
+            // Helper to get user info (handle both string and object)
+            const getUserInfo = () => {
+              if (typeof t.user === 'string') {
+                return { id: t.user, name: 'Unknown Driver', phone: 'N/A' };
+              }
+              return {
+                id: t.userId,
+                name: t.user?.fullName || 'Unknown Driver',
+                phone: t.user?.phoneNumber || 'N/A',
+              };
+            };
+
+            // Helper to get station info (handle both string and object)
+            const getStationInfo = () => {
+              if (typeof t.station === 'string') {
+                return { id: t.station, name: 'Unknown Station', location: 'N/A' };
+              }
+              return {
+                id: t.stationId,
+                name: t.station?.stationName || 'Unknown Station',
+                location: t.station?.address || 'N/A',
+              };
+            };
+
+            const userInfo = getUserInfo();
+            const stationInfo = getStationInfo();
+
+            return {
+              transaction_id: t._id,
+              timestamp: t.createdAt || t.created_at || t.transaction_time || new Date().toISOString(),
+              driver: {
+                id: userInfo.id,
+                name: userInfo.name,
+                vehicle: 'N/A', // API doesn't provide vehicle info yet
+                phone: userInfo.phone,
+              },
+              station: {
+                id: stationInfo.id,
+                name: stationInfo.name,
+                location: stationInfo.location,
+              },
+              batteryReturned: {
+                id: t.batteryIdReturned || t.battery_returned || 'N/A',
+                model: typeof t.batteryReturned !== 'string' && t.batteryReturned?.model ? t.batteryReturned.model : 'N/A',
+                sohBefore: typeof t.batteryReturned !== 'string' && t.batteryReturned?.soh ? t.batteryReturned.soh : 0,
+                chargeLevel: typeof t.batteryReturned !== 'string' && t.batteryReturned?.chargeLevel ? t.batteryReturned.chargeLevel : 0,
+                cycleCount: 0, // API doesn't provide cycle count yet
+              },
+              batteryGiven: {
+                id: t.batteryIdGiven || t.battery_given || 'N/A',
+                model: typeof t.batteryGiven !== 'string' && t.batteryGiven?.model ? t.batteryGiven.model : 'N/A',
+                sohAfter: typeof t.batteryGiven !== 'string' && t.batteryGiven?.soh ? t.batteryGiven.soh : 0,
+                chargeLevel: typeof t.batteryGiven !== 'string' && t.batteryGiven?.chargeLevel ? t.batteryGiven.chargeLevel : 0,
+                cycleCount: 0, // API doesn't provide cycle count yet
+              },
+              processedBy: 'Staff', // API doesn't provide processed by info yet
+              duration: 300, // Default 5 minutes, API doesn't provide duration yet
+              cost: t.amount || t.cost || 0,
+              status: t.status.toLowerCase() as 'completed' | 'cancelled' | 'disputed' | 'pending',
+            };
+          });
+
+        setTransactions(mappedTransactions);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch transactions');
+        console.error('Error fetching transactions:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, []);
+
   // Get unique battery models for filter
   const batteryModels = useMemo(() => {
     const models = new Set<string>();
-    mockBatterySwaps.forEach(swap => {
+    transactions.forEach(swap => {
       models.add(swap.batteryGiven.model);
       models.add(swap.batteryReturned.model);
     });
     return Array.from(models).sort();
-  }, []);
+  }, [transactions]);
 
   // Filter transactions based on filters
   const filteredTransactions = useMemo(() => {
-    return mockBatterySwaps.filter(transaction => {
+    return transactions.filter(transaction => {
       // Date filters
       if (filters.dateFrom) {
         const transactionDate = new Date(transaction.timestamp);
@@ -112,9 +202,47 @@ export default function BatteryChanges() {
 
       return true;
     });
-  }, [filters]);
+  }, [filters, transactions]);
 
-  const stats = getBatterySwapStats();
+  // Calculate stats from transactions
+  const stats = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const completedTransactions = transactions.filter(t => t.status === 'completed');
+    
+    const todaySwaps = completedTransactions.filter(t => new Date(t.timestamp) >= todayStart);
+    const weekSwaps = completedTransactions.filter(t => new Date(t.timestamp) >= weekStart);
+    const monthSwaps = completedTransactions.filter(t => new Date(t.timestamp) >= monthStart);
+
+    const totalRevenue = completedTransactions.reduce((sum, t) => sum + t.cost, 0);
+    const avgSwapTime = completedTransactions.reduce((sum, t) => sum + t.duration, 0) / completedTransactions.length || 0;
+
+    // Find most active station
+    const stationCounts: Record<string, { name: string; count: number }> = {};
+    completedTransactions.forEach(t => {
+      if (!stationCounts[t.station.id]) {
+        stationCounts[t.station.id] = { name: t.station.name, count: 0 };
+      }
+      stationCounts[t.station.id].count++;
+    });
+
+    const mostActiveStation = Object.values(stationCounts).sort((a, b) => b.count - a.count)[0] || {
+      name: 'N/A',
+      count: 0,
+    };
+
+    return {
+      totalSwapsToday: todaySwaps.length,
+      totalSwapsWeek: weekSwaps.length,
+      totalSwapsMonth: monthSwaps.length,
+      averageSwapTime: avgSwapTime,
+      totalRevenue,
+      mostActiveStation,
+    };
+  }, [transactions]);
 
   const handleViewBatteryDetails = (batteryId: string) => {
     setSelectedBatteryId(batteryId);
@@ -126,10 +254,7 @@ export default function BatteryChanges() {
     setSelectedBatteryId(null);
   };
 
-  const selectedBatteryHistory = useMemo(() => {
-    if (!selectedBatteryId) return null;
-    return mockBatteryHistory.find(h => h.battery_id === selectedBatteryId) || null;
-  }, [selectedBatteryId]);
+  
 
   const handleExportData = () => {
     // Convert filtered transactions to CSV
@@ -169,19 +294,43 @@ export default function BatteryChanges() {
     window.URL.revokeObjectURL(url);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Spinner size="xl" className="mb-4" />
+          <p className="text-gray-600">Loading battery change data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-red-600 text-xl mb-4">⚠️</div>
+          <p className="text-gray-800 font-semibold mb-2">Data Loading Error</p>
+          <p className="text-gray-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="p-6 min-h-screen"
-      style={{
-        background: 'linear-gradient(to bottom right, var(--color-bg-primary), var(--color-bg-secondary), var(--color-bg-tertiary))'
-      }}
-    >
+    <div className="p-6 min-h-screen">
       {/* Header */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
           <div>
             <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
-              🔋 Battery Changes Management
+              🔋 Battery Change Management
             </h1>
             <p style={{ color: 'var(--color-text-secondary)' }}>
               Track and analyze all battery swap transactions
@@ -238,9 +387,9 @@ export default function BatteryChanges() {
         <div className="bg-white rounded-lg shadow-md px-6 py-3 flex justify-between items-center">
           <span className="text-sm text-gray-600">
             Showing <span className="font-semibold text-gray-900">{filteredTransactions.length}</span> of{' '}
-            <span className="font-semibold text-gray-900">{mockBatterySwaps.length}</span> transactions
+            <span className="font-semibold text-gray-900">{transactions.length}</span> transactions
           </span>
-          {filteredTransactions.length !== mockBatterySwaps.length && (
+          {filteredTransactions.length !== transactions.length && (
             <button
               onClick={() => setFilters({
                 dateFrom: '',
@@ -276,10 +425,10 @@ export default function BatteryChanges() {
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="text-2xl font-bold text-slate-800 flex items-center gap-2">
               <FileText className="h-6 w-6" />
-              Logs pin - {selectedBatteryId}
+              Battery Logs - {selectedBatteryId}
             </DialogTitle>
             <DialogDescription>
-              Lịch sử hoạt động và sự kiện của pin
+              Battery activity and event history
             </DialogDescription>
           </DialogHeader>
 
@@ -452,7 +601,7 @@ export default function BatteryChanges() {
 
           <DialogFooter className="flex-shrink-0 pt-4">
             <Button variant="outline" onClick={handleCloseModal}>
-              Đóng
+              Close
             </Button>
             <Button
               variant="outline"
@@ -460,7 +609,7 @@ export default function BatteryChanges() {
               onClick={() => console.log('Download logs')}
             >
               <Download className="h-4 w-4 mr-2" />
-              Tải xuống logs
+              Download logs
             </Button>
           </DialogFooter>
         </DialogContent>

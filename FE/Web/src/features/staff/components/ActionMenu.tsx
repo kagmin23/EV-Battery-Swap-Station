@@ -1,14 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import { MoreVertical, Edit, Trash2, Eye } from "lucide-react";
+import { MoreVertical, Eye, Edit } from "lucide-react";
 
 interface ActionMenuProps {
   batteryId: string;
-  onEdit?: (id: string) => void;
-  onDelete?: (id: string) => void;
   onView?: (id: string) => void;
+  onEdit?: (id: string) => void;
 }
 
-export default function ActionMenu({ batteryId, onEdit, onDelete, onView }: ActionMenuProps) {
+export default function ActionMenu({ batteryId, onView, onEdit }: ActionMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -33,35 +32,38 @@ export default function ActionMenu({ batteryId, onEdit, onDelete, onView }: Acti
     <div className="relative" ref={menuRef}>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="p-2 text-text-secondary hover:text-text-primary hover:bg-button-primary/20 rounded-lg transition-colors"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+        aria-label="Menu hành động"
       >
         <MoreVertical className="w-5 h-5" />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-bg-tertiary rounded-lg shadow-lg border border-border z-10">
+        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
           <div className="py-1">
             <button
-              onClick={() => handleAction(() => onView?.(batteryId))}
-              className="w-full px-4 py-2 text-left text-sm text-text-secondary hover:bg-button-primary hover:text-text-primary flex items-center gap-2 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(() => onView?.(batteryId));
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
             >
               <Eye className="w-4 h-4" />
-              View Details
+              Xem chi tiết
             </button>
             <button
-              onClick={() => handleAction(() => onEdit?.(batteryId))}
-              className="w-full px-4 py-2 text-left text-sm text-text-secondary hover:bg-button-primary hover:text-text-primary flex items-center gap-2 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(() => onEdit?.(batteryId));
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
             >
               <Edit className="w-4 h-4" />
-              Edit
-            </button>
-            <button
-              onClick={() => handleAction(() => onDelete?.(batteryId))}
-              className="w-full px-4 py-2 text-left text-sm text-text-secondary hover:bg-red-600 hover:text-text-primary flex items-center gap-2 transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete
+              Cập nhật
             </button>
           </div>
         </div>
