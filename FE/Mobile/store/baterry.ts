@@ -21,6 +21,7 @@ export interface Battery {
     voltage: number;
     createdAt: string;
     updatedAt: string;
+    price: number;
 }export interface BatteryRespon {
     id: string;
     serial: string;
@@ -33,6 +34,7 @@ export interface Battery {
     voltage: number;
     createdAt: string;
     updatedAt: string;
+    price: number;
 }
 
 export const sBatteries = signify<Battery[]>([]);
