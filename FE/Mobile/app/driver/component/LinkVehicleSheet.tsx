@@ -102,7 +102,14 @@ export default function LinkVehicleSheet({ visible, onClose }: Props) {
     ));
 
     const batteryOptionsFromStore: Option[] = useMemo(() => {
-        return (batteries || []).map(b => ({
+        // Get unique battery models to avoid duplicates
+        const uniqueModels = Array.from(
+            new Map(
+                (batteries || []).map(b => [b.model, b])
+            ).values()
+        );
+
+        return uniqueModels.map(b => ({
             label: `${b.model} - ${b.capacityKWh} kWh`,
             value: b.model,
             key: b.id ?? b.model

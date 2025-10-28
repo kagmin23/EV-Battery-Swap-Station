@@ -1,5 +1,6 @@
 import { useCreateBooking } from '@/features/driver/apis/booking';
 import { useVnPay } from '@/store/payment';
+import { toCamelCase } from '@/utils/caseConverter';
 import { showErrorToast, showSuccessToast } from '@/utils/toast';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useMemo } from 'react';
@@ -83,7 +84,9 @@ export default function PaymentModal({
         if (!batteryId) return showErrorToast('No battery available');
 
         try {
-            // 1. Tạo booking (không toast success)
+            console.log('🚀 Starting VNPAY payment flow...');
+
+            // 1. create booking (no toast success)
             const bookingRes = await createBooking({
                 stationId: station.id,
                 vehicleId: vehicle.vehicleId!,
@@ -91,39 +94,46 @@ export default function PaymentModal({
                 batteryId,
             });
 
-            if (!bookingRes.success || !bookingRes.bookingId) {
-                return showErrorToast(bookingRes.message || 'Booking failed');
+            const data = toCamelCase(bookingRes)
+            const bookingId = data.data.bookingId;
+
+            if (!data.success || !bookingId) {
+                return showErrorToast(data.message || 'Booking failed');
             }
 
-            // KHÔNG toast success ở đây → vì chưa thanh toán xong
-
-            // 2. Tạo payment VNPAY
+            // 2. create payment VNPAY
             const returnUrl = `https://unimpulsive-unhumorously-lera.ngrok-free.dev/api/payments/vnpay/return`;
-            // HOẶC dùng deep link nếu bạn có app scheme:
-            // const returnUrl = `myapp://payment-result`;
+
 
             const paymentRes = await createPayment({
                 amount: vehicle.price || 100000,
-                bookingId: bookingRes.bookingId,
+                bookingId: bookingId,
                 returnUrl,
             });
 
-            // Expect `createPayment` returns the payment data object `{ url, txnRef, payment_id }`
-            if (paymentRes?.url) {
-                onClose();
 
-                // Use Linking.canOpenURL before opening
-                const supported = await Linking.canOpenURL(paymentRes.url);
-                if (supported) {
-                    await Linking.openURL(paymentRes.url);
-                } else {
-                    showErrorToast('Cannot open payment URL');
-                }
+            if (!paymentRes) {
+                return showErrorToast('Payment failed - no response');
+            }
+
+            if (!paymentRes.url) {
+                return showErrorToast('Payment failed - no URL returned');
+            }
+
+            onClose();
+
+            // open payment URL
+            console.log('🔗 Opening URL:', paymentRes.url);
+            const supported = await Linking.canOpenURL(paymentRes.url);
+            console.log('✅ URL supported:', supported);
+
+            if (supported) {
+                await Linking.openURL(paymentRes.url);
             } else {
-                showErrorToast('Failed to get VNPAY URL');
+                showErrorToast('Cannot open payment URL');
             }
         } catch (err: any) {
-            console.error('VNPAY Error:', err);
+            console.error('❌ VNPAY Error:', err);
             showErrorToast(err?.response?.data?.message || err.message || 'Payment failed');
         }
     }, [
