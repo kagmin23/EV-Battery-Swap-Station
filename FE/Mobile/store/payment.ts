@@ -15,7 +15,7 @@ export interface CreateVnPayPaymentResponse {
   data: {
     url: string;
     txnRef: string;
-    payment_id: string;
+    paymentId: string;
   };
 }
 
@@ -27,16 +27,6 @@ export interface CreateVnPayPaymentError {
 interface UseVnPayReturn {
   loading: boolean;
   createPayment: (payload: CreateVnPayPaymentRequest) => Promise<CreateVnPayPaymentResponse["data"] | null>;
-}
-
-/** ---------- Type Guard ---------- */
-/**
- * Type guard giúp TS hiểu chắc chắn response là success
- */
-function isVnPaySuccess(
-  res: CreateVnPayPaymentResponse | CreateVnPayPaymentError
-): res is CreateVnPayPaymentResponse {
-  return res.success === true;
 }
 
 /** ---------- Hook ---------- */
@@ -52,17 +42,27 @@ export const useVnPay = (): UseVnPayReturn => {
           payload
         );
 
-        const data = res.data;
+        const data = (res as any).data;
 
-        // ✅ Dùng type guard để TS hiểu rõ
-        if (isVnPaySuccess(data)) {
-          return data.data; // đây là url, txnRef, payment_id
-        } else {
-          showErrorToast(data.message);
-          return null;
+        // check if response has success field
+        if (data && typeof data === 'object') {
+          if (data.success === true && data.data) {
+            // response is in format { success: true, data: { url, txnRef, paymentId } }
+            return data.data;
+          } else if (data.url && data.txnRef) {
+            // response is directly in format { url, txnRef, payment_id }
+            return data;
+          } else if (data.success === false) {
+            // error response
+            showErrorToast(data.message);
+            return null;
+          }
         }
+
+        showErrorToast('Invalid payment response');
+        return null;
       } catch (err: any) {
-        showErrorToast(err?.message || "Payment error");
+        showErrorToast(err?.response?.data?.message || err?.message || 'Payment error');
         return null;
       } finally {
         setLoading(false);
@@ -70,6 +70,5 @@ export const useVnPay = (): UseVnPayReturn => {
     },
     []
   );
-
   return { loading, createPayment };
 };
