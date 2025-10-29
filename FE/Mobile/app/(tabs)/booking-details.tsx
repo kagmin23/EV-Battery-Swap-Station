@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const getStatusColor = (status: string) => {
@@ -209,7 +209,27 @@ export default function BookingDetailsScreen() {
             const res = await createFeedbackApi({ bookingId: bookingIdToSend, rating: feedbackRating, comment: feedbackComment.trim(), images: feedbackImages });
             if (res && res.success) {
                 showSuccessToast(res.message || 'Feedback submitted');
-                await getAllFeedbacks();
+                // Refresh global feedback list first
+                try {
+                    await getAllFeedbacks();
+                } catch {
+                    // ignore global refresh errors
+                }
+
+                // Fetch booking-specific feedback so UI updates immediately and the Feedback button hides
+                try {
+                    const idToUse = String(bookingIdToSend);
+                    const bookingRes = await getFeedbackByBookingApi(idToUse);
+                    if (bookingRes && bookingRes.data) {
+                        setBookingFeedback(bookingRes.data as Feedback);
+                    } else if (res.data) {
+                        // fallback to response data if booking-level fetch didn't return
+                        setBookingFeedback(res.data as Feedback);
+                    }
+                } catch {
+                    if (res.data) setBookingFeedback(res.data as Feedback);
+                }
+
                 setIsFeedbackModalVisible(false);
             } else {
                 showErrorToast(res?.message || 'Failed to submit feedback');
@@ -426,7 +446,7 @@ export default function BookingDetailsScreen() {
 
                 {/* Feedback for this booking (if any) */}
                 {bookingFeedback && (
-                    <View style={styles.cardFeedback}>
+                    <View style={styles.card}>
                         <View style={styles.cardHeader}>
                             <Ionicons name="chatbubble-ellipses-outline" size={20} color="#6C63FF" />
                             <Text style={styles.cardTitle}>Feedback</Text>
@@ -450,7 +470,14 @@ export default function BookingDetailsScreen() {
                                     ))}
                                 </View>
                             )}
-                            <Text style={styles.feedbackMeta}>{new Date(bookingFeedback.createdAt).toLocaleString()}</Text>
+                            <Text
+                                style={[
+                                    styles.feedbackMeta,
+                                    (bookingFeedback.images && bookingFeedback.images.length > 0) ? { marginTop: 10 } : { marginTop: 4 }
+                                ]}
+                            >
+                                {new Date(bookingFeedback.createdAt).toLocaleString()}
+                            </Text>
                         </View>
                     </View>
                 )}
@@ -606,91 +633,98 @@ export default function BookingDetailsScreen() {
                 animationType="fade"
                 onRequestClose={closeFeedbackModal}
             >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                        <TouchableOpacity style={styles.closeButton} onPress={closeFeedbackModal}>
-                            <Ionicons name="close" size={22} color="#FFF" />
-                        </TouchableOpacity>
-
-                        <Text style={styles.modalConfirm}>Create Feedback</Text>
-
-                        <Text style={[styles.label, { marginTop: 8 }]}>Rating</Text>
-                        <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-                            {[1,2,3,4,5].map((n) => (
-                                <TouchableOpacity key={n} onPress={() => setFeedbackRating(n)} style={{ paddingHorizontal: 6 }}>
-                                    <Text style={{ color: n <= feedbackRating ? '#FFD700' : '#9EA0A5', fontSize: 20 }}>{'★'}</Text>
+                <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+                    <View style={styles.modalContainer}>
+                        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}>
+                            <View style={styles.modalContent}>
+                                <TouchableOpacity style={styles.closeButton} onPress={closeFeedbackModal}>
+                                    <Ionicons name="close" size={22} color="#FFF" />
                                 </TouchableOpacity>
-                            ))}
-                        </View>
 
-                        <Text style={[styles.label, { marginTop: 12 }]}>Comment</Text>
-                        <TextInput
-                            value={feedbackComment}
-                            onChangeText={setFeedbackComment}
-                            placeholder="Optional comment"
-                            placeholderTextColor="#9EA0A5"
-                            multiline
-                            numberOfLines={4}
-                            style={[styles.supportInput, { height: 100, textAlignVertical: 'top' }]}
-                        />
+                                <Text style={styles.modalConfirm}>Create Feedback</Text>
 
-                        <Text style={[styles.label, { marginTop: 8 }]}>Images (optional)</Text>
-                        <View style={styles.supportImageContainer}>
-                            {feedbackImages.map((uri, idx) => (
-                                <View key={idx} style={{ position: 'relative' }}>
-                                    <TouchableOpacity onPress={() => setFeedbackImages(prev => prev.filter((p, i) => i !== idx))}>
-                                        <View style={styles.supportImage}>
-                                            <Image source={{ uri }} style={{ width: '100%', height: '100%', borderRadius: 8 }} />
+                                <Text style={[styles.label, { marginTop: 8 }]}>Rating</Text>
+                                <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                                    {[1, 2, 3, 4, 5].map((n) => (
+                                        <TouchableOpacity key={n} onPress={() => setFeedbackRating(n)} style={{ paddingHorizontal: 6 }}>
+                                            <Text style={{ color: n <= feedbackRating ? '#FFD700' : '#9EA0A5', fontSize: 20 }}>{'★'}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                <Text style={[styles.label, { marginTop: 12 }]}>Comment</Text>
+                                <TextInput
+                                    value={feedbackComment}
+                                    onChangeText={setFeedbackComment}
+                                    placeholder="Optional comment"
+                                    placeholderTextColor="#9EA0A5"
+                                    multiline
+                                    numberOfLines={4}
+                                    blurOnSubmit={true}
+                                    returnKeyType="done"
+                                    onSubmitEditing={() => Keyboard.dismiss()}
+                                    style={[styles.supportInput, { height: 100, textAlignVertical: 'top' }]}
+                                />
+
+                                <Text style={[styles.label, { marginTop: 8 }]}>Images (optional)</Text>
+                                <View style={styles.supportImageContainer}>
+                                    {feedbackImages.map((uri, idx) => (
+                                        <View key={idx} style={{ position: 'relative' }}>
+                                            <TouchableOpacity onPress={() => setFeedbackImages(prev => prev.filter((p, i) => i !== idx))}>
+                                                <View style={styles.supportImage}>
+                                                    <Image source={{ uri }} style={{ width: '100%', height: '100%', borderRadius: 8 }} />
+                                                </View>
+                                            </TouchableOpacity>
                                         </View>
+                                    ))}
+                                    <TouchableOpacity style={styles.supportImageAdd} onPress={async () => {
+                                        try {
+                                            const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                                            if (!permission.granted) {
+                                                showErrorToast('Permission to access media library denied');
+                                                return;
+                                            }
+                                            const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsMultipleSelection: true, quality: 0.7 });
+                                            if (result.canceled) return;
+                                            const uris = (result.assets ?? []).map((a: any) => a.uri).filter(Boolean);
+                                            setFeedbackImages(prev => [...prev, ...uris]);
+                                        } catch (err: any) {
+                                            showErrorToast(err?.message || 'Failed to pick image');
+                                        }
+                                    }}>
+                                        <Text style={styles.supportImageAddText}>+</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={[styles.supportImageAdd, { marginLeft: 8 }]} onPress={async () => {
+                                        try {
+                                            const permission = await ImagePicker.requestCameraPermissionsAsync();
+                                            if (!permission.granted) {
+                                                showErrorToast('Permission to access camera denied');
+                                                return;
+                                            }
+                                            const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+                                            if (result.canceled) return;
+                                            const uri = (result.assets ?? [])[0]?.uri ?? (result as any).uri;
+                                            if (uri) setFeedbackImages(prev => [...prev, uri]);
+                                        } catch (err: any) {
+                                            showErrorToast(err?.message || 'Failed to take photo');
+                                        }
+                                    }}>
+                                        <Text style={styles.supportImageAddText}>📷</Text>
                                     </TouchableOpacity>
                                 </View>
-                            ))}
-                            <TouchableOpacity style={styles.supportImageAdd} onPress={async () => {
-                                try {
-                                    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                                    if (!permission.granted) {
-                                        showErrorToast('Permission to access media library denied');
-                                        return;
-                                    }
-                                    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsMultipleSelection: true, quality: 0.7 });
-                                    if (result.canceled) return;
-                                    const uris = (result.assets ?? []).map((a: any) => a.uri).filter(Boolean);
-                                    setFeedbackImages(prev => [...prev, ...uris]);
-                                } catch (err: any) {
-                                    showErrorToast(err?.message || 'Failed to pick image');
-                                }
-                            }}>
-                                <Text style={styles.supportImageAddText}>+</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.supportImageAdd, { marginLeft: 8 }]} onPress={async () => {
-                                try {
-                                    const permission = await ImagePicker.requestCameraPermissionsAsync();
-                                    if (!permission.granted) {
-                                        showErrorToast('Permission to access camera denied');
-                                        return;
-                                    }
-                                    const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
-                                    if (result.canceled) return;
-                                    const uri = (result.assets ?? [])[0]?.uri ?? (result as any).uri;
-                                    if (uri) setFeedbackImages(prev => [...prev, uri]);
-                                } catch (err: any) {
-                                    showErrorToast(err?.message || 'Failed to take photo');
-                                }
-                            }}>
-                                <Text style={styles.supportImageAddText}>📷</Text>
-                            </TouchableOpacity>
-                        </View>
 
-                        <View style={styles.modalButtonsRow}>
-                            <TouchableOpacity style={[styles.modalButton, styles.cancelModalButton]} onPress={closeFeedbackModal}>
-                                <Text style={[styles.modalButtonText, styles.cancelModalButtonText]}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.modalButton, styles.confirmModalButton]} onPress={handleSubmitFeedback}>
-                                <Text style={[styles.modalButtonText, styles.confirmModalButtonText]}>Send Feedback</Text>
-                            </TouchableOpacity>
-                        </View>
+                                <View style={styles.modalButtonsRow}>
+                                    <TouchableOpacity style={[styles.modalButton, styles.cancelModalButton]} onPress={closeFeedbackModal}>
+                                        <Text style={[styles.modalButtonText, styles.cancelModalButtonText]}>Cancel</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={[styles.modalButton, styles.confirmModalButton]} onPress={() => { Keyboard.dismiss(); handleSubmitFeedback(); }}>
+                                        <Text style={[styles.modalButtonText, styles.confirmModalButtonText]}>Send Feedback</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </KeyboardAvoidingView>
                     </View>
-                </View>
+                </TouchableWithoutFeedback>
             </Modal>
 
             {selectedBooking && (
@@ -742,9 +776,23 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 4,
     },
-    cardFeedback: {
-        padding: 10,
+    /* Feedback-specific card styles (distinct from regular cards) */
+    feedbackCard: {
+        backgroundColor: '#251036',
+        borderRadius: 12,
+        padding: 12,
+        marginTop: 6,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(108,99,255,0.12)',
     },
+    feedbackHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+    feedbackUser: { color: '#FFF', fontWeight: '700', fontSize: 15 },
+    feedbackStars: { flexDirection: 'row', alignItems: 'center' },
+    feedbackComment: { color: '#DDD', marginTop: 8, textAlign: 'left', fontSize: 14 },
+    feedbackImages: { flexDirection: 'row', marginTop: 10, flexWrap: 'wrap' },
+    feedbackImage: { width: 90, height: 90, borderRadius: 8, marginRight: 8 },
+    feedbackMeta: { color: '#9EA0A5', fontSize: 12, alignSelf: 'flex-end', textAlign: 'right' },
     cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 },
     cardTitle: { color: '#FFF', fontWeight: '700', fontSize: 16 },
     infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
