@@ -4,7 +4,7 @@ import { useBookings } from '@/store/booking';
 import { useSelectedStation } from '@/store/station';
 import { getAllVehicle, useVehicles, Vehicle } from '@/store/vehicle';
 import { formatDateVN, formatTimeVN } from '@/utils/dateTime';
-import { showErrorToast, showSuccessToast } from '@/utils/toast';
+import { showErrorToast } from '@/utils/toast';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -24,11 +24,16 @@ export default function BookingScreen() {
 
     const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>(undefined);
 
-    // Get available battery models from station
+    // Get available battery models from station (only full and idle batteries)
     const availableBatteryModels = useMemo(() => {
         if (!batteriesInStation || !batteriesInStation.batteries || !Array.isArray(batteriesInStation.batteries) || batteriesInStation.batteries.length === 0) return [];
-        return batteriesInStation.batteries.map((battery: any) => battery.model);
+        // Only include batteries with status 'full' or 'idle'
+        const availableBatteries = batteriesInStation.batteries.filter((battery: any) =>
+            battery.status === 'full' || battery.status === 'idle'
+        );
+        return availableBatteries.map((battery: any) => battery.model);
     }, [batteriesInStation]);
+
 
     // Check if vehicle is compatible with station batteries
     const isVehicleCompatible = useCallback((vehicle: Vehicle) => {
@@ -45,7 +50,7 @@ export default function BookingScreen() {
         // Find the first available battery with matching model
         const matchingBattery = batteriesInStation.batteries.find((battery: any) =>
             battery.model === selectedVehicle.batteryModel &&
-            (battery.status === 'full' || battery.status === 'idle') // Only get fully and  charged batteries
+            (battery.status === 'full' || battery.status === 'idle') // Only get fully and  idle batteries
         );
 
         return matchingBattery?.id || null;
@@ -53,10 +58,14 @@ export default function BookingScreen() {
 
     // Get selected battery info for display
     const getSelectedBatteryInfo = useCallback(() => {
-        if (!selectedVehicleId || !batteriesInStation?.batteries) return null;
+        if (!selectedVehicleId || !batteriesInStation?.batteries) {
+            return null;
+        }
 
         const selectedVehicle = vehicles.find(v => v.vehicleId === selectedVehicleId);
-        if (!selectedVehicle) return null;
+        if (!selectedVehicle) {
+            return null;
+        }
 
         // Find the first available battery with matching model
         const matchingBattery = batteriesInStation.batteries.find((battery: any) =>
@@ -121,85 +130,6 @@ export default function BookingScreen() {
         });
     };
 
-    const onConfirm = async () => {
-        const vehicle = vehicles.find(x => x.vehicleId === selectedVehicleId);
-        if (!vehicle) {
-            showErrorToast('Please select a vehicle.', 'Validation error');
-            return;
-        }
-        if (!date) {
-            showErrorToast('Please select a date.', 'Validation error');
-            return;
-        }
-        if (!time) {
-            showErrorToast('Please select a time.', 'Validation error');
-            return;
-        }
-        if (!station) {
-            showErrorToast('Missing station information.', 'Validation error');
-            return;
-        }
-
-        console.log('station object:', station);
-        console.log('vehicle object:', vehicle);
-
-        const scheduled = new Date(
-            date.getFullYear(),
-            date.getMonth(),
-            date.getDate(),
-            time.getHours(),
-            time.getMinutes(),
-            0,
-            0
-        );
-
-        // Check for duplicate booking
-        const stationId = station.id;
-        console.log('stationId:', stationId);
-        console.log('scheduled time:', scheduled.toISOString());
-
-        if (!stationId) {
-            showErrorToast('Invalid station ID.', 'Validation error');
-            return;
-        }
-
-        if (checkDuplicateBooking(vehicle.vehicleId!, stationId, scheduled)) {
-            showErrorToast('This vehicle already has a booking at this station within 20 minutes.', 'Duplicate booking');
-            return;
-        }
-
-        // Get the actual battery ID for the selected vehicle
-        const selectedBatteryId = getSelectedBatteryId();
-        if (!selectedBatteryId) {
-            showErrorToast('No available battery found for this vehicle model.', 'Battery not available');
-            return;
-        }
-
-        console.log('Selected battery ID:', selectedBatteryId);
-        console.log('Vehicle battery model:', vehicle.batteryModel);
-
-        createBookingMutation.mutate({
-            stationId: stationId,
-            vehicleId: vehicle.vehicleId!,
-            scheduledTime: scheduled.toISOString(),
-            batteryId: selectedBatteryId,
-        }, {
-            onSuccess: (response) => {
-                showSuccessToast(response.message || 'Booking successful!');
-                setTimeout(() => {
-                    router.push('/(tabs)');
-                }, 1500);
-            },
-            onError: (error) => {
-                showErrorToast(error.message || 'Booking failed, please try again.');
-            }
-        });
-    };
-
-    const onPressConfirmBooking = () => {
-        if (!selectedVehicleId) return showErrorToast('Please select a vehicle');
-        setShowPaymentModal(true);
-    };
 
 
     return (
