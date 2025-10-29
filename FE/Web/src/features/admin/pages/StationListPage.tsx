@@ -226,26 +226,6 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
         return allStaff.filter(staff => staff.stationId === stationId);
     };
 
-    // Add staff to station
-    const handleAddStaffToStation = async (stationId: string, staffId: string) => {
-        try {
-            setSavingStaffId(staffId);
-            await StationService.addStaffToStation(stationId, staffId);
-
-            // Update local state
-            setAllStaff(prev => prev.map(s =>
-                s.id === staffId ? { ...s, stationId, stationName: stations.find(st => st.id === stationId)?.name || 'Unassigned' } : s
-            ));
-
-            toast.success('Staff member assigned successfully');
-        } catch (err) {
-            toast.error('Unable to assign staff member. Please try again.');
-            console.error('Error adding staff to station:', err);
-        } finally {
-            setSavingStaffId(null);
-        }
-    };
-
     // Remove staff from station
     const handleRemoveStaffFromStation = async (stationId: string, staffId: string) => {
         try {
