@@ -84,8 +84,6 @@ export default function PaymentModal({
         if (!batteryId) return showErrorToast('No battery available');
 
         try {
-            console.log('🚀 Starting VNPAY payment flow...');
-
             // 1. create booking (no toast success)
             const bookingRes = await createBooking({
                 stationId: station.id,
@@ -102,8 +100,8 @@ export default function PaymentModal({
             }
 
             // 2. create payment VNPAY
-            const returnUrl = `https://unimpulsive-unhumorously-lera.ngrok-free.dev/api/payments/vnpay/return`;
-
+            // ✅ Dùng deep link của Expo
+            const returnUrl = "exp://192.168.1.38:8081/--/payment-success";
 
             const paymentRes = await createPayment({
                 amount: vehicle.price || 100000,
@@ -123,9 +121,7 @@ export default function PaymentModal({
             onClose();
 
             // open payment URL
-            console.log('🔗 Opening URL:', paymentRes.url);
             const supported = await Linking.canOpenURL(paymentRes.url);
-            console.log('✅ URL supported:', supported);
 
             if (supported) {
                 await Linking.openURL(paymentRes.url);

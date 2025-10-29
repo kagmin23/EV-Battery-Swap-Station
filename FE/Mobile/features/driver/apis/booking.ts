@@ -20,7 +20,6 @@ export interface BookingResponse {
 export const bookingAPI = {
     async createBooking(data: BookingRequest): Promise<BookingResponse> {
         const payload = await toSnakeCase(data)
-        console.log('payload', payload)
 
         return httpClient.post<BookingResponse>("/booking", payload, {
             "Content-Type": "application/json",
