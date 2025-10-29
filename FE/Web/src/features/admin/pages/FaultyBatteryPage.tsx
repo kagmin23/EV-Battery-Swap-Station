@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Battery as BatteryIcon, Eye, AlertCircle, TrendingUp, Search, Filter, Grid, List, Plus, MapPin } from 'lucide-react';
+import { AlertTriangle, Battery as BatteryIcon, Eye, AlertCircle, TrendingUp, Search, Grid, List, Plus, MapPin, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -335,6 +335,8 @@ const FaultyBatteryPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<BatteryStatus | 'ALL'>('ALL');
     const [selectedStation, setSelectedStation] = useState<string>('ALL');
+    const [limit, setLimit] = useState<string>('20');
+    const [currentPage, setCurrentPage] = useState<number>(1);
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
     // Load stations data
@@ -389,6 +391,19 @@ const FaultyBatteryPage: React.FC = () => {
 
         setFilteredBatteries(filtered);
     };
+
+    // Calculate pagination - apply after filtering
+    const limitNum = Number(limit) || 20;
+    const totalPages = Math.ceil(filteredBatteries.length / limitNum);
+    const paginatedBatteries = filteredBatteries.slice(
+        (currentPage - 1) * limitNum,
+        currentPage * limitNum
+    );
+
+    // Reset to first page when filters or limit change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter, selectedStation, limit]);
 
     useEffect(() => {
         loadStations();
@@ -553,26 +568,32 @@ const FaultyBatteryPage: React.FC = () => {
                                 </SelectContent>
                             </Select>
 
-                            {/* Clear Filters Button */}
+                            {/* Limit Filter */}
+                            <Select value={limit} onValueChange={setLimit}>
+                                <SelectTrigger className="w-full sm:w-[120px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
+                                    <SelectValue placeholder="Limit" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
+                                    <SelectItem value="10" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700">10</SelectItem>
+                                    <SelectItem value="20" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700">20</SelectItem>
+                                    <SelectItem value="50" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700">50</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {/* Reset Button */}
                             <Button
                                 variant="outline"
                                 onClick={() => {
                                     setSearchTerm('');
                                     setStatusFilter('ALL');
                                     setSelectedStation('ALL');
+                                    setLimit('20');
+                                    setCurrentPage(1);
                                 }}
                                 className="h-12 px-4 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl"
                             >
-                                Clear Filters
-                            </Button>
-
-                            {/* Filter Button */}
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-12 w-12 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl"
-                            >
-                                <Filter className="h-5 w-5" />
+                                <RotateCcw className="h-4 w-4 mr-2" />
+                                Reset
                             </Button>
                         </div>
                     </div>
@@ -654,7 +675,7 @@ const FaultyBatteryPage: React.FC = () => {
                         </div>
                     ) : viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredBatteries.map((battery) => (
+                            {paginatedBatteries.map((battery) => (
                                 <FaultyBatteryCard
                                     key={battery._id}
                                     battery={battery}
@@ -663,15 +684,232 @@ const FaultyBatteryPage: React.FC = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className="overflow-hidden rounded-xl border border-slate-200">
-                            {/* Table view will be implemented here */}
-                            <div className="text-center py-8 text-slate-500">
-                                Table view will be implemented
-                            </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[900px]">
+                                <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
+                                    <tr>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Battery ID</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Model</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Station</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Status</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">SOH</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Capacity (kWh)</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Voltage (V)</th>
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Manufacturer</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200">
+                                    {paginatedBatteries.map((battery) => {
+                                        const getStatusColor = (status: BatteryStatus) => {
+                                            switch (status) {
+                                                case 'faulty':
+                                                    return 'bg-red-100 text-red-800 border-red-200';
+                                                case 'charging':
+                                                    return 'bg-blue-100 text-blue-800 border-blue-200';
+                                                case 'full':
+                                                    return 'bg-green-100 text-green-800 border-green-200';
+                                                case 'in-use':
+                                                    return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                                                case 'idle':
+                                                    return 'bg-gray-100 text-gray-800 border-gray-200';
+                                                default:
+                                                    return 'bg-gray-100 text-gray-800 border-gray-200';
+                                            }
+                                        };
+
+                                        const getStatusText = (status: BatteryStatus) => {
+                                            switch (status) {
+                                                case 'faulty':
+                                                    return 'Faulty';
+                                                case 'charging':
+                                                    return 'Charging';
+                                                case 'full':
+                                                    return 'Full';
+                                                case 'in-use':
+                                                    return 'In Use';
+                                                case 'idle':
+                                                    return 'Idle';
+                                                default:
+                                                    return 'Unknown';
+                                            }
+                                        };
+
+                                        const getSohColor = (soh: number) => {
+                                            if (soh >= 80) return 'text-green-600';
+                                            if (soh >= 60) return 'text-yellow-600';
+                                            if (soh >= 40) return 'text-orange-600';
+                                            return 'text-red-600';
+                                        };
+
+                                        return (
+                                            <tr
+                                                key={battery._id}
+                                                className="hover:bg-slate-50 cursor-pointer transition-colors"
+                                                onClick={() => handleBatteryClick(battery)}
+                                            >
+                                                <td className但="px-6 py-4">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="w-10 h-10 flex-shrink-0 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                                            <BatteryIcon className="h-5 w-5 flex-shrink-0" />
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-medium text-slate-800">{battery.serial}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-slate-800">{battery.model || 'N/A'}</td>
+                                                <td className="px-6 py-4 text-sm text-slate-800">{battery.station?.stationName || 'Not assigned'}</td>
+                                                <td className="px-6 py-4">
+                                                    <Badge className={`${getStatusColor(battery.status)} border`}>
+                                                        {getStatusText(battery.status)}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`text-sm font-medium ${getSohColor(battery.soh)}`}>
+                                                        {battery.soh}%
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-slate-800">{battery.capacity_kWh || 'N/A'}</td>
+                                                <td className="px-6 py-4 text-sm text-slate-800">{battery.voltage || 'N/A'}</td>
+                                                <td className="px-6 py-4 text-sm text-slate-800">{battery.manufacturer || 'N/A'}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
                     )}
                 </CardContent>
             </Card>
+
+            {/* Pagination */}
+            {!loading && filteredBatteries.length > 0 && totalPages > 1 && (
+                <div className="flex flex-col items-center py-4 gap-3">
+                    <nav className="flex items-center -space-x-px" aria-label="Pagination">
+                        <button
+                            type="button"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-s-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                            aria-label="Previous"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            <span className="hidden sm:block">Previous</span>
+                        </button>
+
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum: number;
+                            if (totalPages <= 5) {
+                                pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                                pageNum = i === 4 ? totalPages : i + 1;
+                                if (i === 3 && totalPages > 5) {
+                                    return (
+                                        <React.Fragment key={`fragment-${i}`}>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                            <button
+                                                key={totalPages}
+                                                type="button"
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === totalPages
+                                                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                                    }`}
+                                            >
+                                                {totalPages}
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                }
+                            } else if (currentPage >= totalPages - 2) {
+                                if (i === 0) {
+                                    return (
+                                        <React.Fragment key={`fragment-start-${i}`}>
+                                            <button
+                                                key={1}
+                                                type="button"
+                                                onClick={() => setCurrentPage(1)}
+                                                className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === 1
+                                                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                                    }`}
+                                            >
+                                                1
+                                            </button>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                        </React.Fragment>
+                                    );
+                                }
+                                pageNum = totalPages - 4 + i;
+                            } else {
+                                if (i === 0) {
+                                    return (
+                                        <React.Fragment key={`fragment-mid-start`}>
+                                            <button
+                                                key={1}
+                                                type="button"
+                                                onClick={() => setCurrentPage(1)}
+                                                className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                            >
+                                                1
+                                            </button>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                        </React.Fragment>
+                                    );
+                                } else if (i === 4) {
+                                    return (
+                                        <React.Fragment key={`fragment-mid-end`}>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                            <button
+                                                key={totalPages}
+                                                type="button"
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                            >
+                                                {totalPages}
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                }
+                                pageNum = currentPage + i - 2;
+                            }
+
+                            return (
+                                <button
+                                    key={pageNum}
+                                    type="button"
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === pageNum
+                                        ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                        : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                        }`}
+                                    aria-current={currentPage === pageNum ? "page" : undefined}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+
+                        <button
+                            type="button"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-e-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                            aria-label="Next"
+                        >
+                            <span className="hidden sm:block">Next</span>
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </nav>
+
+                    {/* Items info */}
+                    <div className="text-sm text-gray-800">
+                        Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * limitNum + 1}</span> to{" "}
+                        <span className="font-semibold text-slate-900">{Math.min(currentPage * limitNum, filteredBatteries.length)}</span> of{" "}
+                        <span className="font-semibold text-slate-900">{filteredBatteries.length}</span> results
+                    </div>
+                </div>
+            )}
 
             {/* Detail Modal */}
             <FaultyBatteryDetailModal

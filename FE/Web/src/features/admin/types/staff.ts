@@ -9,7 +9,6 @@ export interface Staff {
   status: StaffStatus;
   avatar?: string;
   permissions: StaffPermission[];
-  lastActive: Date;
   shiftStart?: Date;
   shiftEnd?: Date;
   createdAt: Date;
@@ -57,6 +56,7 @@ export interface StaffFilters {
   stationId: string;
   role: StaffRole | 'ALL';
   status: StaffStatus | 'ALL' | 'active' | 'locked';
+  limit: string;
 }
 
 export interface StaffStats {

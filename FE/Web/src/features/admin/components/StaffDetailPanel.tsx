@@ -233,7 +233,7 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
             <div className="p-2 bg-green-100 rounded-lg mr-3">
               <Activity className="h-5 w-5 text-green-600" />
             </div>
-            Hoạt động gần đây
+            Recent Activity
           </CardTitle>
         </CardHeader>
         <CardContent>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, RotateCcw } from 'lucide-react';
+import { Search, RotateCcw, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,13 +10,15 @@ interface StaffSearchBarProps {
   onFiltersChange: (filters: StaffFilters) => void;
   stations: { id: string; name: string }[];
   onResetFilters?: () => void;
+  isResetting?: boolean;
 }
 
 export const StaffSearchBar: React.FC<StaffSearchBarProps> = ({
   filters,
   onFiltersChange,
   stations,
-  onResetFilters
+  onResetFilters,
+  isResetting = false
 }) => {
   const handleSearchChange = (value: string) => {
     onFiltersChange({ ...filters, search: value });
@@ -32,6 +34,10 @@ export const StaffSearchBar: React.FC<StaffSearchBarProps> = ({
 
   const handleStatusChange = (value: string) => {
     onFiltersChange({ ...filters, status: value as StaffStatus | 'ALL' });
+  };
+
+  const handleLimitChange = (value: string) => {
+    onFiltersChange({ ...filters, limit: value });
   };
 
   return (
@@ -141,13 +147,30 @@ export const StaffSearchBar: React.FC<StaffSearchBarProps> = ({
             </SelectContent>
           </Select>
 
+          {/* Limit Filter */}
+          <Select value={filters.limit} onValueChange={handleLimitChange}>
+            <SelectTrigger className="w-full sm:w-[120px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
+              <SelectValue placeholder="Limit" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
+              <SelectItem value="10" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700">10</SelectItem>
+              <SelectItem value="20" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700">20</SelectItem>
+              <SelectItem value="50" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700">50</SelectItem>
+            </SelectContent>
+          </Select>
+
           {/* Reset Filter Button */}
           <Button
             variant="outline"
             onClick={onResetFilters}
-            className="h-12 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl text-slate-700 px-4 whitespace-nowrap"
+            disabled={isResetting}
+            className="h-12 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl text-slate-700 px-4 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <RotateCcw className="h-4 w-4 mr-2" />
+            {isResetting ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RotateCcw className="h-4 w-4 mr-2" />
+            )}
             Reset
           </Button>
         </div>

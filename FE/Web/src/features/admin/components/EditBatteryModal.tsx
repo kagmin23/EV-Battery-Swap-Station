@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Battery as BatteryIcon, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
-import { BatteryService } from '@/services/api/batteryService';
+import { BatteryService, type UpdateBatteryRequest } from '@/services/api/batteryService';
 import { StationService, type Station as ApiStation } from '@/services/api/stationService';
 import { ConfirmationModal } from './ConfirmationModal';
 import type { Battery } from '../types/battery';
@@ -27,6 +27,7 @@ interface BatteryFormData {
     manufacturer: string;
     capacity_kWh: number;
     voltage: number;
+    price?: number;
 }
 
 export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
@@ -42,11 +43,13 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
         stationId: '',
         manufacturer: '',
         capacity_kWh: 0,
-        voltage: 0
+        voltage: 0,
+        price: 0
     });
     const [stations, setStations] = useState<Array<{ id: string; name: string }>>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [sohTouched, setSohTouched] = useState(false);
 
     // Confirmation modal state
     const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
@@ -69,10 +72,12 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                 stationId: battery.stationId || '',
                 manufacturer: battery.manufacturer || '',
                 capacity_kWh: battery.capacity_kWh || 0,
-                voltage: battery.voltage || 0
+                voltage: battery.voltage || 0,
+                price: (battery as any).price || 0
             };
             console.log('Setting form data:', newFormData);
             setFormData(newFormData);
+            setSohTouched(true); // Battery data is loaded, so SOH is considered touched
         }
     }, [battery, isOpen]);
 
@@ -86,9 +91,11 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                 stationId: '',
                 manufacturer: '',
                 capacity_kWh: 0,
-                voltage: 0
+                voltage: 0,
+                price: 0
             });
             setErrors({});
+            setSohTouched(false);
         }
     }, [isOpen]);
 
@@ -102,7 +109,7 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
             setStations(stationList);
         } catch (err) {
             console.error('Error loading stations:', err);
-            toast.error('Không thể tải danh sách trạm');
+            toast.error('Unable to load stations. Please try again.');
         }
     };
 
@@ -110,27 +117,33 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
         const newErrors: Record<string, string> = {};
 
         if (!formData.model.trim()) {
-            newErrors.model = 'Model pin là bắt buộc';
+            newErrors.model = 'Model is required';
         }
 
-        if (formData.soh < 0 || formData.soh > 100) {
-            newErrors.soh = 'SOH phải từ 0 đến 100';
+        if (formData.soh === undefined || formData.soh === null || isNaN(formData.soh)) {
+            newErrors.soh = 'SOH is required';
+        } else if (formData.soh < 0 || formData.soh > 100) {
+            newErrors.soh = 'SOH must be between 0 and 100';
+        }
+
+        if (!formData.status) {
+            newErrors.status = 'Status is required';
         }
 
         if (!formData.stationId) {
-            newErrors.stationId = 'Vui lòng chọn trạm';
+            newErrors.stationId = 'Please select a station';
         }
 
         if (!formData.manufacturer.trim()) {
-            newErrors.manufacturer = 'Nhà sản xuất là bắt buộc';
+            newErrors.manufacturer = 'Manufacturer is required';
         }
 
         if (formData.capacity_kWh <= 0) {
-            newErrors.capacity_kWh = 'Dung lượng phải lớn hơn 0';
+            newErrors.capacity_kWh = 'Capacity must be greater than 0';
         }
 
         if (formData.voltage <= 0) {
-            newErrors.voltage = 'Điện áp phải lớn hơn 0';
+            newErrors.voltage = 'Voltage must be greater than 0';
         }
 
         setErrors(newErrors);
@@ -156,24 +169,24 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
         try {
             setIsLoading(true);
 
-            const updateData = {
+            const updateData: UpdateBatteryRequest = {
                 model: formData.model.trim(),
                 soh: formData.soh,
                 status: formData.status,
                 stationId: formData.stationId,
                 manufacturer: formData.manufacturer.trim(),
                 capacity_kWh: formData.capacity_kWh,
-                voltage: formData.voltage
+                voltage: formData.voltage,
+                price: formData.price
             };
 
             await BatteryService.updateBattery(battery.id, updateData);
 
-            toast.success('Cập nhật pin thành công');
+            toast.success('Battery updated successfully');
             onSuccess();
             handleClose();
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi cập nhật pin';
-            toast.error(errorMessage);
+            toast.error('Unable to update battery. Please check your inputs and try again.');
             console.error('Error updating battery:', err);
         } finally {
             setIsLoading(false);
@@ -205,7 +218,7 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                         <div className="p-2 bg-blue-100 rounded-xl mr-3">
                             <BatteryIcon className="h-6 w-6 text-blue-600" />
                         </div>
-                        Sửa pin {battery.batteryId}
+                        Edit Battery {battery.batteryId}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -241,17 +254,19 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                             <Input
                                 id="soh"
                                 type="text"
-                                value={formData.soh === 100 ? '' : formData.soh.toString()}
+                                value={formData.soh.toString()}
                                 onChange={(e) => {
                                     const value = e.target.value;
+                                    setSohTouched(true);
                                     if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                                        const numValue = value === '' ? 100 : parseFloat(value) || 0;
+                                        const numValue = value === '' ? 0 : parseFloat(value) || 0;
                                         if (numValue >= 0 && numValue <= 100) {
                                             handleInputChange('soh', numValue);
                                         }
                                     }
                                 }}
-                                placeholder="Nhập SOH (0-100)"
+                                onBlur={() => setSohTouched(true)}
+                                placeholder="Enter SOH (0-100)"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 ${errors.soh ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
@@ -266,7 +281,7 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                         {/* Status */}
                         <div className="space-y-2">
                             <Label htmlFor="status" className="text-sm font-medium text-slate-700">
-                                Trạng thái <span className="text-red-500">*</span>
+                                Status <span className="text-red-500">*</span>
                             </Label>
                             <Select
                                 value={formData.status}
@@ -274,23 +289,23 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                             >
                                 <SelectTrigger className={`h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 ${errors.status ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}>
-                                    <SelectValue placeholder="Chọn trạng thái" />
+                                    <SelectValue placeholder="Select status" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-[9999]">
                                     <SelectItem value="idle" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer">
-                                        Nhàn rỗi
+                                        Idle
                                     </SelectItem>
                                     <SelectItem value="charging" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer">
-                                        Đang sạc
+                                        Charging
                                     </SelectItem>
                                     <SelectItem value="full" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer">
-                                        Đầy
+                                        Full
                                     </SelectItem>
                                     <SelectItem value="in-use" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer">
-                                        Đang sử dụng
+                                        In Use
                                     </SelectItem>
                                     <SelectItem value="faulty" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer">
-                                        Lỗi
+                                        Faulty
                                     </SelectItem>
                                 </SelectContent>
                             </Select>

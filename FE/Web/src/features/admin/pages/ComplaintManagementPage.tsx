@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/text-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
     Search,
     AlertCircle,
@@ -12,7 +13,11 @@ import {
     MessageSquareText,
     RefreshCw,
     CheckCheck,
-    X
+    X,
+    RotateCcw,
+    Loader2,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import {
     Dialog,
@@ -33,10 +38,13 @@ export const ComplaintManagementPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'resolved'>('all');
+    const [limit, setLimit] = useState<string>('20');
     const [isResolveModalOpen, setIsResolveModalOpen] = useState(false);
     const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
     const [responseText, setResponseText] = useState('');
     const [isResolving, setIsResolving] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
+    const [currentPage, setCurrentPage] = useState<number>(1);
 
     const loadComplaints = async () => {
         try {
@@ -44,12 +52,11 @@ export const ComplaintManagementPage: React.FC = () => {
             setError(null);
             const data = await AdminService.getAllComplaints();
             setComplaints(data);
-            toast.success('Successfully loaded complaints list');
+            // Success message removed to avoid notification spam
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Error loading complaints list';
-            setError(errorMessage);
+            setError('Unable to load complaints. Please try again later.');
             console.error('Error loading complaints:', err);
-            toast.error(errorMessage);
+            toast.error('Unable to load complaints. Please try again later.');
         } finally {
             setIsLoading(false);
         }
@@ -80,6 +87,19 @@ export const ComplaintManagementPage: React.FC = () => {
         setFilteredComplaints(filtered);
     }, [complaints, searchTerm, statusFilter]);
 
+    // Calculate pagination - apply after filtering
+    const limitNum = Number(limit) || 20;
+    const totalPages = Math.ceil(filteredComplaints.length / limitNum);
+    const paginatedComplaints = filteredComplaints.slice(
+        (currentPage - 1) * limitNum,
+        currentPage * limitNum
+    );
+
+    // Reset to first page when filters or limit change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter, limit]);
+
     const handleOpenResolveModal = (complaint: Complaint) => {
         setSelectedComplaint(complaint);
         setResponseText(complaint.response || '');
@@ -88,7 +108,7 @@ export const ComplaintManagementPage: React.FC = () => {
 
     const handleResolveComplaint = async () => {
         if (!selectedComplaint || !responseText.trim()) {
-            toast.error('Please enter a response');
+            toast.error('Please enter a response before resolving the complaint');
             return;
         }
 
@@ -103,13 +123,12 @@ export const ComplaintManagementPage: React.FC = () => {
                     : c
             ));
 
-            toast.success('Successfully resolved complaint');
+            toast.success('Complaint resolved successfully');
             setIsResolveModalOpen(false);
             setSelectedComplaint(null);
             setResponseText('');
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Error resolving complaint';
-            toast.error(errorMessage);
+            toast.error('Unable to resolve complaint. Please try again.');
             console.error('Error resolving complaint:', err);
         } finally {
             setIsResolving(false);
@@ -223,6 +242,7 @@ export const ComplaintManagementPage: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col lg:flex-row gap-4">
+                        {/* Search Input */}
                         <div className="flex-1 relative">
                             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
                             <Input
@@ -233,27 +253,69 @@ export const ComplaintManagementPage: React.FC = () => {
                             />
                         </div>
 
-                        <div className="flex gap-3">
+                        {/* Filters */}
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            {/* Status Filter */}
+                            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'pending' | 'resolved')}>
+                                <SelectTrigger className="w-full sm:w-[180px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
+                                    <SelectValue placeholder="Status" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:scust-start [&_[data-radix-collection-item]]:px-3">
+                                    <SelectItem
+                                        value="all"
+                                        className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                                    >
+                                        All status
+                                    </SelectItem>
+                                    <SelectItem
+                                        value="pending"
+                                        className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                                    >
+                                        Pending
+                                    </SelectItem>
+                                    <SelectItem
+                                        value="resolved"
+                                        className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                                    >
+                                        Resolved
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {/* Limit Filter */}
+                            <Select value={limit} onValueChange={setLimit}>
+                                <SelectTrigger className="w-full sm:w-[120px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
+                                    <SelectValue placeholder="Limit" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
+                                    <SelectItem value="10" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700">10</SelectItem>
+                                    <SelectItem value="20" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700">20</SelectItem>
+                                    <SelectItem value="50" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700">50</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {/* Reset Filter Button */}
                             <Button
-                                variant={statusFilter === 'all' ? 'default' : 'outline'}
-                                onClick={() => setStatusFilter('all')}
-                                className="h-12"
+                                variant="outline"
+                                onClick={() => {
+                                    setIsResetting(true);
+                                    setSearchTerm('');
+                                    setStatusFilter('all');
+                                    setLimit('20');
+                                    setCurrentPage(1);
+                                    setTimeout(() => {
+                                        setIsResetting(false);
+                                    }, 300);
+                                }}
+                                disabled={isResetting}
+                                className="h-12 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl text-slate-700 px-4 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                All
-                            </Button>
-                            <Button
-                                variant={statusFilter === 'pending' ? 'default' : 'outline'}
-                                onClick={() => setStatusFilter('pending')}
-                                className="h-12"
-                            >
-                                Pending
-                            </Button>
-                            <Button
-                                variant={statusFilter === 'resolved' ? 'default' : 'outline'}
-                                onClick={() => setStatusFilter('resolved')}
-                                className="h-12"
-                            >
-                                Resolved
+                                {isResetting ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                    <RotateCcw className="h-4 w-4 mr-2" />
+                                )}
+                                Reset
                             </Button>
                         </div>
                     </div>
@@ -282,7 +344,7 @@ export const ComplaintManagementPage: React.FC = () => {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {filteredComplaints.map((complaint) => (
+                            {paginatedComplaints.map((complaint) => (
                                 <Card key={complaint._id} className="hover:shadow-md transition-shadow">
                                     <CardContent className="p-4">
                                         <div className="flex items-start justify-between">
@@ -321,6 +383,135 @@ export const ComplaintManagementPage: React.FC = () => {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Pagination */}
+            {!isLoading && filteredComplaints.length > 0 && totalPages > 1 && (
+                <div className="flex flex-col items-center py-4 gap-3">
+                    <nav className="flex items-center -space-x-px" aria-label="Pagination">
+                        <button
+                            type="button"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-s-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                            aria-label="Previous"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            <span className="hidden sm:block">Previous</span>
+                        </button>
+
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum: number;
+                            if (totalPages <= 5) {
+                                pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                                pageNum = i === 4 ? totalPages : i + 1;
+                                if (i === 3 && totalPages > 5) {
+                                    return (
+                                        <React.Fragment key={`fragment-${i}`}>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                            <button
+                                                key={totalPages}
+                                                type="button"
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === totalPages
+                                                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                                    }`}
+                                            >
+                                                {totalPages}
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                }
+                            } else if (currentPage >= totalPages - 2) {
+                                if (i === 0) {
+                                    return (
+                                        <React.Fragment key={`fragment-start-${i}`}>
+                                            <button
+                                                key={1}
+                                                type="button"
+                                                onClick={() => setCurrentPage(1)}
+                                                className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === 1
+                                                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                                    }`}
+                                            >
+                                                1
+                                            </button>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                        </React.Fragment>
+                                    );
+                                }
+                                pageNum = totalPages - 4 + i;
+                            } else {
+                                if (i === 0) {
+                                    return (
+                                        <React.Fragment key={`fragment-mid-start`}>
+                                            <button
+                                                key={1}
+                                                type="button"
+                                                onClick={() => setCurrentPage(1)}
+                                                className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                            >
+                                                1
+                                            </button>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                        </React.Fragment>
+                                    );
+                                } else if (i === 4) {
+                                    return (
+                                        <React.Fragment key={`fragment-mid-end`}>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                            <button
+                                                key={totalPages}
+                                                type="button"
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                            >
+                                                {totalPages}
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                }
+                                pageNum = currentPage + i - 2;
+                            }
+
+                            return (
+                                <button
+                                    key={pageNum}
+                                    type="button"
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === pageNum
+                                        ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                        : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                        }`}
+                                    aria-current={currentPage === pageNum ? "page" : undefined}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+
+                        <button
+                            type="button"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-e-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                            aria-label="Next"
+                        >
+                            <span className="hidden sm:block">Next</span>
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </nav>
+
+                    {/* Items info */}
+                    <div className="text-sm text-gray-800">
+                        Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * limitNum + 1}</span> to{" "}
+                        <span className="font-semibold text-slate-900">{Math.min(currentPage * limitNum, filteredComplaints.length)}</span> of{" "}
+                        <span className="font-semibold text-slate-900">{filteredComplaints.length}</span> results
+                    </div>
+                </div>
+            )}
 
             {/* Resolve Complaint Modal */}
             <Dialog open={isResolveModalOpen} onOpenChange={setIsResolveModalOpen}>

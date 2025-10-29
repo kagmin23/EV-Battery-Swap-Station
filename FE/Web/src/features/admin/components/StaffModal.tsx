@@ -60,23 +60,23 @@ export const StaffModal: React.FC<StaffModalProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Tên là bắt buộc';
+      newErrors.name = 'Name is required';
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email là bắt buộc';
+      newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Email không hợp lệ';
+      newErrors.email = 'Invalid email format';
     }
 
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Số điện thoại là bắt buộc';
+      newErrors.phone = 'Phone number is required';
     } else if (!/^[0-9]{10,11}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Số điện thoại không hợp lệ';
+      newErrors.phone = 'Invalid phone number';
     }
 
     if (!formData.stationId) {
-      newErrors.stationId = 'Vui lòng chọn trạm';
+      newErrors.stationId = 'Please select a station';
     }
 
     setErrors(newErrors);

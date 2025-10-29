@@ -1,20 +1,22 @@
 import React from 'react';
-import { Search, RotateCcw } from 'lucide-react';
+import { Search, RotateCcw, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { StationFilters, StationStatus } from '../types/station';
+import type { StationFilters } from '../types/station';
 
 interface StationSearchBarProps {
     filters: StationFilters;
     onFiltersChange: (filters: StationFilters) => void;
     onResetFilters?: () => void;
+    isResetting?: boolean;
 }
 
 export const StationSearchBar: React.FC<StationSearchBarProps> = ({
     filters,
     onFiltersChange,
-    onResetFilters
+    onResetFilters,
+    isResetting = false
 }) => {
     const handleSearchChange = (value: string) => {
         onFiltersChange({ ...filters, search: value });
@@ -28,8 +30,8 @@ export const StationSearchBar: React.FC<StationSearchBarProps> = ({
         onFiltersChange({ ...filters, district: value });
     };
 
-    const handleStatusChange = (value: string) => {
-        onFiltersChange({ ...filters, status: value as StationStatus | 'ALL' });
+    const handleLimitChange = (value: string) => {
+        onFiltersChange({ ...filters, limit: value });
     };
 
     return (
@@ -91,16 +93,15 @@ export const StationSearchBar: React.FC<StationSearchBarProps> = ({
                         </SelectContent>
                     </Select>
 
-                    {/* Status Filter */}
-                    <Select value={filters.status} onValueChange={handleStatusChange}>
-                        <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl">
-                            <SelectValue placeholder="Status" />
+                    {/* Limit Filter */}
+                    <Select value={filters.limit} onValueChange={handleLimitChange}>
+                        <SelectTrigger className="w-full sm:w-[120px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
+                            <SelectValue placeholder="Limit" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                            <SelectItem value="ALL">All status</SelectItem>
-                            <SelectItem value="ACTIVE">Active</SelectItem>
-                            <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                            <SelectItem value="INACTIVE">Inactive</SelectItem>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl bg-white/95 backdrop-blur-sm z-50">
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="20">20</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
                         </SelectContent>
                     </Select>
 
@@ -108,9 +109,14 @@ export const StationSearchBar: React.FC<StationSearchBarProps> = ({
                     <Button
                         variant="outline"
                         onClick={onResetFilters}
-                        className="h-12 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl text-slate-700 px-4 whitespace-nowrap"
+                        disabled={isResetting}
+                        className="h-12 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl text-slate-700 px-4 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <RotateCcw className="h-4 w-4 mr-2" />
+                        {isResetting ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                            <RotateCcw className="h-4 w-4 mr-2" />
+                        )}
                         Reset
                     </Button>
                 </div>

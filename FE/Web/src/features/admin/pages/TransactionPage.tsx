@@ -6,15 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
     CreditCard,
     Search,
-    Filter,
-    RefreshCw,
     AlertCircle,
-    Calendar,
     DollarSign,
     TrendingUp,
-    Users
+    Users,
+    RotateCcw,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { TransactionCard } from '../components/TransactionCard';
 import { TransactionDetailModal } from '../components/TransactionDetailModal';
 import { PageHeader } from '../components/PageHeader';
@@ -31,12 +30,14 @@ export const TransactionPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+    const [currentPage, setCurrentPage] = useState<number>(1);
     const [filters, setFilters] = useState<TransactionFilters>({
         search: '',
         stationId: 'all',
         date: '',
         minCost: 0,
-        maxCost: 0
+        maxCost: 0,
+        limit: '20'
     });
 
     // Load stations data
@@ -61,9 +62,8 @@ export const TransactionPage: React.FC = () => {
             setError(null);
 
             const apiFilters = {
-                user_id: filters.userId && filters.userId !== 'all' ? filters.userId : undefined,
                 station_id: filters.stationId && filters.stationId !== 'all' ? filters.stationId : undefined,
-                limit: 200
+                limit: filters.limit ? Number(filters.limit) : 20
             };
 
             const response = await TransactionService.getAllTransactions(apiFilters);
@@ -87,10 +87,10 @@ export const TransactionPage: React.FC = () => {
                     cost: apiTransaction.cost,
                     // Additional fields for display
                     userName: `User ${apiTransaction.user_id}`,
-                    stationName: station?.name || 'Trạm không xác định',
-                    vehicleName: null, // Not available in API
-                    batterySerial: null, // Not available in API
-                    bookingStatus: null // Not available in API
+                    stationName: station?.name || 'Unknown Station',
+                    vehicleName: undefined, // Not available in API
+                    batterySerial: undefined, // Not available in API
+                    bookingStatus: undefined // Not available in API
                 };
             });
 
@@ -101,8 +101,8 @@ export const TransactionPage: React.FC = () => {
                     const searchTerm = filters.search.toLowerCase();
                     const matchesSearch = (
                         transaction.transactionId.toLowerCase().includes(searchTerm) ||
-                        transaction.userName.toLowerCase().includes(searchTerm) ||
-                        transaction.stationName.toLowerCase().includes(searchTerm) ||
+                        (transaction.userName && transaction.userName.toLowerCase().includes(searchTerm)) ||
+                        (transaction.stationName && transaction.stationName.toLowerCase().includes(searchTerm)) ||
                         (transaction.batteryGiven && transaction.batteryGiven.toLowerCase().includes(searchTerm)) ||
                         (transaction.batteryReturned && transaction.batteryReturned.toLowerCase().includes(searchTerm))
                     );
@@ -127,10 +127,10 @@ export const TransactionPage: React.FC = () => {
             });
 
             setTransactions(filteredTransactions);
-            toast.success('Successfully loaded transaction list');
+            // Success message removed to avoid notification spam
+            // Note: Filtering is done client-side, pagination will be handled in render
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Error loading transaction list';
-            setError(errorMessage);
+            setError('Unable to load transactions. Please try again later.');
             console.error('Error loading transactions:', err);
         } finally {
             setIsLoading(false);
@@ -162,10 +162,6 @@ export const TransactionPage: React.FC = () => {
         setSelectedTransaction(null);
     };
 
-    const handleRefresh = () => {
-        loadTransactions();
-    };
-
     const handleFilterChange = (key: keyof TransactionFilters, value: string | number) => {
         setFilters(prev => ({
             ...prev,
@@ -179,9 +175,24 @@ export const TransactionPage: React.FC = () => {
             stationId: 'all',
             date: '',
             minCost: 0,
-            maxCost: 0
+            maxCost: 0,
+            limit: '20'
         });
+        setCurrentPage(1);
     };
+
+    // Calculate pagination
+    const limitNum = Number(filters.limit) || 20;
+    const totalPages = Math.ceil(transactions.length / limitNum);
+    const paginatedTransactions = transactions.slice(
+        (currentPage - 1) * limitNum,
+        currentPage * limitNum
+    );
+
+    // Reset to first page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filters.search, filters.stationId, filters.date, filters.limit]);
 
     // Calculate stats
     const totalTransactions = transactions.length;
@@ -240,7 +251,7 @@ export const TransactionPage: React.FC = () => {
                     iconBg="bg-green-500"
                 />
                 <StatsCard
-                    title="Chi phí trung bình"
+                    title="Average Cost"
                     value={new Intl.NumberFormat('vi-VN', {
                         style: 'currency',
                         currency: 'VND',
@@ -253,7 +264,7 @@ export const TransactionPage: React.FC = () => {
                     iconBg="bg-purple-500"
                 />
                 <StatsCard
-                    title="Người dùng"
+                    title="Users"
                     value={uniqueUsers}
                     icon={Users}
                     gradientFrom="from-orange-50"
@@ -270,7 +281,7 @@ export const TransactionPage: React.FC = () => {
                         <div className="p-2 bg-blue-100 rounded-xl">
                             <Search className="h-5 w-5 text-blue-600" />
                         </div>
-                        <h3 className="text-lg font-semibold text-slate-800">Tìm kiếm & Lọc</h3>
+                        <h3 className="text-lg font-semibold text-slate-800">Search & Filters</h3>
                     </div>
 
                     <div className="flex flex-col lg:flex-row gap-4">
@@ -293,14 +304,14 @@ export const TransactionPage: React.FC = () => {
                                 onValueChange={(value) => handleFilterChange('stationId', value)}
                             >
                                 <SelectTrigger className="w-full sm:w-[200px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
-                                    <SelectValue placeholder="Chọn trạm" />
+                                    <SelectValue placeholder="Select Station" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 max-h-[300px] overflow-y-auto [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
                                     <SelectItem
                                         value="all"
                                         className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                                     >
-                                        Tất cả trạm
+                                        All Stations
                                     </SelectItem>
                                     {stations.map((station) => (
                                         <SelectItem
@@ -315,22 +326,38 @@ export const TransactionPage: React.FC = () => {
                             </Select>
 
                             {/* Date Filter */}
-                            <Input
-                                type="date"
-                                placeholder="Chọn ngày"
-                                value={filters.date}
-                                onChange={(e) => handleFilterChange('date', e.target.value)}
-                                className="w-full sm:w-[200px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200"
-                            />
+                            <div className="relative w-full sm:w-[200px]">
+                                <Input
+                                    type="date"
+                                    value={filters.date}
+                                    onChange={(e) => handleFilterChange('date', e.target.value)}
+                                    className="w-full h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                                />
+                            </div>
 
-                            {/* Filter Button */}
+                            {/* Limit Filter */}
+                            <Select
+                                value={filters.limit}
+                                onValueChange={(value) => handleFilterChange('limit', value)}
+                            >
+                                <SelectTrigger className="w-full sm:w-[120px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
+                                    <SelectValue placeholder="Limit" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-50 [&_[data-state=checked]]:bg-blue-100 [&_[data-state=checked]]:text-blue-700 [&_[data-state=checked]]:rounded-lg [&_[data-state=checked]_svg]:hidden [&_[data-radix-collection-item]]:justify-start [&_[data-radix-collection-item]]:px-3">
+                                    <SelectItem value="10" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700">10</SelectItem>
+                                    <SelectItem value="20" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700">20</SelectItem>
+                                    <SelectItem value="50" className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700">50</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {/* Reset Button */}
                             <Button
                                 variant="outline"
-                                size="icon"
                                 onClick={handleClearFilters}
-                                className="h-12 w-12 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl"
+                                className="h-12 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl text-slate-700 px-4 whitespace-nowrap"
                             >
-                                <Filter className="h-5 w-5" />
+                                <RotateCcw className="h-4 w-4 mr-2" />
+                                Reset
                             </Button>
                         </div>
                     </div>
@@ -360,14 +387,14 @@ export const TransactionPage: React.FC = () => {
                             <CreditCard className="h-12 w-12 text-slate-400 mb-4" />
                             <h3 className="text-lg font-medium text-slate-900 mb-2">No transactions found</h3>
                             <p className="text-slate-600 text-center mb-6">
-                                {filters.search || filters.userId || filters.stationId
+                                {filters.search || filters.stationId !== 'all'
                                     ? 'No transactions found matching the current filters.'
                                     : 'No transactions in the system yet.'}
                             </p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {transactions.map((transaction) => (
+                            {paginatedTransactions.map((transaction) => (
                                 <TransactionCard
                                     key={transaction.id}
                                     transaction={transaction}
@@ -378,6 +405,135 @@ export const TransactionPage: React.FC = () => {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Pagination */}
+            {!isLoading && transactions.length > 0 && totalPages > 1 && (
+                <div className="flex flex-col items-center py-4 gap-3">
+                    <nav className="flex items-center -space-x-px" aria-label="Pagination">
+                        <button
+                            type="button"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-s-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                            aria-label="Previous"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            <span className="hidden sm:block">Previous</span>
+                        </button>
+
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum: number;
+                            if (totalPages <= 5) {
+                                pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                                pageNum = i === 4 ? totalPages : i + 1;
+                                if (i === 3 && totalPages > 5) {
+                                    return (
+                                        <React.Fragment key={`fragment-${i}`}>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                            <button
+                                                key={totalPages}
+                                                type="button"
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === totalPages
+                                                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                                    }`}
+                                            >
+                                                {totalPages}
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                }
+                            } else if (currentPage >= totalPages - 2) {
+                                if (i === 0) {
+                                    return (
+                                        <React.Fragment key={`fragment-start-${i}`}>
+                                            <button
+                                                key={1}
+                                                type="button"
+                                                onClick={() => setCurrentPage(1)}
+                                                className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === 1
+                                                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                                    }`}
+                                            >
+                                                1
+                                            </button>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                        </React.Fragment>
+                                    );
+                                }
+                                pageNum = totalPages - 4 + i;
+                            } else {
+                                if (i === 0) {
+                                    return (
+                                        <React.Fragment key={`fragment-mid-start`}>
+                                            <button
+                                                key={1}
+                                                type="button"
+                                                onClick={() => setCurrentPage(1)}
+                                                className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                            >
+                                                1
+                                            </button>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                        </React.Fragment>
+                                    );
+                                } else if (i === 4) {
+                                    return (
+                                        <React.Fragment key={`fragment-mid-end`}>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                            <button
+                                                key={totalPages}
+                                                type="button"
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                            >
+                                                {totalPages}
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                }
+                                pageNum = currentPage + i - 2;
+                            }
+
+                            return (
+                                <button
+                                    key={pageNum}
+                                    type="button"
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === pageNum
+                                        ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                        : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                        }`}
+                                    aria-current={currentPage === pageNum ? "page" : undefined}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+
+                        <button
+                            type="button"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-e-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                            aria-label="Next"
+                        >
+                            <span className="hidden sm:block">Next</span>
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </nav>
+
+                    {/* Items info */}
+                    <div className="text-sm text-gray-800">
+                        Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * limitNum + 1}</span> to{" "}
+                        <span className="font-semibold text-slate-900">{Math.min(currentPage * limitNum, transactions.length)}</span> of{" "}
+                        <span className="font-semibold text-slate-900">{transactions.length}</span> results
+                    </div>
+                </div>
+            )}
 
             {/* Transaction Detail Modal */}
             <TransactionDetailModal

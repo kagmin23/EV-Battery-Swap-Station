@@ -365,7 +365,7 @@ export const SubscriptionPage: React.FC = () => {
                 variant={subscription.status === 'active' ? 'default' : 'secondary'}
                 className={subscription.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}
               >
-                {subscription.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
+                {subscription.status === 'active' ? 'Active' : 'Suspended'}
               </Badge>
             </div>
 
@@ -392,8 +392,8 @@ export const SubscriptionPage: React.FC = () => {
                 <Zap className="h-4 w-4 mr-2 text-yellow-500" />
                 <span className="font-medium">
                   {subscription.swapLimit === -1
-                    ? 'Không giới hạn'
-                    : `${subscription.swapLimit} lần đổi pin`}
+                    ? 'Unlimited'
+                    : `${subscription.swapLimit} battery swaps`}
                 </span>
               </div>
               {subscription.features.map((feature, index) => (
@@ -408,12 +408,12 @@ export const SubscriptionPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-4 mb-4 pt-4 border-t border-gray-200">
               <div className="text-center">
                 <Users className="h-4 w-4 mx-auto mb-1 text-slate-500" />
-                <p className="text-xs text-slate-500">Người dùng</p>
+                <p className="text-xs text-slate-500">Users</p>
                 <p className="font-bold text-slate-800">{subscription.subscriberCount}</p>
               </div>
               <div className="text-center">
                 <DollarSign className="h-4 w-4 mx-auto mb-1 text-slate-500" />
-                <p className="text-xs text-slate-500">Doanh thu</p>
+                <p className="text-xs text-slate-500">Revenue</p>
                 <p className="font-bold text-slate-800">{(subscription.revenue / 1000000).toFixed(1)}M</p>
               </div>
             </div>
@@ -428,7 +428,7 @@ export const SubscriptionPage: React.FC = () => {
                 className="flex-1 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300"
               >
                 <Edit className="h-4 w-4 mr-1" />
-                Sửa
+                Edit
               </Button>
               <Button
                 variant="outline"

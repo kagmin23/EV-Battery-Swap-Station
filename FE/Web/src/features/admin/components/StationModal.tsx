@@ -69,35 +69,35 @@ export const StationModal: React.FC<StationModalProps> = ({
         const newErrors: Record<string, string> = {};
 
         if (!formData.name.trim()) {
-            newErrors.name = 'Tên trạm là bắt buộc';
+            newErrors.name = 'Station name is required';
         }
 
         if (!formData.address.trim()) {
-            newErrors.address = 'Địa chỉ là bắt buộc';
+            newErrors.address = 'Address is required';
         }
 
         if (!formData.city.trim()) {
-            newErrors.city = 'Thành phố là bắt buộc';
+            newErrors.city = 'City is required';
         }
 
         if (!formData.district.trim()) {
-            newErrors.district = 'Quận/Huyện là bắt buộc';
+            newErrors.district = 'District is required';
         }
 
         if (formData.capacity <= 0) {
-            newErrors.capacity = 'Sức chứa phải lớn hơn 0';
+            newErrors.capacity = 'Capacity must be greater than 0';
         }
 
         if (formData.sohAvg < 0 || formData.sohAvg > 100) {
-            newErrors.sohAvg = 'SOH phải từ 0 đến 100';
+            newErrors.sohAvg = 'SOH must be between 0 and 100';
         }
 
         if (formData.availableBatteries < 0) {
-            newErrors.availableBatteries = 'Số pin có sẵn không được âm';
+            newErrors.availableBatteries = 'Available batteries cannot be negative';
         }
 
         if (formData.availableBatteries > formData.capacity) {
-            newErrors.availableBatteries = 'Số pin có sẵn không được vượt quá sức chứa';
+            newErrors.availableBatteries = 'Available batteries cannot exceed capacity';
         }
 
         setErrors(newErrors);
@@ -139,7 +139,7 @@ export const StationModal: React.FC<StationModalProps> = ({
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold text-slate-800">
-                        {station ? 'Chỉnh sửa trạm' : 'Thêm trạm mới'}
+                        {station ? 'Edit Station' : 'Add New Station'}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -148,120 +148,137 @@ export const StationModal: React.FC<StationModalProps> = ({
                         <CardContent className="p-6 space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="name">Tên trạm *</Label>
+                                    <Label htmlFor="name">Station Name *</Label>
                                     <Input
                                         id="name"
                                         value={formData.name}
                                         onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                                         className={errors.name ? 'border-red-500' : ''}
-                                        placeholder="Nhập tên trạm"
+                                        placeholder="Enter station name"
                                     />
                                     {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="capacity">Sức chứa *</Label>
+                                    <Label htmlFor="capacity">Capacity *</Label>
                                     <Input
                                         id="capacity"
                                         type="number"
-                                        value={formData.capacity}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, capacity: parseInt(e.target.value) || 0 }))}
-                                        className={errors.capacity ? 'border-red-500' : ''}
-                                        placeholder="Nhập sức chứa"
+                                        value={formData.capacity || ''}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            setFormData(prev => ({ ...prev, capacity: value === '' ? 0 : parseInt(value) || 0 }));
+                                        }}
+                                        className={`${errors.capacity ? 'border-red-500' : ''} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                                        placeholder="Enter capacity"
                                     />
                                     {errors.capacity && <p className="text-sm text-red-500">{errors.capacity}</p>}
                                 </div>
 
                                 <div className="space-y-2 md:col-span-2">
-                                    <Label htmlFor="address">Địa chỉ *</Label>
+                                    <Label htmlFor="address">Address *</Label>
                                     <Input
                                         id="address"
                                         value={formData.address}
                                         onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                                         className={errors.address ? 'border-red-500' : ''}
-                                        placeholder="Nhập địa chỉ đầy đủ"
+                                        placeholder="Enter full address"
                                     />
                                     {errors.address && <p className="text-sm text-red-500">{errors.address}</p>}
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="city">Thành phố *</Label>
+                                    <Label htmlFor="city">City *</Label>
                                     <Input
                                         id="city"
                                         value={formData.city}
                                         onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
                                         className={errors.city ? 'border-red-500' : ''}
-                                        placeholder="Nhập thành phố"
+                                        placeholder="Enter city"
                                     />
                                     {errors.city && <p className="text-sm text-red-500">{errors.city}</p>}
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="district">Quận/Huyện *</Label>
+                                    <Label htmlFor="district">District *</Label>
                                     <Input
                                         id="district"
                                         value={formData.district}
                                         onChange={(e) => setFormData(prev => ({ ...prev, district: e.target.value }))}
                                         className={errors.district ? 'border-red-500' : ''}
-                                        placeholder="Nhập quận/huyện"
+                                        placeholder="Enter district"
                                     />
                                     {errors.district && <p className="text-sm text-red-500">{errors.district}</p>}
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="lat">Vĩ độ</Label>
+                                    <Label htmlFor="lat">Latitude</Label>
                                     <Input
                                         id="lat"
                                         type="number"
                                         step="any"
-                                        value={formData.coordinates.lat}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            coordinates: { ...prev.coordinates, lat: parseFloat(e.target.value) || 0 }
-                                        }))}
+                                        value={formData.coordinates.lat || ''}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                coordinates: { ...prev.coordinates, lat: value === '' ? 0 : parseFloat(value) || 0 }
+                                            }));
+                                        }}
                                         placeholder="10.8231"
+                                        className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="lng">Kinh độ</Label>
+                                    <Label htmlFor="lng">Longitude</Label>
                                     <Input
                                         id="lng"
                                         type="number"
                                         step="any"
-                                        value={formData.coordinates.lng}
-                                        onChange={(e) => setFormData(prev => ({
-                                            ...prev,
-                                            coordinates: { ...prev.coordinates, lng: parseFloat(e.target.value) || 0 }
-                                        }))}
+                                        value={formData.coordinates.lng || ''}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                coordinates: { ...prev.coordinates, lng: value === '' ? 0 : parseFloat(value) || 0 }
+                                            }));
+                                        }}
                                         placeholder="106.6297"
+                                        className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="sohAvg">SOH trung bình (%)</Label>
+                                    <Label htmlFor="sohAvg">Average SOH (%)</Label>
                                     <Input
                                         id="sohAvg"
                                         type="number"
                                         min="0"
                                         max="100"
-                                        value={formData.sohAvg}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, sohAvg: parseInt(e.target.value) || 0 }))}
-                                        className={errors.sohAvg ? 'border-red-500' : ''}
+                                        value={formData.sohAvg || ''}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            setFormData(prev => ({ ...prev, sohAvg: value === '' ? 100 : parseInt(value) || 100 }));
+                                        }}
+                                        className={`${errors.sohAvg ? 'border-red-500' : ''} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                                         placeholder="100"
                                     />
                                     {errors.sohAvg && <p className="text-sm text-red-500">{errors.sohAvg}</p>}
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="availableBatteries">Pin có sẵn</Label>
+                                    <Label htmlFor="availableBatteries">Available Batteries</Label>
                                     <Input
                                         id="availableBatteries"
                                         type="number"
                                         min="0"
-                                        value={formData.availableBatteries}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, availableBatteries: parseInt(e.target.value) || 0 }))}
-                                        className={errors.availableBatteries ? 'border-red-500' : ''}
+                                        value={formData.availableBatteries || ''}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            setFormData(prev => ({ ...prev, availableBatteries: value === '' ? 0 : parseInt(value) || 0 }));
+                                        }}
+                                        className={`${errors.availableBatteries ? 'border-red-500' : ''} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                                         placeholder="0"
                                     />
                                     {errors.availableBatteries && <p className="text-sm text-red-500">{errors.availableBatteries}</p>}
@@ -287,13 +304,13 @@ export const StationModal: React.FC<StationModalProps> = ({
                             onClick={handleClose}
                             className="text-slate-600 hover:text-slate-700 hover:bg-slate-50 border-slate-200 hover:border-slate-300 transition-all duration-200 hover:shadow-sm"
                         >
-                            Hủy
+                            Cancel
                         </Button>
                         <Button
                             type="submit"
                             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-600 hover:border-blue-700"
                         >
-                            {station ? 'Cập nhật' : 'Thêm trạm'}
+                            {station ? 'Update' : 'Add Station'}
                         </Button>
                     </DialogFooter>
                 </form>

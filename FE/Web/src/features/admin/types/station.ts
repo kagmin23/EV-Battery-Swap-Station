@@ -12,26 +12,27 @@ export interface Station {
     capacity: number;
     sohAvg: number;
     availableBatteries: number;
-    status: StationStatus;
+    batteryCounts?: {
+        total: number;
+        available: number;
+        charging: number;
+        inUse: number;
+        faulty: number;
+    };
     lastActive?: Date;
     createdAt: Date;
     updatedAt: Date;
 }
 
-export type StationStatus = 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
-
 export interface StationFilters {
     search: string;
     city: string;
     district: string;
-    status: StationStatus | 'ALL';
+    limit: string;
 }
 
 export interface StationStats {
     totalStations: number;
-    activeStations: number;
-    maintenanceStations: number;
-    inactiveStations: number;
     totalCapacity: number;
     totalAvailableBatteries: number;
     averageSoh: number;
@@ -70,5 +71,4 @@ export interface UpdateStationRequest {
     capacity?: number;
     sohAvg?: number;
     availableBatteries?: number;
-    status?: StationStatus;
 }

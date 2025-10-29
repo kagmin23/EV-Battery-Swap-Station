@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   Users,
-  UserPlus,
   Home,
   ChevronLeft,
   ChevronRight,
@@ -199,26 +198,6 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
           );
         })}
       </nav>
-
-      {/* Quick Actions */}
-      {!isCollapsed && (
-        <div className="flex-shrink-0 px-4 py-6 border-t border-gray-200">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-700 mb-3">Quick Actions</h3>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-base py-6 px-6"
-            >
-              <UserPlus
-                className="h-6 w-6 mr-2 flex-shrink-0"
-                style={{ width: '24px', height: '24px' }}
-              />
-              Add User
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

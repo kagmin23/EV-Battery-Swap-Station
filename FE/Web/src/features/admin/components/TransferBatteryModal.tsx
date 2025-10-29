@@ -47,7 +47,7 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
             setStations(stationList);
         } catch (err) {
             console.error('Error loading stations:', err);
-            toast.error('Không thể tải danh sách trạm');
+            toast.error('Unable to load stations. Please try again.');
         }
     };
 
@@ -90,12 +90,11 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
             const selectedBattery = batteries.find(b => b.id === selectedBatteryId);
             const targetStation = stations.find(s => s.id === selectedStationId);
 
-            toast.success(`Đã chuyển pin ${selectedBattery?.batteryId} đến trạm ${targetStation?.name}`);
+            toast.success(`Battery ${selectedBattery?.batteryId} transferred to "${targetStation?.name}" successfully`);
             onSuccess();
             handleClose();
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi chuyển pin';
-            toast.error(errorMessage);
+            toast.error('Unable to transfer battery. Please try again.');
             console.error('Error transferring battery:', err);
         } finally {
             setIsLoading(false);

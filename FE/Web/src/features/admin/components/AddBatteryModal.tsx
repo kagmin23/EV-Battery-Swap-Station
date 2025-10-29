@@ -25,6 +25,7 @@ interface BatteryFormData {
     manufacturer: string;
     capacity_kWh: number;
     voltage: number;
+    price?: number;
 }
 
 export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
@@ -40,11 +41,13 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
         stationId: '',
         manufacturer: '',
         capacity_kWh: 0,
-        voltage: 0
+        voltage: 0,
+        price: 0
     });
     const [stations, setStations] = useState<Array<{ id: string; name: string }>>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [sohTouched, setSohTouched] = useState(false);
 
     // Load stations when modal opens
     useEffect(() => {
@@ -63,7 +66,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
             setStations(stationList);
         } catch (err) {
             console.error('Error loading stations:', err);
-            toast.error('Unable to load station list');
+            toast.error('Unable to load stations. Please try again.');
         }
     };
 
@@ -78,8 +81,14 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
             newErrors.model = 'Battery model is required';
         }
 
-        if (formData.soh < 0 || formData.soh > 100) {
+        if (!sohTouched || formData.soh === undefined || formData.soh === null || isNaN(formData.soh)) {
+            newErrors.soh = 'SOH is required';
+        } else if (formData.soh < 0 || formData.soh > 100) {
             newErrors.soh = 'SOH must be between 0 and 100';
+        }
+
+        if (!formData.status) {
+            newErrors.status = 'Status is required';
         }
 
         if (!formData.stationId) {
@@ -98,6 +107,10 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
             newErrors.voltage = 'Voltage must be greater than 0';
         }
 
+        if (formData.price === undefined || formData.price === null || formData.price < 0) {
+            newErrors.price = 'Price is required and must be greater than or equal to 0';
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -112,7 +125,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
         try {
             setIsLoading(true);
 
-            const batteryData = {
+            const batteryData: CreateBatteryRequest = {
                 serial: formData.serial.trim(),
                 model: formData.model.trim(),
                 soh: formData.soh,
@@ -120,17 +133,17 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                 stationId: formData.stationId,
                 manufacturer: formData.manufacturer.trim(),
                 capacity_kWh: formData.capacity_kWh,
-                voltage: formData.voltage
+                voltage: formData.voltage,
+                price: formData.price
             };
 
             await BatteryService.createBattery(batteryData);
 
-            toast.success('Successfully added new battery');
+            toast.success('Battery added successfully');
             onSuccess();
             handleClose();
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Error adding battery';
-            toast.error(errorMessage);
+            toast.error('Unable to add battery. Please check your inputs and try again.');
             console.error('Error creating battery:', err);
         } finally {
             setIsLoading(false);
@@ -146,9 +159,11 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
             stationId: '',
             manufacturer: '',
             capacity_kWh: 0,
-            voltage: 0
+            voltage: 0,
+            price: 0
         });
         setErrors({});
+        setSohTouched(false);
         onClose();
     };
 
@@ -225,16 +240,18 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                             <Input
                                 id="soh"
                                 type="text"
-                                value={formData.soh === 100 ? '' : formData.soh}
+                                value={formData.soh === 100 && !sohTouched ? '' : formData.soh.toString()}
                                 onChange={(e) => {
                                     const value = e.target.value;
+                                    setSohTouched(true);
                                     if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                                        const numValue = value === '' ? 100 : parseFloat(value) || 0;
+                                        const numValue = value === '' ? 0 : parseFloat(value) || 0;
                                         if (numValue >= 0 && numValue <= 100) {
                                             handleInputChange('soh', numValue);
                                         }
                                     }
                                 }}
+                                onBlur={() => setSohTouched(true)}
                                 placeholder="Enter SOH (0-100)"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.soh ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}

@@ -1,19 +1,16 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
-import { MapPin, Battery, Users, ExternalLink, MoreVertical } from 'lucide-react';
-import type { Station, StationStatus } from '../types/station';
+import { MapPin, Battery, Users, MoreVertical } from 'lucide-react';
+import type { Station } from '../types/station';
 
 interface StationCardProps {
     station: Station;
     onSelect: (station: Station) => void;
     onEdit: (station: Station) => void;
-    onSuspend: (station: Station) => void;
     onViewDetails?: (station: Station) => void;
     onViewStaff?: (station: Station) => void;
-    isSuspending?: boolean;
     isSaving?: boolean;
     staffCount?: number;
 }
@@ -22,43 +19,11 @@ export const StationCard: React.FC<StationCardProps> = ({
     station,
     onSelect,
     onEdit,
-    onSuspend,
     onViewDetails,
     onViewStaff,
-    isSuspending = false,
     isSaving = false,
     staffCount = 0
 }) => {
-    const getStatusBadge = (status: StationStatus) => {
-        switch (status) {
-            case 'ACTIVE':
-                return <Badge variant="success">Hoạt động</Badge>;
-            case 'MAINTENANCE':
-                return <Badge variant="warning">Bảo trì</Badge>;
-            case 'INACTIVE':
-                return <Badge variant="destructive">Ngừng hoạt động</Badge>;
-            default:
-                return <Badge variant="secondary">Không xác định</Badge>;
-        }
-    };
-
-    const getStatusColor = (status: StationStatus) => {
-        switch (status) {
-            case 'ACTIVE':
-                return 'bg-green-500';
-            case 'MAINTENANCE':
-                return 'bg-orange-500';
-            case 'INACTIVE':
-                return 'bg-red-500';
-            default:
-                return 'bg-gray-400';
-        }
-    };
-
-    const formatCapacity = (capacity: number) => {
-        return capacity.toLocaleString('vi-VN');
-    };
-
     const formatSoh = (soh: number) => {
         return `${soh}%`;
     };
@@ -68,21 +33,17 @@ export const StationCard: React.FC<StationCardProps> = ({
             className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-0 shadow-lg bg-white/90 backdrop-blur-sm hover:bg-white overflow-hidden"
             onClick={() => onSelect(station)}
         >
-            <CardContent className="p-6">
+            <CardContent className="p-4 md:p-6">
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-4">
-                        <div className="relative">
-                            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                                <MapPin className="h-7 w-7" />
+                        <div className="relative flex-shrink-0">
+                            <div className="w-10 h-10 flex-shrink-0 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                <MapPin className="h-5 w-5 flex-shrink-0" />
                             </div>
-                            <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${getStatusColor(station.status)}`} />
                         </div>
                         <div className="flex-1 min-w-0">
                             <h3 className="font-bold text-slate-800 truncate text-lg">{station.name}</h3>
                             <p className="text-sm text-slate-500 truncate">{station.address}</p>
-                            <div className="flex items-center space-x-2 mt-2">
-                                {getStatusBadge(station.status)}
-                            </div>
                         </div>
                     </div>
                     <Button
@@ -105,19 +66,19 @@ export const StationCard: React.FC<StationCardProps> = ({
                     </div>
                     <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-2 rounded-lg">
                         <Battery className="h-4 w-4 mr-2 text-green-500" />
-                        <span>{formatCapacity(station.capacity)} pin</span>
+                        <span>{station.batteryCounts?.total ?? station.availableBatteries ?? 0} batteries</span>
                     </div>
                     <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-2 rounded-lg">
                         <Users className="h-4 w-4 mr-2 text-purple-500" />
-                        <span>{staffCount} nhân viên</span>
+                        <span>{staffCount} staff</span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-slate-500 bg-slate-100 px-3 py-2 rounded-lg">
-                        <span className="font-medium">SOH trung bình:</span>
+                        <span className="font-medium">Average SOH:</span>
                         <span className="font-semibold">{formatSoh(station.sohAvg)}</span>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 pt-4 border-t border-slate-100">
+                <div className="grid grid-cols-3 gap-2 pt-4 border-t border-slate-100">
                     {onViewDetails && (
                         <Button
                             variant="outline"
@@ -126,10 +87,10 @@ export const StationCard: React.FC<StationCardProps> = ({
                                 e.stopPropagation();
                                 onViewDetails(station);
                             }}
-                            disabled={isSaving || isSuspending}
+                            disabled={isSaving}
                             className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
                         >
-                            Xem chi tiết
+                            View Details
                         </Button>
                     )}
                     {onViewStaff && (
@@ -140,11 +101,11 @@ export const StationCard: React.FC<StationCardProps> = ({
                                 e.stopPropagation();
                                 onViewStaff(station);
                             }}
-                            disabled={isSaving || isSuspending}
+                            disabled={isSaving}
                             className="hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
                         >
                             <Users className="h-4 w-4 mr-1" />
-                            Nhân viên
+                            Staff
                         </Button>
                     )}
                     <Button
@@ -154,33 +115,15 @@ export const StationCard: React.FC<StationCardProps> = ({
                             e.stopPropagation();
                             onEdit(station);
                         }}
-                        disabled={isSaving || isSuspending}
+                        disabled={isSaving}
                         className="hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
                     >
                         {isSaving ? (
-                            <ButtonLoadingSpinner size="sm" variant="default" text="Đang lưu..." />
+                            <ButtonLoadingSpinner size="sm" variant="default" text="Saving..." />
                         ) : (
-                            'Chỉnh sửa'
+                            'Edit'
                         )}
                     </Button>
-                    {station.status !== 'INACTIVE' && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onSuspend(station);
-                            }}
-                            disabled={isSuspending || isSaving}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
-                        >
-                            {isSuspending ? (
-                                <ButtonLoadingSpinner size="sm" variant="default" text="Đang xử lý..." />
-                            ) : (
-                                'Tạm dừng'
-                            )}
-                        </Button>
-                    )}
                 </div>
             </CardContent>
         </Card>

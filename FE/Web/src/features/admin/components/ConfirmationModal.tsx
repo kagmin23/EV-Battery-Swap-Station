@@ -23,7 +23,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     title,
     message,
     confirmText,
-    cancelText = 'Hủy',
+    cancelText = 'Cancel',
     type,
     isLoading = false
 }) => {

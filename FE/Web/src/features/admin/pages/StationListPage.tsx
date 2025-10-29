@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Grid, List, MapPin, Activity, AlertCircle, Battery, Wrench } from 'lucide-react';
+import { Plus, Grid, List, MapPin, Activity, AlertCircle, Battery, Wrench, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { StationSearchBar } from '../components/StationSearchBar';
 import { StationCard } from '../components/StationCard';
@@ -11,11 +11,10 @@ import { StationDetailModal } from '../components/StationDetailModal';
 import { StationStaffModal } from '../components/StationStaffModal';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
-import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PageLoadingSpinner, ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
 import { StationService, type CreateStationRequest, type UpdateStationRequest as ApiUpdateStationRequest, type Station as ApiStation } from '@/services/api/stationService';
 import { StaffService, type Staff as ApiStaff } from '@/services/api/staffService';
-import type { Station, StationFilters, AddStationRequest, UpdateStationRequest, StationStatus } from '../types/station';
+import type { Station, StationFilters, AddStationRequest, UpdateStationRequest } from '../types/station';
 import type { Staff } from '../types/staff';
 
 interface StationListPageProps {
@@ -32,19 +31,18 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
         search: '',
         city: 'ALL',
         district: 'ALL',
-        status: 'ALL',
+        limit: '20',
     });
     const [isLoading, setIsLoading] = useState(true);
+    const [isResetting, setIsResetting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [suspendingStationId, setSuspendingStationId] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState<number>(1);
     const [savingStationId, setSavingStationId] = useState<string | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedStation, setSelectedStation] = useState<Station | null>(null);
     const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
     const [selectedStationForStaff, setSelectedStationForStaff] = useState<Station | null>(null);
     const [savingStaffId, setSavingStaffId] = useState<string | null>(null);
-    const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
-    const [suspendingStation, setSuspendingStation] = useState<Station | null>(null);
 
     // Load staff data from API
     const loadStaff = async () => {
@@ -59,10 +57,9 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                 phone: apiStaffMember.phoneNumber || 'N/A',
                 role: 'STAFF' as const,
                 stationId: apiStaffMember.station ? apiStaffMember.station.toString() : 'default',
-                stationName: 'Chưa phân trạm',
+                stationName: 'Unassigned',
                 status: apiStaffMember.status === 'active' ? 'ONLINE' : 'OFFLINE',
                 permissions: [],
-                lastActive: new Date(apiStaffMember.updatedAt),
                 createdAt: new Date(apiStaffMember.createdAt),
                 updatedAt: new Date(apiStaffMember.updatedAt),
             }));
@@ -94,17 +91,17 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                 mapUrl: apiStation.map_url,
                 capacity: apiStation.capacity,
                 sohAvg: apiStation.sohAvg,
-                availableBatteries: apiStation.availableBatteries,
-                status: 'ACTIVE' as StationStatus, // Default status since API doesn't provide it
+                // Use available from batteryCounts if available (real-time data), fallback to availableBatteries
+                availableBatteries: apiStation.batteryCounts?.available ?? apiStation.availableBatteries,
+                batteryCounts: apiStation.batteryCounts,
                 createdAt: new Date(apiStation.createdAt),
                 updatedAt: new Date(apiStation.updatedAt),
             }));
 
             setStations(convertedStations);
-            toast.success('Successfully loaded station list');
+            // Success message removed to avoid notification spam
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Error loading station list';
-            setError(errorMessage);
+            setError('Unable to load stations. Please try again later.');
             console.error('Error loading stations:', err);
         } finally {
             setIsLoading(false);
@@ -129,59 +126,55 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
 
         const matchesCity = filters.city === 'ALL' || station.city === filters.city;
         const matchesDistrict = filters.district === 'ALL' || station.district === filters.district;
-        const matchesStatus = filters.status === 'ALL' || station.status === filters.status;
 
-        return matchesSearch && matchesCity && matchesDistrict && matchesStatus;
+        return matchesSearch && matchesCity && matchesDistrict;
     });
 
-    const handleStationEdit = (station: Station) => {
-        setEditingStation(station);
-        setIsModalOpen(true);
-    };
+    // Calculate pagination
+    const limitNum = Number(filters.limit) || 20;
+    const totalPages = Math.ceil(filteredStations.length / limitNum);
+    const paginatedStations = filteredStations.slice(
+        (currentPage - 1) * limitNum,
+        currentPage * limitNum
+    );
 
-    const handleStationSuspend = (station: Station) => {
-        setSuspendingStation(station);
-        setIsConfirmationModalOpen(true);
-    };
+    // Reset to first page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filters.search, filters.city, filters.district, filters.limit]);
 
-    const handleConfirmSuspend = async () => {
-        if (!suspendingStation) return;
-
+    const handleStationEdit = async (station: Station) => {
         try {
-            setSuspendingStationId(suspendingStation.id);
-            const newStatus = suspendingStation.status === 'ACTIVE' ? 'MAINTENANCE' : 'ACTIVE';
-            await StationService.changeStationStatus(suspendingStation.id, newStatus);
+            // Fetch fresh station data from API
+            const apiStation = await StationService.getStationById(station.id);
 
-            // Update local state
-            setStations(prev => prev.map(s =>
-                s.id === suspendingStation.id
-                    ? {
-                        ...s,
-                        status: newStatus as StationStatus,
-                        updatedAt: new Date()
-                    }
-                    : s
-            ));
+            // Convert API station to UI format
+            const convertedStation: Station = {
+                id: apiStation._id,
+                name: apiStation.stationName,
+                address: apiStation.address,
+                city: apiStation.city,
+                district: apiStation.district,
+                coordinates: {
+                    lat: apiStation.location.coordinates[1], // latitude
+                    lng: apiStation.location.coordinates[0], // longitude
+                },
+                mapUrl: apiStation.map_url,
+                capacity: apiStation.capacity,
+                sohAvg: apiStation.sohAvg,
+                // Use available from batteryCounts if available (real-time data), fallback to availableBatteries
+                availableBatteries: apiStation.batteryCounts?.available ?? apiStation.availableBatteries,
+                batteryCounts: apiStation.batteryCounts,
+                createdAt: new Date(apiStation.createdAt),
+                updatedAt: new Date(apiStation.updatedAt),
+            };
 
-            toast.success(
-                newStatus === 'ACTIVE'
-                    ? `Đã kích hoạt trạm ${suspendingStation.name}`
-                    : `Đã tạm dừng trạm ${suspendingStation.name}`
-            );
+            setEditingStation(convertedStation);
+            setIsModalOpen(true);
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Error changing station status';
-            setError(errorMessage);
-            console.error('Error changing station status:', err);
-        } finally {
-            setSuspendingStationId(null);
-            setIsConfirmationModalOpen(false);
-            setSuspendingStation(null);
+            toast.error('Unable to load station details. Please try again.');
+            console.error('Error loading station:', err);
         }
-    };
-
-    const handleCancelSuspend = () => {
-        setIsConfirmationModalOpen(false);
-        setSuspendingStation(null);
     };
 
     const handleAddStation = () => {
@@ -189,9 +182,38 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
         setIsModalOpen(true);
     };
 
-    const handleViewStationDetails = (station: Station) => {
-        setSelectedStation(station);
-        setIsDetailModalOpen(true);
+    const handleViewStationDetails = async (station: Station) => {
+        try {
+            // Fetch fresh station data from API
+            const apiStation = await StationService.getStationById(station.id);
+
+            // Convert API station to UI format
+            const convertedStation: Station = {
+                id: apiStation._id,
+                name: apiStation.stationName,
+                address: apiStation.address,
+                city: apiStation.city,
+                district: apiStation.district,
+                coordinates: {
+                    lat: apiStation.location.coordinates[1], // latitude
+                    lng: apiStation.location.coordinates[0], // longitude
+                },
+                mapUrl: apiStation.map_url,
+                capacity: apiStation.capacity,
+                sohAvg: apiStation.sohAvg,
+                // Use available from batteryCounts if available (real-time data), fallback to availableBatteries
+                availableBatteries: apiStation.batteryCounts?.available ?? apiStation.availableBatteries,
+                batteryCounts: apiStation.batteryCounts,
+                createdAt: new Date(apiStation.createdAt),
+                updatedAt: new Date(apiStation.updatedAt),
+            };
+
+            setSelectedStation(convertedStation);
+            setIsDetailModalOpen(true);
+        } catch (err) {
+            toast.error('Unable to load station details. Please try again.');
+            console.error('Error loading station:', err);
+        }
     };
 
     const handleViewStationStaff = (station: Station) => {
@@ -212,13 +234,12 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
 
             // Update local state
             setAllStaff(prev => prev.map(s =>
-                s.id === staffId ? { ...s, stationId, stationName: stations.find(st => st.id === stationId)?.name || 'Chưa phân trạm' } : s
+                s.id === staffId ? { ...s, stationId, stationName: stations.find(st => st.id === stationId)?.name || 'Unassigned' } : s
             ));
 
-            toast.success('Đã thêm nhân viên vào trạm');
+            toast.success('Staff member assigned successfully');
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi thêm nhân viên vào trạm';
-            setError(errorMessage);
+            toast.error('Unable to assign staff member. Please try again.');
             console.error('Error adding staff to station:', err);
         } finally {
             setSavingStaffId(null);
@@ -233,13 +254,12 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
 
             // Update local state
             setAllStaff(prev => prev.map(s =>
-                s.id === staffId ? { ...s, stationId: 'default', stationName: 'Chưa phân trạm' } : s
+                s.id === staffId ? { ...s, stationId: 'default', stationName: 'Unassigned' } : s
             ));
 
-            toast.success('Successfully removed staff from station');
+            toast.success('Staff member removed successfully');
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Error removing staff from station';
-            toast.error(errorMessage);
+            toast.error('Unable to remove staff member. Please try again.');
             console.error('Error removing staff from station:', err);
         } finally {
             setSavingStaffId(null);
@@ -264,10 +284,8 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                     address: data.address,
                     city: data.city,
                     district: data.district,
-                    location: {
-                        type: 'Point',
-                        coordinates: [data.coordinates?.lng || 0, data.coordinates?.lat || 0]
-                    },
+                    lat: data.coordinates?.lat || 0,
+                    lng: data.coordinates?.lng || 0,
                     map_url: data.mapUrl || '',
                     capacity: data.capacity || 0,
                     sohAvg: data.sohAvg,
@@ -290,15 +308,15 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                     mapUrl: updatedStation.map_url,
                     capacity: updatedStation.capacity,
                     sohAvg: updatedStation.sohAvg,
-                    availableBatteries: updatedStation.availableBatteries,
-                    status: 'ACTIVE' as StationStatus,
-                    lastActive: new Date(updatedStation.updatedAt),
+                    // Use available from batteryCounts if available (real-time data), fallback to availableBatteries
+                    availableBatteries: updatedStation.batteryCounts?.available ?? updatedStation.availableBatteries,
+                    batteryCounts: updatedStation.batteryCounts,
                     createdAt: new Date(updatedStation.createdAt),
                     updatedAt: new Date(updatedStation.updatedAt),
                 };
 
                 setStations(prev => prev.map(s => s.id === data.id ? convertedStation : s));
-                toast.success(`Đã cập nhật thông tin trạm ${convertedStation.name}`);
+                toast.success(`Station "${convertedStation.name}" updated successfully`);
             } else {
                 // Add new station
                 const createData: CreateStationRequest = {
@@ -306,10 +324,8 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                     address: data.address,
                     city: data.city,
                     district: data.district,
-                    location: {
-                        type: 'Point',
-                        coordinates: [data.coordinates.lng, data.coordinates.lat]
-                    },
+                    lat: data.coordinates.lat,
+                    lng: data.coordinates.lng,
                     map_url: data.mapUrl,
                     capacity: data.capacity,
                     sohAvg: data.sohAvg,
@@ -332,22 +348,21 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                     mapUrl: newStation.map_url,
                     capacity: newStation.capacity,
                     sohAvg: newStation.sohAvg,
-                    availableBatteries: newStation.availableBatteries,
-                    status: 'ACTIVE' as StationStatus,
-                    lastActive: new Date(newStation.createdAt),
+                    // Use available from batteryCounts if available (real-time data), fallback to availableBatteries
+                    availableBatteries: newStation.batteryCounts?.available ?? newStation.availableBatteries,
+                    batteryCounts: newStation.batteryCounts,
                     createdAt: new Date(newStation.createdAt),
                     updatedAt: new Date(newStation.updatedAt),
                 };
 
                 setStations(prev => [...prev, convertedStation]);
-                toast.success(`Đã thêm trạm ${convertedStation.name} thành công`);
+                toast.success(`Station "${convertedStation.name}" added successfully`);
             }
 
             setIsModalOpen(false);
             setEditingStation(null);
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi lưu thông tin trạm';
-            setError(errorMessage);
+            toast.error('Unable to save station information. Please check your inputs and try again.');
             console.error('Error saving station:', err);
         } finally {
             setSavingStationId(null);
@@ -355,7 +370,7 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
     };
 
     return (
-        <div className="p-6 space-y-8">
+        <div className="p-4 md:p-6 space-y-6 md:space-y-8">
             {/* Header */}
             <PageHeader
                 title="Battery Swap Station List"
@@ -381,7 +396,7 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
             )}
 
             {/* Quick Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 <StatsCard
                     title="Total Stations"
                     value={stations.length}
@@ -392,8 +407,8 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                     iconBg="bg-blue-500"
                 />
                 <StatsCard
-                    title="Đang hoạt động"
-                    value={stations.filter(s => s.status === 'ACTIVE').length}
+                    title="Average Capacity"
+                    value={Math.round(stations.reduce((sum, s) => sum + s.capacity, 0) / (stations.length || 1))}
                     icon={Activity}
                     gradientFrom="from-green-50"
                     gradientTo="to-green-100/50"
@@ -401,8 +416,8 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                     iconBg="bg-green-500"
                 />
                 <StatsCard
-                    title="Bảo trì"
-                    value={stations.filter(s => s.status === 'MAINTENANCE').length}
+                    title="Average SOH"
+                    value={`${Math.round(stations.reduce((sum, s) => sum + s.sohAvg, 0) / (stations.length || 1))}%`}
                     icon={Wrench}
                     gradientFrom="from-orange-50"
                     gradientTo="to-orange-100/50"
@@ -411,7 +426,7 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                 />
                 <StatsCard
                     title="Total Batteries"
-                    value={stations.reduce((sum, s) => sum + s.availableBatteries, 0)}
+                    value={stations.reduce((sum, s) => sum + (s.batteryCounts?.total ?? 0), 0)}
                     icon={Battery}
                     gradientFrom="from-purple-50"
                     gradientTo="to-purple-100/50"
@@ -425,29 +440,36 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                 <StationSearchBar
                     filters={filters}
                     onFiltersChange={setFilters}
-                    onResetFilters={() => setFilters({
-                        search: '',
-                        city: 'ALL',
-                        district: 'ALL',
-                        status: 'ALL',
-                    })}
+                    isResetting={isResetting}
+                    onResetFilters={async () => {
+                        setIsResetting(true);
+                        setFilters({
+                            search: '',
+                            city: 'ALL',
+                            district: 'ALL',
+                            limit: '20',
+                        });
+                        setCurrentPage(1);
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                        setIsResetting(false);
+                    }}
                 />
             </div>
 
             {/* Station List */}
             <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden">
                 <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50/50 border-b border-slate-200/60">
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center text-xl font-bold text-slate-800">
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                        <CardTitle className="flex items-center text-lg md:text-xl font-bold text-slate-800 flex-wrap gap-2">
                             <div className="p-2 bg-blue-100 rounded-xl mr-3">
-                                <MapPin className="h-6 w-6 text-blue-600" />
+                                <MapPin className="h-5 w-5 text-blue-600" />
                             </div>
                             Battery Swap Station List
-                            <span className="ml-3 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
+                            <span className="px-2 md:px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs md:text-sm font-semibold">
                                 {filteredStations.length}
                             </span>
                         </CardTitle>
-                        <div className="flex space-x-2">
+                        <div className="flex flex-wrap gap-2">
                             <Button
                                 variant={viewMode === 'grid' ? 'default' : 'outline'}
                                 size="sm"
@@ -473,21 +495,21 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                             <Button
                                 onClick={handleAddStation}
                                 disabled={savingStationId === 'new'}
-                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed border border-blue-600 hover:border-blue-700"
+                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-3 md:px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed border border-blue-600 hover:border-blue-700 flex-1 md:flex-initial"
                             >
                                 {savingStationId === 'new' ? (
-                                    <ButtonLoadingSpinner size="sm" variant="white" text="Đang thêm..." />
+                                    <ButtonLoadingSpinner size="sm" variant="white" text="Adding..." />
                                 ) : (
                                     <>
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Thêm trạm
+                                        <Plus className="h-4 w-4 md:mr-2" />
+                                        <span className="hidden md:inline">Add Station</span>
                                     </>
                                 )}
                             </Button>
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="m-0 p-6 max-h-[600px] overflow-y-auto custom-scrollbar">
+                <CardContent className="m-0 p-4 md:p-6 max-h-[600px] overflow-y-auto custom-scrollbar">
                     {isLoading ? (
                         <PageLoadingSpinner text="Loading station list..." />
                     ) : filteredStations.length === 0 ? (
@@ -495,32 +517,30 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                             <MapPin className="h-12 w-12 text-slate-400 mb-4" />
                             <h3 className="text-lg font-medium text-slate-900 mb-2">No stations found</h3>
                             <p className="text-slate-600 text-center mb-6">
-                                {filters.search || filters.city !== 'ALL' || filters.district !== 'ALL' || filters.status !== 'ALL'
+                                {filters.search || filters.city !== 'ALL' || filters.district !== 'ALL'
                                     ? 'No stations found matching the current filters.'
                                     : 'No stations have been added to the system yet.'}
                             </p>
-                            {(!filters.search && filters.city === 'ALL' && filters.district === 'ALL' && filters.status === 'ALL') && (
+                            {(!filters.search && filters.city === 'ALL' && filters.district === 'ALL') && (
                                 <Button
                                     onClick={handleAddStation}
                                     className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border border-blue-600 hover:border-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-lg"
                                 >
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Thêm trạm đầu tiên
+                                    Add First Station
                                 </Button>
                             )}
                         </div>
                     ) : viewMode === 'grid' ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredStations.map((station) => (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                            {paginatedStations.map((station) => (
                                 <StationCard
                                     key={station.id}
                                     station={station}
                                     onSelect={onStationSelect || (() => { })}
                                     onEdit={handleStationEdit}
-                                    onSuspend={handleStationSuspend}
                                     onViewDetails={handleViewStationDetails}
                                     onViewStaff={handleViewStationStaff}
-                                    isSuspending={suspendingStationId === station.id}
                                     isSaving={savingStationId === station.id}
                                     staffCount={getStaffByStation(station.id).length}
                                 />
@@ -529,19 +549,146 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                     ) : (
                         <div className="overflow-hidden rounded-xl border border-slate-200">
                             <StationTable
-                                stations={filteredStations}
+                                stations={paginatedStations}
                                 onSelect={onStationSelect || (() => { })}
                                 onEdit={handleStationEdit}
-                                onSuspend={handleStationSuspend}
                                 onViewDetails={handleViewStationDetails}
                                 onViewStaff={handleViewStationStaff}
-                                suspendingStationId={suspendingStationId}
                                 savingStationId={savingStationId}
                             />
                         </div>
                     )}
                 </CardContent>
             </Card>
+
+            {/* Pagination */}
+            {!isLoading && filteredStations.length > 0 && totalPages > 1 && (
+                <div className="flex flex-col items-center py-4 gap-3">
+                    <nav className="flex items-center -space-x-px" aria-label="Pagination">
+                        <button
+                            type="button"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-s-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                            aria-label="Previous"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            <span className="hidden sm:block">Previous</span>
+                        </button>
+
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum: number;
+                            if (totalPages <= 5) {
+                                pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                                pageNum = i === 4 ? totalPages : i + 1;
+                                if (i === 3 && totalPages > 5) {
+                                    return (
+                                        <React.Fragment key={`fragment-${i}`}>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                            <button
+                                                key={totalPages}
+                                                type="button"
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === totalPages
+                                                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                                    }`}
+                                            >
+                                                {totalPages}
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                }
+                            } else if (currentPage >= totalPages - 2) {
+                                if (i === 0) {
+                                    return (
+                                        <React.Fragment key={`fragment-start-${i}`}>
+                                            <button
+                                                key={1}
+                                                type="button"
+                                                onClick={() => setCurrentPage(1)}
+                                                className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === 1
+                                                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                                    }`}
+                                            >
+                                                1
+                                            </button>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                        </React.Fragment>
+                                    );
+                                }
+                                pageNum = totalPages - 4 + i;
+                            } else {
+                                if (i === 0) {
+                                    return (
+                                        <React.Fragment key={`fragment-mid-start`}>
+                                            <button
+                                                key={1}
+                                                type="button"
+                                                onClick={() => setCurrentPage(1)}
+                                                className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                            >
+                                                1
+                                            </button>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                        </React.Fragment>
+                                    );
+                                } else if (i === 4) {
+                                    return (
+                                        <React.Fragment key={`fragment-mid-end`}>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                            <button
+                                                key={totalPages}
+                                                type="button"
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                            >
+                                                {totalPages}
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                }
+                                pageNum = currentPage + i - 2;
+                            }
+
+                            return (
+                                <button
+                                    key={pageNum}
+                                    type="button"
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === pageNum
+                                        ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                        : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                        }`}
+                                    aria-current={currentPage === pageNum ? "page" : undefined}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+
+                        <button
+                            type="button"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-e-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                            aria-label="Next"
+                        >
+                            <span className="hidden sm:block">Next</span>
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </nav>
+
+                    {/* Items info */}
+                    <div className="text-sm text-gray-800">
+                        Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * limitNum + 1}</span> to{" "}
+                        <span className="font-semibold text-slate-900">{Math.min(currentPage * limitNum, filteredStations.length)}</span> of{" "}
+                        <span className="font-semibold text-slate-900">{filteredStations.length}</span> results
+                    </div>
+                </div>
+            )}
 
             {/* Station Modal */}
             <StationModal
@@ -573,27 +720,9 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                 }}
                 station={selectedStationForStaff}
                 staff={selectedStationForStaff ? getStaffByStation(selectedStationForStaff.id) : []}
-                allStaff={allStaff}
-                onAddStaff={handleAddStaffToStation}
                 onRemoveStaff={handleRemoveStaffFromStation}
                 onReloadStaff={handleReloadStaff}
                 savingStaffId={savingStaffId}
-            />
-
-            {/* Confirmation Modal */}
-            <ConfirmationModal
-                isOpen={isConfirmationModalOpen}
-                onClose={handleCancelSuspend}
-                onConfirm={handleConfirmSuspend}
-                title={`Confirm ${suspendingStation?.status === 'ACTIVE' ? 'suspend' : 'activate'} station`}
-                message={
-                    <div>
-                        Are you sure you want to {suspendingStation?.status === 'ACTIVE' ? 'suspend' : 'activate'} station <span className="font-bold text-slate-800">{suspendingStation?.name}</span>?
-                    </div>
-                }
-                confirmText={suspendingStation?.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
-                type="delete"
-                isLoading={suspendingStationId === suspendingStation?.id}
             />
         </div>
     );

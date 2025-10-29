@@ -23,6 +23,29 @@ export interface Battery {
     __v: number;
 }
 
+export interface CreateBatteryRequest {
+    serial: string;
+    model?: string;
+    soh?: number;
+    status?: 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';
+    stationId?: string;
+    manufacturer?: string;
+    capacity_kWh?: number;
+    voltage?: number;
+    price?: number;
+}
+
+export interface UpdateBatteryRequest {
+    model?: string;
+    soh?: number;
+    status?: 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';
+    stationId?: string;
+    manufacturer?: string;
+    capacity_kWh?: number;
+    voltage?: number;
+    price?: number;
+}
+
 export interface BatteryFilters {
     status?: 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';
     stationId?: string;
@@ -37,11 +60,10 @@ export interface BatteryFilters {
 export interface BatteryResponse {
     success: boolean;
     data: Battery[];
-    pagination: {
+    meta: {
         page: number;
         limit: number;
         total: number;
-        pages: number;
     };
 }
 
@@ -103,11 +125,10 @@ export class BatteryService {
                 return {
                     success: response.data.success,
                     data: response.data.data || [],
-                    pagination: response.data.pagination || {
+                    meta: response.data.meta || {
                         page: 1,
                         limit: 20,
-                        total: response.data.data?.length || 0,
-                        pages: 1
+                        total: response.data.data?.length || 0
                     }
                 };
             }
@@ -161,11 +182,10 @@ export class BatteryService {
                 return {
                     success: response.data.success,
                     data: response.data.data || [],
-                    pagination: response.data.pagination || {
+                    meta: response.data.meta || {
                         page: 1,
                         limit: 20,
-                        total: response.data.data?.length || 0,
-                        pages: 1
+                        total: response.data.data?.length || 0
                     }
                 };
             }
@@ -215,7 +235,7 @@ export class BatteryService {
                         stationName: station.name
                     }));
                     allBatteries.push(...stationBatteries);
-                    totalCount += stationResponse.pagination.total;
+                    totalCount += stationResponse.meta.total;
                 } catch (error) {
                     console.warn(`Failed to fetch batteries from station ${station.name}:`, error);
                     // Continue with other stations even if one fails
@@ -225,11 +245,10 @@ export class BatteryService {
             return {
                 success: true,
                 data: allBatteries,
-                pagination: {
+                meta: {
                     page: 1,
                     limit: allBatteries.length,
-                    total: totalCount,
-                    pages: 1
+                    total: totalCount
                 }
             };
         } catch (error) {
@@ -245,11 +264,10 @@ export class BatteryService {
                 return {
                     success: response.data.success,
                     data: response.data.data || [],
-                    pagination: {
+                    meta: {
                         page: 1,
                         limit: response.data.data?.length || 0,
-                        total: response.data.data?.length || 0,
-                        pages: 1
+                        total: response.data.data?.length || 0
                     }
                 };
             }
@@ -360,16 +378,7 @@ export class BatteryService {
     }
 
     // Create new battery
-    static async createBattery(batteryData: {
-        serial: string;
-        model?: string;
-        soh?: number;
-        status?: 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';
-        stationId?: string;
-        manufacturer?: string;
-        capacity_kWh?: number;
-        voltage?: number;
-    }): Promise<Battery> {
+    static async createBattery(batteryData: CreateBatteryRequest): Promise<Battery> {
         try {
             const response = await api.post('/batteries', batteryData);
             if (response.data.success) {
@@ -405,15 +414,7 @@ export class BatteryService {
     }
 
     // Update battery
-    static async updateBattery(id: string, updateData: {
-        model?: string;
-        soh?: number;
-        status?: 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';
-        stationId?: string;
-        manufacturer?: string;
-        capacity_kWh?: number;
-        voltage?: number;
-    }): Promise<Battery> {
+    static async updateBattery(id: string, updateData: UpdateBatteryRequest): Promise<Battery> {
         try {
             const response = await api.put(`/batteries/${id}`, updateData);
             if (response.data.success) {

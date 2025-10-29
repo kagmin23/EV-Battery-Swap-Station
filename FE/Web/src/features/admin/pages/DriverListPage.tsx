@@ -18,7 +18,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Plus, Grid, List, Users, Activity, Car, Star, Calendar, User, AlertCircle } from 'lucide-react';
+import { Plus, Grid, List, Users, Activity, Car, Star, Calendar, User, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
@@ -85,7 +85,8 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
         status: 'ALL',
         subscriptionPlan: 'ALL',
         licenseType: 'ALL',
-        city: 'ALL'
+        city: 'ALL',
+        limit: '20'
     });
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -103,7 +104,9 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
         vehiclePlate: ''
     });
     const [isLoading, setIsLoading] = useState(true);
+    const [isResetting, setIsResetting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState<number>(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [suspendingDriverId, setSuspendingDriverId] = useState<string | null>(null);
     const [activatingDriverId, setActivatingDriverId] = useState<string | null>(null);
@@ -159,10 +162,9 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
             }));
 
             setDrivers(convertedDrivers);
-            toast.success('Successfully loaded driver list');
+            // Success message removed to avoid notification spam
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Error loading driver list';
-            setError(errorMessage);
+            setError('Unable to load driver list. Please try again later.');
             console.error('Error loading drivers:', err);
         } finally {
             setIsLoading(false);
@@ -187,6 +189,19 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
 
         return matchesSearch && matchesStatus && matchesPlan && matchesLicense && matchesCity;
     });
+
+    // Calculate pagination
+    const limitNum = Number(filters.limit) || 20;
+    const totalPages = Math.ceil(filteredDrivers.length / limitNum);
+    const paginatedDrivers = filteredDrivers.slice(
+        (currentPage - 1) * limitNum,
+        currentPage * limitNum
+    );
+
+    // Reset to first page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filters.search, filters.status, filters.subscriptionPlan, filters.licenseType, filters.city, filters.limit]);
 
     const handleDriverSelect = (driver: Driver) => {
         setSelectedDriver(driver);
@@ -267,7 +282,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                         : d
                 ));
 
-                toast.success(`Successfully locked driver ${targetDriver.name}`);
+                toast.success(`Driver "${targetDriver.name}" locked successfully`);
             } else {
                 setActivatingDriverId(targetDriver.id);
                 await DriverService.changeDriverStatus(targetDriver.id, 'active');
@@ -279,11 +294,10 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                         : d
                 ));
 
-                toast.success(`Successfully activated driver ${targetDriver.name}`);
+                toast.success(`Driver "${targetDriver.name}" activated successfully`);
             }
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : `Error ${actionType === 'suspend' ? 'locking' : 'activating'} driver`;
-            setError(errorMessage);
+            toast.error(`Unable to ${actionType === 'suspend' ? 'lock' : 'activate'} driver. Please try again.`);
             console.error(`Error ${actionType}ing driver:`, err);
         } finally {
             setSuspendingDriverId(null);
@@ -393,13 +407,21 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                     filters={filters}
                     onFiltersChange={setFilters}
                     subscriptionPlans={mockSubscriptionPlans}
-                    onResetFilters={() => setFilters({
-                        search: '',
-                        status: 'ALL',
-                        subscriptionPlan: 'ALL',
-                        licenseType: 'ALL',
-                        city: 'ALL'
-                    })}
+                    isResetting={isResetting}
+                    onResetFilters={async () => {
+                        setIsResetting(true);
+                        setFilters({
+                            search: '',
+                            status: 'ALL',
+                            subscriptionPlan: 'ALL',
+                            licenseType: 'ALL',
+                            city: 'ALL',
+                            limit: '20'
+                        });
+                        setCurrentPage(1);
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                        setIsResetting(false);
+                    }}
                 />
             </div>
 
@@ -480,7 +502,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                         </div>
                     ) : viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
-                            {filteredDrivers.map((driver) => (
+                            {paginatedDrivers.map((driver) => (
                                 <Card
                                     key={driver.id}
                                     className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-0 shadow-lg bg-white/90 backdrop-blur-sm hover:bg-white overflow-hidden"
@@ -603,7 +625,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200">
-                                    {filteredDrivers.map((driver) => (
+                                    {paginatedDrivers.map((driver) => (
                                         <tr key={driver.id} className="hover:bg-slate-50">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center space-x-3">
@@ -687,6 +709,134 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                 </CardContent>
             </Card>
 
+            {/* Pagination */}
+            {!isLoading && filteredDrivers.length > 0 && (
+                <div className="flex flex-col items-center py-4 gap-3">
+                    <nav className="flex items-center -space-x-px" aria-label="Pagination">
+                        <button
+                            type="button"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1 || totalPages === 1}
+                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-s-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Previous"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            <span className="hidden sm:block">Previous</span>
+                        </button>
+
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum: number;
+                            if (totalPages <= 5) {
+                                pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                                pageNum = i === 4 ? totalPages : i + 1;
+                                if (i === 3 && totalPages > 5) {
+                                    return (
+                                        <React.Fragment key={`fragment-${i}`}>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                            <button
+                                                key={totalPages}
+                                                type="button"
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === totalPages
+                                                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                                    }`}
+                                            >
+                                                {totalPages}
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                }
+                            } else if (currentPage >= totalPages - 2) {
+                                if (i === 0) {
+                                    return (
+                                        <React.Fragment key={`fragment-start-${i}`}>
+                                            <button
+                                                key={1}
+                                                type="button"
+                                                onClick={() => setCurrentPage(1)}
+                                                className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === 1
+                                                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                                    }`}
+                                            >
+                                                1
+                                            </button>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                        </React.Fragment>
+                                    );
+                                }
+                                pageNum = totalPages - 4 + i;
+                            } else {
+                                if (i === 0) {
+                                    return (
+                                        <React.Fragment key={`fragment-mid-start`}>
+                                            <button
+                                                key={1}
+                                                type="button"
+                                                onClick={() => setCurrentPage(1)}
+                                                className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                            >
+                                                1
+                                            </button>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                        </React.Fragment>
+                                    );
+                                } else if (i === 4) {
+                                    return (
+                                        <React.Fragment key={`fragment-mid-end`}>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                            <button
+                                                key={totalPages}
+                                                type="button"
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                            >
+                                                {totalPages}
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                }
+                                pageNum = currentPage + i - 2;
+                            }
+
+                            return (
+                                <button
+                                    key={pageNum}
+                                    type="button"
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === pageNum
+                                        ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                        : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                        }`}
+                                    aria-current={currentPage === pageNum ? "page" : undefined}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+
+                        <button
+                            type="button"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages || totalPages === 1}
+                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-e-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Next"
+                        >
+                            <span className="hidden sm:block">Next</span>
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </nav>
+
+                    {/* Items info */}
+                    <div className="text-sm text-gray-800">
+                        Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * limitNum + 1}</span> to{" "}
+                        <span className="font-semibold text-slate-900">{Math.min(currentPage * limitNum, filteredDrivers.length)}</span> of{" "}
+                        <span className="font-semibold text-slate-900">{filteredDrivers.length}</span> results
+                    </div>
+                </div>
+            )}
 
             {/* Driver Details Modal */}
             <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>

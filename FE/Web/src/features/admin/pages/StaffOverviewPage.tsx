@@ -179,7 +179,7 @@ export const StaffOverviewPage: React.FC = () => {
             <div className="p-2 bg-green-100 rounded-xl mr-3">
               <Activity className="h-5 w-5 text-green-600" />
             </div>
-            Hoạt động gần đây
+            Recent Activity
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
