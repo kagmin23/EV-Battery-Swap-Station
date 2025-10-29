@@ -1,5 +1,5 @@
 import { getAllBookings } from "@/store/booking";
-import { createSupportRequest, getAllSupportRequests, SupportRequest, useSupportRequests } from "@/store/support";
+import { completeSupportRequest, createSupportRequest, getAllSupportRequests, SupportRequest, useSupportRequests } from "@/store/support";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
@@ -8,6 +8,7 @@ import {
     Alert,
     FlatList,
     Image,
+    Modal,
     ScrollView,
     StyleSheet,
     Text,
@@ -25,6 +26,9 @@ const RequestSupportScreen = () => {
     const [images, setImages] = useState<string[]>([]);
     const [selectedBookingId, setSelectedBookingId] = useState<string>("");
     const [completedBookings, setCompletedBookings] = useState<any[]>([]);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null);
+    const [confirming, setConfirming] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -35,8 +39,6 @@ const RequestSupportScreen = () => {
     useEffect(() => {
         if (showForm) fetchCompletedBookings();
     }, [showForm]);
-
-    // fetchRequests removed: we use shared store via useSupportRequests()
 
     const pickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -114,7 +116,6 @@ const RequestSupportScreen = () => {
                 setDescription("");
                 setImages([]);
                 setSelectedBookingId("");
-                // ensure latest requests loaded (createSupportRequest also refreshes store on success)
                 getAllSupportRequests();
             } else {
                 Alert.alert("Error", response.message);
@@ -125,9 +126,10 @@ const RequestSupportScreen = () => {
     };
 
     const statusColors: Record<string, string> = {
-        "in-progress": "#6d4aff",
-        resolved: "#2ecc71",
-        closed: "#7f8c8d",
+        "in-progress": "#6d4aff", // purple
+        resolved: "#2ecc71", // green
+        completed: "#00bcd4", // teal/blue
+        closed: "#7f8c8d", // gray
     };
 
     const renderForm = () => {
@@ -231,32 +233,97 @@ const RequestSupportScreen = () => {
         );
     };
 
-    const renderRequest = ({ item }: { item: SupportRequest }) => (
-        <View style={styles.card}>
-            <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>{item.title}</Text>
-                <View
-                    style={[
-                        styles.statusBadge,
-                        { backgroundColor: statusColors[item.status] || "#6d4aff" },
-                    ]}
-                >
-                    <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
+    const renderRequest = ({ item }: { item: SupportRequest }) => {
+        const canView = ["resolved", "closed", "completed"].includes(item.status as string);
+        return (
+            <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                    <Text style={styles.cardTitle}>{item.title}</Text>
+                    <View
+                        style={[
+                            styles.statusBadge,
+                            { backgroundColor: statusColors[item.status] || "#6d4aff" },
+                        ]}
+                    >
+                        <Text style={styles.statusText}>{String(item.status).toUpperCase()}</Text>
+                    </View>
+                </View>
+                <Text style={styles.cardDescription}>{item.description}</Text>
+                {/* Booking / battery quick info */}
+                {item.booking && (
+                    <View style={{ marginTop: 8 }}>
+
+                        {/* booking id */}
+                        {item.booking?.scheduledTime && (
+                            <Text style={styles.selectSmallText}>Booking time: {new Date(item.booking.scheduledTime).toLocaleString()}</Text>
+                        )}
+
+                        {/* station name/address if present on booking */}
+                        { (((item.booking as any).stationName) || (item.booking as any).station?.stationName || (item.booking as any).station?.name) && (
+                            <Text style={styles.selectSmallText}>
+                                Station: {(item.booking as any).stationName ?? (item.booking as any).station?.stationName ?? (item.booking as any).station?.name}
+                            </Text>
+                        ) }
+
+                        {/* battery info */}
+                        {item.booking.battery && (
+                            (() => {
+                                const batterySource: any = item.booking.battery || {};
+                                const model = batterySource.model ?? batterySource.Model ?? "Unknown Model";
+                                const serial = batterySource.serial ?? batterySource.Serial ?? "";
+                                const manufacturer = batterySource.manufacturer ?? batterySource.Manufacturer ?? "";
+                                const soh = batterySource.soh ?? batterySource.SOH ?? null;
+                                const capacity = batterySource.capacityKWh ?? batterySource.capacity_kWh ?? batterySource.capacity ?? null;
+                                const voltage = batterySource.voltage ?? batterySource.Voltage ?? null;
+
+                                const specs: string[] = [];
+                                if (manufacturer) specs.push(manufacturer);
+                                if (capacity !== null && capacity !== undefined) specs.push(`${capacity} kWh`);
+                                if (voltage !== null && voltage !== undefined) specs.push(`${voltage}V`);
+                                if (soh !== null && soh !== undefined) specs.push(`SOH ${soh}%`);
+
+                                const batteryInfo = `${model}${serial ? ` (${serial})` : ""}${specs.length ? ` — ${specs.join(" • ")}` : ""}`;
+
+                                return (
+                                    <Text style={[styles.selectSmallText, { marginTop: 6 }]}>Battery: {batteryInfo}</Text>
+                                );
+                            })()
+                        )}
+                    </View>
+                )}
+                {item.images.length > 0 && (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
+                        {item.images.map((uri: string, idx: number) => (
+                            <Image key={idx} source={{ uri }} style={styles.cardImage} />
+                        ))}
+                    </ScrollView>
+                )}
+
+                {/* Created timestamp always visible; View button shown only for resolvable statuses */}
+                <View style={{ marginTop: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                    <View style={{ flex: 1 }}>
+                        {item.createdAt ? (
+                            <Text style={[styles.selectSmallText]}>Created: {new Date(item.createdAt).toLocaleString()}</Text>
+                        ) : (
+                            <Text style={[styles.selectSmallText, { opacity: 0.6 }]}>Created: -</Text>
+                        )}
+                    </View>
+
+                    {canView ? (
+                        <TouchableOpacity
+                            style={styles.viewButton}
+                            onPress={() => {
+                                setSelectedRequest(item);
+                                setModalVisible(true);
+                            }}
+                        >
+                            <Text style={styles.viewButtonText}>View</Text>
+                        </TouchableOpacity>
+                    ) : null}
                 </View>
             </View>
-            <Text style={styles.cardDescription}>{item.description}</Text>
-            <Text style={styles.cardInfo}>
-                Scheduled: {new Date(item.booking.scheduledTime).toLocaleString()}
-            </Text>
-            {item.images.length > 0 && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
-                    {item.images.map((uri: string, idx: number) => (
-                        <Image key={idx} source={{ uri }} style={styles.cardImage} />
-                    ))}
-                </ScrollView>
-            )}
-        </View>
-    );
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -284,6 +351,143 @@ const RequestSupportScreen = () => {
                 ListHeaderComponent={showForm ? renderForm() : null}
                 contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
             />
+
+            {/* Details modal for support request */}
+            {selectedRequest && (
+                <Modal
+                    visible={modalVisible}
+                    transparent
+                    animationType="slide"
+                    onRequestClose={() => setModalVisible(false)}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContent}>
+                            <View style={styles.modalHeader}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.modalTitle}>{selectedRequest.title}</Text>
+                                    <Text style={styles.modalSubTitle}>{new Date(selectedRequest.createdAt).toLocaleString()}</Text>
+                                </View>
+                                <TouchableOpacity
+                                    style={styles.modalCloseButton}
+                                    onPress={() => {
+                                        setModalVisible(false);
+                                        setSelectedRequest(null);
+                                    }}
+                                    accessibilityLabel="Close"
+                                >
+                                    <Ionicons name="close" size={22} color="#fff" />
+                                </TouchableOpacity>
+                            </View>
+
+                            <ScrollView style={{ marginTop: 8 }} contentContainerStyle={{ paddingBottom: 24 }}>
+                                <View style={styles.sectionContainer}>
+                                    <Text style={styles.sectionTitle}>Details</Text>
+                                    <Text style={styles.sectionText}>{selectedRequest.description}</Text>
+                                    <View style={styles.rowBetween}>
+                                        <Text style={styles.metaLabel}>Status</Text>
+                                        <Text style={styles.metaValue}>{selectedRequest.status}</Text>
+                                    </View>
+                                    <View style={styles.rowBetween}>
+                                        <Text style={styles.metaLabel}>Scheduled</Text>
+                                        <Text style={styles.metaValue}>{new Date(selectedRequest.booking.scheduledTime).toLocaleString()}</Text>
+                                    </View>
+                                </View>
+
+                                {selectedRequest.images && selectedRequest.images.length > 0 && (
+                                    <View style={styles.sectionContainer}>
+                                        <Text style={styles.sectionTitle}>Images</Text>
+                                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
+                                            {selectedRequest.images.map((uri, i) => (
+                                                <Image key={i} source={{ uri }} style={styles.cardImage} />
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+                                )}
+
+                                {/* Resolved info */}
+                                {(selectedRequest.resolvedAt || selectedRequest.resolveNote || selectedRequest.resolvedBy) && (
+                                    <View style={styles.sectionContainer}>
+                                        <Text style={styles.sectionTitle}>Resolved</Text>
+                                        {selectedRequest.resolvedAt && <Text style={styles.sectionText}>At: {new Date(selectedRequest.resolvedAt).toLocaleString()}</Text>}
+                                        {selectedRequest.resolvedBy && <Text style={styles.sectionText}>By: {selectedRequest.resolvedBy.fullName ?? selectedRequest.resolvedBy.email}</Text>}
+                                        {selectedRequest.resolveNote && <Text style={styles.sectionText}>Note: {selectedRequest.resolveNote}</Text>}
+                                    </View>
+                                )}
+
+                                {/* Completed info */}
+                                {selectedRequest.completedAt && (
+                                    <View style={styles.sectionContainer}>
+                                        <Text style={styles.sectionTitle}>Completed</Text>
+                                        <Text style={styles.sectionText}>At: {new Date(selectedRequest.completedAt).toLocaleString()}</Text>
+                                    </View>
+                                )}
+
+                                {/* Closed info */}
+                                {(selectedRequest.closedAt || selectedRequest.closeNote || selectedRequest.closedBy) && (
+                                    <View style={styles.sectionContainer}>
+                                        <Text style={styles.sectionTitle}>Closed</Text>
+                                        {selectedRequest.closedAt && <Text style={styles.sectionText}>At: {new Date(selectedRequest.closedAt).toLocaleString()}</Text>}
+                                        {selectedRequest.closedBy && <Text style={styles.sectionText}>By: {selectedRequest.closedBy.fullName ?? selectedRequest.closedBy.email}</Text>}
+                                        {selectedRequest.closeNote && <Text style={styles.sectionText}>Note: {selectedRequest.closeNote}</Text>}
+                                    </View>
+                                )}
+                            </ScrollView>
+
+                            <View style={styles.modalFooter}>
+                                {selectedRequest.status === "resolved" && (
+                                <TouchableOpacity
+                                    style={[styles.submitButton, { flex: 1 }]}
+                                    onPress={async () => {
+                                        if (!selectedRequest) return;
+
+                                        const id =
+                                            selectedRequest._id ??
+                                            (selectedRequest as any).id ??
+                                            selectedRequest.booking?._id ??
+                                            selectedRequest.booking?.bookingId ??
+                                            undefined;
+
+                                        if (!id) {
+                                            console.warn("Support request confirm attempted with missing id", selectedRequest);
+                                            Alert.alert(
+                                                "Error",
+                                                "Support request id is missing. Please refresh the list and try again. If the problem persists, contact support."
+                                            );
+                                            return;
+                                        }
+
+                                        setConfirming(true);
+                                        try {
+                                            const res = await completeSupportRequest(String(id));
+                                            if (res?.success) {
+                                                Alert.alert("Success", "Support request marked as completed.");
+                                                setModalVisible(false);
+                                                setSelectedRequest(null);
+                                                try {
+                                                    await getAllSupportRequests();
+                                                } catch (e) {
+                                                    console.warn("Failed to refresh support requests after complete:", e);
+                                                }
+                                            } else {
+                                                Alert.alert("Error", res?.message || "Failed to update request");
+                                            }
+                                        } catch (err: any) {
+                                            console.warn("API Error completing support request:", err, "selectedRequest:", selectedRequest);
+                                            Alert.alert("Error", err?.message || "Failed to complete request");
+                                        } finally {
+                                            setConfirming(false);
+                                        }
+                                    }}
+                                    disabled={confirming}
+                                >
+                                    <Text style={styles.submitText}>{confirming ? "Confirming..." : "Confirm Completed"}</Text>
+                                </TouchableOpacity>
+                            )}
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+            )}
         </SafeAreaView>
     );
 };
@@ -357,7 +561,7 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: "#6d4aff",
     },
-    imageScroll: { marginTop: 8 },
+    imageScroll: { marginTop: 20 },
     label: { fontSize: 14, color: "#bfa8ff", marginBottom: 8, fontWeight: "600" },
     input: {
         backgroundColor: "#2a1f4e",
@@ -436,4 +640,41 @@ const styles = StyleSheet.create({
     selectText: {
         color: "#fff",
     },
+    viewButton: {
+        backgroundColor: "#6d4aff",
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 12,
+    },
+    viewButtonText: {
+        color: "#fff",
+        fontWeight: "700",
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 16,
+    },
+    modalContent: {
+        width: "100%",
+        backgroundColor: "#0b0624",
+        borderRadius: 12,
+        padding: 16,
+        maxHeight: "85%",
+    },
+    modalTitle: { color: "#fff", fontSize: 18, fontWeight: "800", marginBottom: 8 },
+    modalDescription: { color: "#e0d5ff", fontSize: 14, marginBottom: 8 },
+    modalInfo: { color: "#bfa8ff", fontSize: 13, marginBottom: 4 },
+    modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    modalSubTitle: { color: "#bfa8ff", fontSize: 12 },
+    modalCloseButton: { padding: 8, marginLeft: 12 },
+    sectionContainer: { backgroundColor: "#12062a", padding: 12, borderRadius: 10, marginTop: 12 },
+    sectionTitle: { color: "#dcd6ff", fontWeight: "700", marginBottom: 6 },
+    sectionText: { color: "#e6def8", fontSize: 13 },
+    rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
+    metaLabel: { color: "#bfa8ff", fontSize: 12 },
+    metaValue: { color: "#fff", fontWeight: "700", fontSize: 12 },
+    modalFooter: { marginTop: 12, flexDirection: "row", justifyContent: "flex-end" },
 });
