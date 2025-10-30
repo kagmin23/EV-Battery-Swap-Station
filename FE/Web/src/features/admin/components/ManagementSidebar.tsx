@@ -17,6 +17,7 @@ import {
   FolderOpen,
   DollarSign,
   MessageSquareText
+  , LifeBuoy
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -113,6 +114,13 @@ const menuItems = [
     route: '/transactions'
   },
 
+  {
+    id: 'support-requests',
+    label: 'Support Requests',
+    icon: LifeBuoy,
+    description: 'User support tickets',
+    route: '/admin/support-requests'
+  },
   {
     id: 'feedbacks',
     label: 'Feedbacks',

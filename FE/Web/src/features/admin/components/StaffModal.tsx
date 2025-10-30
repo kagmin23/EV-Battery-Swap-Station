@@ -96,7 +96,7 @@ export const StaffModal: React.FC<StaffModalProps> = ({
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Full Name *</Label>
+                      <Label htmlFor="name" className="after:ml-1 after:text-red-500 after:content-['*']">Full Name</Label>
                       <Field as={Input}
                         id="name"
                         name="name"
@@ -109,7 +109,7 @@ export const StaffModal: React.FC<StaffModalProps> = ({
                       {errors.name && touched.name && <p className="text-sm text-red-500">{errors.name}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email *</Label>
+                      <Label htmlFor="email" className="after:ml-1 after:text-red-500 after:content-['*']">Email</Label>
                       <Field as={Input}
                         id="email"
                         name="email"
@@ -122,7 +122,7 @@ export const StaffModal: React.FC<StaffModalProps> = ({
                       {errors.email && touched.email && <p className="text-sm text-red-500">{errors.email}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number *</Label>
+                      <Label htmlFor="phone" className="after:ml-1 after:text-red-500 after:content-['*']">Phone Number</Label>
                       <Field as={Input}
                         id="phone"
                         name="phone"
@@ -137,7 +137,7 @@ export const StaffModal: React.FC<StaffModalProps> = ({
                       {errors.phone && touched.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="role">Role *</Label>
+                      <Label htmlFor="role" className="after:ml-1 after:text-red-500 after:content-['*']">Role</Label>
                       <Select
                         value={values.role}
                         onValueChange={(v) => setFieldValue('role', v)}
@@ -153,7 +153,7 @@ export const StaffModal: React.FC<StaffModalProps> = ({
                       </Select>
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="station">Working Station *</Label>
+                      <Label htmlFor="station" className="after:ml-1 after:text-red-500 after:content-['*']">Working Station</Label>
                       <Select
                         value={values.stationId}
                         onValueChange={(v) => setFieldValue('stationId', v)}

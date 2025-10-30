@@ -18,7 +18,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Plus, Grid, List, Users, Activity, Car, Star, Calendar, User, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Grid, List, Users, Activity, Car, Star, Calendar, User, AlertCircle, ChevronLeft, ChevronRight, UserX } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
@@ -88,7 +88,6 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
         city: 'ALL',
         limit: '20'
     });
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
     const [formData, setFormData] = useState({
@@ -114,7 +113,6 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
     const [actionType, setActionType] = useState<'suspend' | 'activate' | null>(null);
     const [targetDriver, setTargetDriver] = useState<Driver | null>(null);
     const [submitError, setSubmitError] = useState<string | null>(null);
-    const [addSubmitError, setAddSubmitError] = useState<string | null>(null);
 
     // Load drivers data from API
     const loadDrivers = async () => {
@@ -211,56 +209,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
         onDriverSelect?.(driver);
     };
 
-    const handleAddDriver = () => {
-        setAddSubmitError(null);
-        setIsAddModalOpen(true);
-    };
 
-    const handleCloseModal = () => {
-        setIsAddModalOpen(false);
-        setAddSubmitError(null);
-        setFormData({
-            name: '',
-            email: '',
-            phone: '',
-            licenseNumber: '',
-            licenseType: '',
-            address: '',
-            city: '',
-            subscriptionPlan: '',
-            vehicleModel: '',
-            vehiclePlate: ''
-        });
-    };
-
-    const handleSubmit = async () => {
-        try {
-            setIsSubmitting(true);
-            setAddSubmitError(null);
-            // TODO: Implement add driver API call; simulate validation example
-            if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim()) {
-                throw new Error('Please fill in required fields: name, email, phone');
-            }
-            // success flow (placeholder)
-            handleCloseModal();
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Error adding driver';
-            setAddSubmitError(errorMessage);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    // const handleAddDriver = (data: AddDriverRequest) => {
-    //   // TODO: Implement add driver API call
-    //   console.log('Add driver:', data);
-    //   setIsAddModalOpen(false);
-    // };
-
-    // const handleUpdateDriver = (data: UpdateDriverRequest) => {
-    //   // TODO: Implement update driver API call
-    //   console.log('Update driver:', data);
-    // };
 
     const handleSuspendDriver = (driver: Driver) => {
         setTargetDriver(driver);
@@ -366,7 +315,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
             )}
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
                 <StatsCard
                     title="Total Drivers"
                     value={drivers.length.toLocaleString()}
@@ -386,24 +335,16 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                     iconBg="bg-green-500"
                 />
                 <StatsCard
-                    title="Total Swaps"
-                    value={drivers.reduce((sum, d) => sum + d.totalSwaps, 0).toLocaleString()}
-                    icon={Car}
-                    gradientFrom="from-purple-50"
-                    gradientTo="to-purple-100/50"
-                    textColor="text-purple-900"
-                    iconBg="bg-purple-500"
-                />
-                <StatsCard
-                    title="Average Rating"
-                    value={drivers.length > 0 ? `${(drivers.reduce((sum, d) => sum + d.rating, 0) / drivers.length).toFixed(1)}/5` : '0/5'}
-                    icon={Star}
-                    gradientFrom="from-orange-50"
-                    gradientTo="to-orange-100/50"
-                    textColor="text-orange-900"
-                    iconBg="bg-orange-500"
+                    title="Locked Drivers"
+                    value={drivers.filter(d => d.status === 'INACTIVE').length.toLocaleString()}
+                    icon={UserX}
+                    gradientFrom="from-gray-50"
+                    gradientTo="to-gray-100/50"
+                    textColor="text-gray-900"
+                    iconBg="bg-gray-500"
                 />
             </div>
+
 
             {/* Search and Filters */}
             <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6">
@@ -465,20 +406,6 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                             >
                                 <List className="h-4 w-4" />
                             </Button>
-                            <Button
-                                onClick={handleAddDriver}
-                                disabled={isSubmitting}
-                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed border border-blue-600 hover:border-blue-700"
-                            >
-                                {isSubmitting ? (
-                                    <ButtonLoadingSpinner size="sm" variant="white" text="Adding..." />
-                                ) : (
-                                    <>
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Add Driver
-                                    </>
-                                )}
-                            </Button>
                         </div>
                     </div>
                 </CardHeader>
@@ -494,15 +421,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                     ? 'No drivers found matching the current filters.'
                                     : 'No drivers have been added to the system yet.'}
                             </p>
-                            {(!filters.search && filters.status === 'ALL' && filters.subscriptionPlan === 'ALL' && filters.licenseType === 'ALL' && filters.city === 'ALL') && (
-                                <Button
-                                    onClick={handleAddDriver}
-                                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
-                                >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add First Driver
-                                </Button>
-                            )}
+                            {(!filters.search && filters.status === 'ALL' && filters.subscriptionPlan === 'ALL' && filters.licenseType === 'ALL' && filters.city === 'ALL')}
                         </div>
                     ) : viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
@@ -713,8 +632,8 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                 </CardContent>
             </Card>
 
-            {/* Pagination */}
-            {!isLoading && filteredDrivers.length > 0 && (
+            {/* Pagination - copied logic/markup from StaffListPage */}
+            {filteredDrivers.length > 0 && (
                 <div className="flex flex-col items-center py-4 gap-3">
                     <nav className="flex items-center -space-x-px" aria-label="Pagination">
                         <button
@@ -727,14 +646,13 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                             <ChevronLeft className="w-4 h-4" />
                             <span className="hidden sm:block">Previous</span>
                         </button>
-
                         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let pageNum: number;
+                            let pageNum;
                             if (totalPages <= 5) {
                                 pageNum = i + 1;
                             } else if (currentPage <= 3) {
                                 pageNum = i === 4 ? totalPages : i + 1;
-                                if (i === 3 && totalPages > 5) {
+                                if (i === 3) {
                                     return (
                                         <React.Fragment key={`fragment-${i}`}>
                                             <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
@@ -744,8 +662,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                                 onClick={() => setCurrentPage(totalPages)}
                                                 className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === totalPages
                                                     ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
-                                                    }`}
+                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"}`}
                                             >
                                                 {totalPages}
                                             </button>
@@ -762,8 +679,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                                 onClick={() => setCurrentPage(1)}
                                                 className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === 1
                                                     ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
-                                                    }`}
+                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"}`}
                                             >
                                                 1
                                             </button>
@@ -804,7 +720,6 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                 }
                                 pageNum = currentPage + i - 2;
                             }
-
                             return (
                                 <button
                                     key={pageNum}
@@ -812,15 +727,13 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                     onClick={() => setCurrentPage(pageNum)}
                                     className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === pageNum
                                         ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                                        : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
-                                        }`}
+                                        : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"}`}
                                     aria-current={currentPage === pageNum ? "page" : undefined}
                                 >
                                     {pageNum}
                                 </button>
                             );
                         })}
-
                         <button
                             type="button"
                             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
@@ -832,11 +745,10 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                             <ChevronRight className="w-4 h-4" />
                         </button>
                     </nav>
-
                     {/* Items info */}
                     <div className="text-sm text-gray-800">
-                        Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * limitNum + 1}</span> to{" "}
-                        <span className="font-semibold text-slate-900">{Math.min(currentPage * limitNum, filteredDrivers.length)}</span> of{" "}
+                        Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * limitNum + 1}</span> to {" "}
+                        <span className="font-semibold text-slate-900">{Math.min(currentPage * limitNum, filteredDrivers.length)}</span> of {" "}
                         <span className="font-semibold text-slate-900">{filteredDrivers.length}</span> results
                     </div>
                 </div>
@@ -1035,204 +947,6 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                 )}
                             </Button>
                         )}
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Add Driver Modal */}
-            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                            <Plus className="h-6 w-6" />
-                            Add New Driver
-                        </DialogTitle>
-                        <DialogDescription>
-                            Enter driver information to add to the system
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="py-4 space-y-6">
-                        {/* Personal Information */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                                <User className="h-5 w-5" />
-                                Personal Information
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor="name">Full Name *</Label>
-                                    <Input
-                                        id="name"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                                        placeholder="Enter full name"
-                                        className="mt-1"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="email">Email *</Label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                                        placeholder="Enter email"
-                                        className="mt-1"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="phone">Phone Number *</Label>
-                                    <Input
-                                        id="phone"
-                                        value={formData.phone}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                                        placeholder="Enter phone number"
-                                        className="mt-1"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="address">Address</Label>
-                                    <Input
-                                        id="address"
-                                        value={formData.address}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                                        placeholder="Enter address"
-                                        className="mt-1"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="city">City</Label>
-                                    <Select value={formData.city} onValueChange={(value) => setFormData(prev => ({ ...prev, city: value }))}>
-                                        <SelectTrigger className="mt-1">
-                                            <SelectValue placeholder="Select city" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Hà Nội">Hà Nội</SelectItem>
-                                            <SelectItem value="TP.HCM">TP.HCM</SelectItem>
-                                            <SelectItem value="Đà Nẵng">Đà Nẵng</SelectItem>
-                                            <SelectItem value="Hải Phòng">Hải Phòng</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* License Information */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                                <Car className="h-5 w-5" />
-                                License Information
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor="licenseNumber">License Number *</Label>
-                                    <Input
-                                        id="licenseNumber"
-                                        value={formData.licenseNumber}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, licenseNumber: e.target.value }))}
-                                        placeholder="Enter license number"
-                                        className="mt-1"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="licenseType">License Type *</Label>
-                                    <Select value={formData.licenseType} onValueChange={(value) => setFormData(prev => ({ ...prev, licenseType: value }))}>
-                                        <SelectTrigger className="mt-1">
-                                            <SelectValue placeholder="Select license type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="A1">A1 - Motorcycle under 175cc</SelectItem>
-                                            <SelectItem value="A2">A2 - Motorcycle over 175cc</SelectItem>
-                                            <SelectItem value="B1">B1 - Automatic car</SelectItem>
-                                            <SelectItem value="B2">B2 - Manual car</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Vehicle Information */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                                <Car className="h-5 w-5" />
-                                Vehicle Information
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor="vehicleModel">Vehicle Model</Label>
-                                    <Input
-                                        id="vehicleModel"
-                                        value={formData.vehicleModel}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, vehicleModel: e.target.value }))}
-                                        placeholder="Enter vehicle model"
-                                        className="mt-1"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="vehiclePlate">Plate Number</Label>
-                                    <Input
-                                        id="vehiclePlate"
-                                        value={formData.vehiclePlate}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, vehiclePlate: e.target.value }))}
-                                        placeholder="Enter plate number"
-                                        className="mt-1"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Subscription Plan */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                                <Calendar className="h-5 w-5" />
-                                Subscription Plan
-                            </h3>
-                            <div>
-                                <Label htmlFor="subscriptionPlan">Select Subscription Plan *</Label>
-                                <Select value={formData.subscriptionPlan} onValueChange={(value) => setFormData(prev => ({ ...prev, subscriptionPlan: value }))}>
-                                    <SelectTrigger className="mt-1">
-                                        <SelectValue placeholder="Select subscription plan" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {mockSubscriptionPlans.map(plan => (
-                                            <SelectItem key={plan.id} value={plan.id}>
-                                                {plan.name} - {plan.price.toLocaleString('vi-VN')} VND
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </div>
-
-                    {addSubmitError && (
-                        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-2 rounded-lg">
-                            <AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" />
-                            <span className="font-medium">{addSubmitError}</span>
-                        </div>
-                    )}
-
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={handleCloseModal}
-                            disabled={isSubmitting}
-                            className="hover:bg-slate-50 border-slate-200 hover:border-slate-300 transition-all duration-200 hover:shadow-sm disabled:opacity-50"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleSubmit}
-                            disabled={isSubmitting}
-                            className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed border border-blue-600 hover:border-blue-700 transition-all duration-200 hover:shadow-lg"
-                        >
-                            {isSubmitting ? (
-                                <ButtonLoadingSpinner size="sm" variant="white" text="Adding..." />
-                            ) : (
-                                'Add Driver'
-                            )}
-                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

@@ -16,6 +16,7 @@ import { StationService, type CreateStationRequest, type UpdateStationRequest as
 import { StaffService, type Staff as ApiStaff } from '@/services/api/staffService';
 import type { Station, StationFilters, AddStationRequest, UpdateStationRequest } from '../types/station';
 import type { Staff } from '../types/staff';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 
 interface StationListPageProps {
     onStationSelect?: (station: Station) => void;
@@ -43,6 +44,11 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
     const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
     const [selectedStationForStaff, setSelectedStationForStaff] = useState<Station | null>(null);
     const [savingStaffId, setSavingStaffId] = useState<string | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deletingStation, setDeletingStation] = useState<Station | null>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [isCannotDeleteOpen, setIsCannotDeleteOpen] = useState(false);
+    const [cannotDeleteStation, setCannotDeleteStation] = useState<Station | null>(null);
 
     // Load staff data from API
     const loadStaff = async () => {
@@ -180,6 +186,42 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
     const handleAddStation = () => {
         setEditingStation(null);
         setIsModalOpen(true);
+    };
+
+    const handleDeleteStation = (station: Station) => {
+        const available = station.batteryCounts?.available ?? station.availableBatteries ?? 0;
+        const total = station.batteryCounts?.total ?? available;
+        if ((total ?? 0) > 0 || available > 0) {
+            setCannotDeleteStation(station);
+            setIsCannotDeleteOpen(true);
+            return;
+        }
+        setDeletingStation(station);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDeleteStation = async () => {
+        if (!deletingStation) return;
+        const available = deletingStation.batteryCounts?.available ?? deletingStation.availableBatteries ?? 0;
+        const total = deletingStation.batteryCounts?.total ?? available;
+        if ((total ?? 0) > 0 || available > 0) {
+            toast.error(`Cannot delete station. There are still ${available > 0 ? available : total} battery(ies) at this station.`);
+            setIsDeleteModalOpen(false);
+            setDeletingStation(null);
+            return;
+        }
+        try {
+            setDeletingId(deletingStation.id);
+            await StationService.deleteStation(deletingStation.id);
+            setStations(prev => prev.filter(s => s.id !== deletingStation.id));
+        } catch (err) {
+            toast.error('Unable to delete station. Please try again.');
+            console.error('Error deleting station:', err);
+        } finally {
+            setDeletingId(null);
+            setIsDeleteModalOpen(false);
+            setDeletingStation(null);
+        }
     };
 
     const handleViewStationDetails = async (station: Station) => {
@@ -512,6 +554,7 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                                     onEdit={handleStationEdit}
                                     onViewDetails={handleViewStationDetails}
                                     onViewStaff={handleViewStationStaff}
+                                    onDelete={handleDeleteStation}
                                     isSaving={savingStationId === station.id}
                                     staffCount={getStaffByStation(station.id).length}
                                 />
@@ -694,6 +737,33 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                 onRemoveStaff={handleRemoveStaffFromStation}
                 onReloadStaff={handleReloadStaff}
                 savingStaffId={savingStaffId}
+            />
+
+            {/* Delete Station Modal */}
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmDeleteStation}
+                title="Confirm delete station"
+                message={<div>Are you sure you want to delete station <span className="font-bold text-slate-800">{deletingStation?.name}</span>? This action cannot be undone.</div>}
+                confirmText="Delete"
+                type="delete"
+                isLoading={deletingId === deletingStation?.id}
+            />
+
+            {/* Cannot delete info */}
+            <ConfirmationModal
+                isOpen={isCannotDeleteOpen}
+                onClose={() => setIsCannotDeleteOpen(false)}
+                onConfirm={() => setIsCannotDeleteOpen(false)}
+                title="Cannot delete station"
+                message={
+                    <div>
+                        Station <span className="font-bold text-slate-800">{cannotDeleteStation?.name}</span> still has battery(ies). Please transfer or empty all batteries before deleting.
+                    </div>
+                }
+                confirmText="OK"
+                type="default"
             />
         </div>
     );

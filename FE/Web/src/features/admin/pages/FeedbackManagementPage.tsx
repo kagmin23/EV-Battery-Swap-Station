@@ -197,7 +197,7 @@ export const FeedbackManagementPage: React.FC = () => {
                     {isLoading ? (
                         <PageLoadingSpinner text="Loading feedbacks..." />
                     ) : paginatedFeedbacks.map((fb) => (
-                        <Card key={fb._id} className="hover:shadow-md transition-shadow border border-slate-200">
+                        <Card key={fb._id} className="hover:shadow-xl transition-transform duration-200 hover:scale-[1.01] border border-slate-200">
                             <CardContent className="p-5 space-y-4">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div className="font-semibold text-slate-900">

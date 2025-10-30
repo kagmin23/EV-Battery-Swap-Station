@@ -34,25 +34,25 @@ export const StaffTable: React.FC<StaffTableProps> = ({
       case 'active':
         return <Badge variant="success">Active</Badge>;
       case 'OFFLINE':
-        return <Badge variant="secondary">Ngoại tuyến</Badge>;
+        return <Badge variant="secondary">Offline</Badge>;
       case 'SUSPENDED':
       case 'locked':
-        return <Badge variant="destructive">Tạm khóa</Badge>;
+        return <Badge variant="destructive">Suspended</Badge>;
       default:
-        return <Badge variant="secondary">Không xác định</Badge>;
+        return <Badge variant="secondary">Unknown</Badge>;
     }
   };
 
   const getRoleBadge = (role: StaffRole) => {
     switch (role) {
       case 'MANAGER':
-        return <Badge variant="outline">Quản lý</Badge>;
+        return <Badge variant="outline">Manager</Badge>;
       case 'SUPERVISOR':
-        return <Badge variant="outline">Giám sát</Badge>;
+        return <Badge variant="outline">Supervisor</Badge>;
       case 'STAFF':
-        return <Badge variant="outline">Nhân viên</Badge>;
+        return <Badge variant="outline">Staff</Badge>;
       default:
-        return <Badge variant="outline">Nhân viên</Badge>;
+        return <Badge variant="outline">Staff</Badge>;
     }
   };
 
@@ -69,10 +69,10 @@ export const StaffTable: React.FC<StaffTableProps> = ({
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
 
-    if (diffInMinutes < 1) return 'Vừa xong';
-    if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} giờ trước`;
-    return `${Math.floor(diffInMinutes / 1440)} ngày trước`;
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`;
+    return `${Math.floor(diffInMinutes / 1440)} days ago`;
   };
 
   return (
@@ -80,8 +80,8 @@ export const StaffTable: React.FC<StaffTableProps> = ({
       <table className="w-full">
         <thead>
           <tr className="border-b bg-gray-50">
-            <th className="text-left py-3 px-4 font-medium text-gray-700">Nhân viên</th>
-            <th className="text-left py-3 px-4 font-medium text-gray-700">Vai trò</th>
+            <th className="text-left py-3 px-4 font-medium text-gray-700">Staff</th>
+            <th className="text-left py-3 px-4 font-medium text-gray-700">Role</th>
             <th className="text-left py-3 px-4 font-medium text-gray-700">Station</th>
             <th className="text-left py-3 px-4 font-medium text-gray-700">Status</th>
             <th className="text-left py-3 px-4 font-medium text-gray-700">Actions</th>
@@ -180,9 +180,9 @@ export const StaffTable: React.FC<StaffTableProps> = ({
                       className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200 hover:border-green-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
                     >
                       {suspendingStaffId === staffMember.id ? (
-                        <ButtonLoadingSpinner size="sm" variant="white" text="Đang xử lý..." />
+                        <ButtonLoadingSpinner size="sm" variant="white" text="Processing..." />
                       ) : (
-                        'Kích hoạt'
+                        'Activate'
                       )}
                     </Button>
                   ) : (
@@ -197,9 +197,9 @@ export const StaffTable: React.FC<StaffTableProps> = ({
                       className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
                     >
                       {suspendingStaffId === staffMember.id ? (
-                        <ButtonLoadingSpinner size="sm" variant="white" text="Đang xử lý..." />
+                        <ButtonLoadingSpinner size="sm" variant="white" text="Processing..." />
                       ) : (
-                        'Khóa'
+                        'Lock'
                       )}
                     </Button>
                   )}

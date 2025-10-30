@@ -198,8 +198,8 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Serial Number */}
                         <div className="space-y-2">
-                            <Label htmlFor="serial" className="text-sm font-medium text-slate-700">
-                                Battery Serial Number <span className="text-red-500">*</span>
+                            <Label htmlFor="serial" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                Battery Serial Number
                             </Label>
                             <Input
                                 id="serial"
@@ -211,17 +211,14 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                                     }`}
                             />
                             {errors.serial && (
-                                <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{errors.serial}</span>
-                                </div>
+                                <p className="text-sm text-red-500">{errors.serial}</p>
                             )}
                         </div>
 
                         {/* Model */}
                         <div className="space-y-2">
-                            <Label htmlFor="model" className="text-sm font-medium text-slate-700">
-                                Battery Model <span className="text-red-500">*</span>
+                            <Label htmlFor="model" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                Battery Model
                             </Label>
                             <Input
                                 id="model"
@@ -233,17 +230,14 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                                     }`}
                             />
                             {errors.model && (
-                                <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{errors.model}</span>
-                                </div>
+                                <p className="text-sm text-red-500">{errors.model}</p>
                             )}
                         </div>
 
                         {/* SOH */}
                         <div className="space-y-2">
-                            <Label htmlFor="soh" className="text-sm font-medium text-slate-700">
-                                SOH (%) <span className="text-red-500">*</span>
+                            <Label htmlFor="soh" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                SOH (%)
                             </Label>
                             <Input
                                 id="soh"
@@ -265,17 +259,14 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                                     }`}
                             />
                             {errors.soh && (
-                                <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{errors.soh}</span>
-                                </div>
+                                <p className="text-sm text-red-500">{errors.soh}</p>
                             )}
                         </div>
 
                         {/* Status */}
                         <div className="space-y-2">
-                            <Label htmlFor="status" className="text-sm font-medium text-slate-700">
-                                Status <span className="text-red-500">*</span>
+                            <Label htmlFor="status" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                Status
                             </Label>
                             <Select
                                 value={formData.status}
@@ -304,17 +295,14 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                                 </SelectContent>
                             </Select>
                             {errors.status && (
-                                <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{errors.status}</span>
-                                </div>
+                                <p className="text-sm text-red-500">{errors.status}</p>
                             )}
                         </div>
 
                         {/* Station */}
                         <div className="space-y-2">
-                            <Label htmlFor="stationId" className="text-sm font-medium text-slate-700">
-                                Station <span className="text-red-500">*</span>
+                            <Label htmlFor="stationId" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                Station
                             </Label>
                             <Select
                                 value={formData.stationId}
@@ -337,17 +325,14 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                                 </SelectContent>
                             </Select>
                             {errors.stationId && (
-                                <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{errors.stationId}</span>
-                                </div>
+                                <p className="text-sm text-red-500">{errors.stationId}</p>
                             )}
                         </div>
 
                         {/* Manufacturer */}
                         <div className="space-y-2">
-                            <Label htmlFor="manufacturer" className="text-sm font-medium text-slate-700">
-                                Manufacturer <span className="text-red-500">*</span>
+                            <Label htmlFor="manufacturer" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                Manufacturer
                             </Label>
                             <Input
                                 id="manufacturer"
@@ -359,17 +344,14 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                                     }`}
                             />
                             {errors.manufacturer && (
-                                <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{errors.manufacturer}</span>
-                                </div>
+                                <p className="text-sm text-red-500">{errors.manufacturer}</p>
                             )}
                         </div>
 
                         {/* Capacity */}
                         <div className="space-y-2">
-                            <Label htmlFor="capacity_kWh" className="text-sm font-medium text-slate-700">
-                                Capacity (kWh) <span className="text-red-500">*</span>
+                            <Label htmlFor="capacity_kWh" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                Capacity (kWh)
                             </Label>
                             <Input
                                 id="capacity_kWh"
@@ -386,17 +368,14 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                                     }`}
                             />
                             {errors.capacity_kWh && (
-                                <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{errors.capacity_kWh}</span>
-                                </div>
+                                <p className="text-sm text-red-500">{errors.capacity_kWh}</p>
                             )}
                         </div>
 
                         {/* Voltage */}
                         <div className="space-y-2">
-                            <Label htmlFor="voltage" className="text-sm font-medium text-slate-700">
-                                Voltage (V) <span className="text-red-500">*</span>
+                            <Label htmlFor="voltage" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                Voltage (V)
                             </Label>
                             <Input
                                 id="voltage"
@@ -413,10 +392,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                                     }`}
                             />
                             {errors.voltage && (
-                                <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{errors.voltage}</span>
-                                </div>
+                                <p className="text-sm text-red-500">{errors.voltage}</p>
                             )}
                         </div>
                     </div>

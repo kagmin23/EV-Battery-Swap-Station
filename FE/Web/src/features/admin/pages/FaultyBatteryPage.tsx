@@ -870,133 +870,126 @@ const FaultyBatteryPage: React.FC = () => {
                 </CardContent>
             </Card>
 
-            {/* Pagination */}
-            {!loading && filteredBatteries.length > 0 && totalPages > 1 && (
-                <div className="flex flex-col items-center py-4 gap-3">
-                    <nav className="flex items-center -space-x-px" aria-label="Pagination">
-                        <button
-                            type="button"
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-s-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-                            aria-label="Previous"
-                        >
-                            <ChevronLeft className="w-4 h-4" />
-                            <span className="hidden sm:block">Previous</span>
-                        </button>
-
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let pageNum: number;
-                            if (totalPages <= 5) {
-                                pageNum = i + 1;
-                            } else if (currentPage <= 3) {
-                                pageNum = i === 4 ? totalPages : i + 1;
-                                if (i === 3 && totalPages > 5) {
-                                    return (
-                                        <React.Fragment key={`fragment-${i}`}>
-                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
-                                            <button
-                                                key={totalPages}
-                                                type="button"
-                                                onClick={() => setCurrentPage(totalPages)}
-                                                className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === totalPages
-                                                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
-                                                    }`}
-                                            >
-                                                {totalPages}
-                                            </button>
-                                        </React.Fragment>
-                                    );
-                                }
-                            } else if (currentPage >= totalPages - 2) {
-                                if (i === 0) {
-                                    return (
-                                        <React.Fragment key={`fragment-start-${i}`}>
-                                            <button
-                                                key={1}
-                                                type="button"
-                                                onClick={() => setCurrentPage(1)}
-                                                className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === 1
-                                                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
-                                                    }`}
-                                            >
-                                                1
-                                            </button>
-                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
-                                        </React.Fragment>
-                                    );
-                                }
-                                pageNum = totalPages - 4 + i;
-                            } else {
-                                if (i === 0) {
-                                    return (
-                                        <React.Fragment key={`fragment-mid-start`}>
-                                            <button
-                                                key={1}
-                                                type="button"
-                                                onClick={() => setCurrentPage(1)}
-                                                className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
-                                            >
-                                                1
-                                            </button>
-                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
-                                        </React.Fragment>
-                                    );
-                                } else if (i === 4) {
-                                    return (
-                                        <React.Fragment key={`fragment-mid-end`}>
-                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
-                                            <button
-                                                key={totalPages}
-                                                type="button"
-                                                onClick={() => setCurrentPage(totalPages)}
-                                                className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
-                                            >
-                                                {totalPages}
-                                            </button>
-                                        </React.Fragment>
-                                    );
-                                }
-                                pageNum = currentPage + i - 2;
-                            }
-
-                            return (
-                                <button
-                                    key={pageNum}
-                                    type="button"
-                                    onClick={() => setCurrentPage(pageNum)}
-                                    className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === pageNum
-                                        ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                                        : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
-                                        }`}
-                                    aria-current={currentPage === pageNum ? "page" : undefined}
-                                >
-                                    {pageNum}
-                                </button>
-                            );
-                        })}
-
-                        <button
-                            type="button"
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages}
-                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-e-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-                            aria-label="Next"
-                        >
-                            <span className="hidden sm:block">Next</span>
-                            <ChevronRight className="w-4 h-4" />
-                        </button>
-                    </nav>
-
-                    {/* Items info */}
-                    <div className="text-sm text-gray-800">
-                        Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * limitNum + 1}</span> to{" "}
-                        <span className="font-semibold text-slate-900">{Math.min(currentPage * limitNum, filteredBatteries.length)}</span> of{" "}
-                        <span className="font-semibold text-slate-900">{filteredBatteries.length}</span> results
-                    </div>
+            {/* Pagination - copied logic/markup from StaffListPage */}
+            {filteredBatteries.length > 0 && (
+              <div className="flex flex-col items-center py-4 gap-3">
+                <nav className="flex items-center -space-x-px" aria-label="Pagination">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1 || totalPages === 1}
+                    className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-s-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Previous"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span className="hidden sm:block">Previous</span>
+                  </button>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i === 4 ? totalPages : i + 1;
+                      if (i === 3) {
+                        return (
+                          <React.Fragment key={`fragment-${i}`}>
+                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                            <button
+                              key={totalPages}
+                              type="button"
+                              onClick={() => setCurrentPage(totalPages)}
+                              className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === totalPages
+                                ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"}`}
+                            >
+                              {totalPages}
+                            </button>
+                          </React.Fragment>
+                        );
+                      }
+                    } else if (currentPage >= totalPages - 2) {
+                      if (i === 0) {
+                        return (
+                          <React.Fragment key={`fragment-start-${i}`}>
+                            <button
+                              key={1}
+                              type="button"
+                              onClick={() => setCurrentPage(1)}
+                              className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === 1
+                                ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"}`}
+                            >
+                              1
+                            </button>
+                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                          </React.Fragment>
+                        );
+                      }
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      if (i === 0) {
+                        return (
+                          <React.Fragment key={`fragment-mid-start`}>
+                            <button
+                              key={1}
+                              type="button"
+                              onClick={() => setCurrentPage(1)}
+                              className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                            >
+                              1
+                            </button>
+                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                          </React.Fragment>
+                        );
+                      } else if (i === 4) {
+                        return (
+                          <React.Fragment key={`fragment-mid-end`}>
+                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                            <button
+                              key={totalPages}
+                              type="button"
+                              onClick={() => setCurrentPage(totalPages)}
+                              className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                            >
+                              {totalPages}
+                            </button>
+                          </React.Fragment>
+                        );
+                      }
+                      pageNum = currentPage + i - 2;
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === pageNum
+                          ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                          : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"}`}
+                        aria-current={currentPage === pageNum ? "page" : undefined}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages || totalPages === 1}
+                    className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-e-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Next"
+                  >
+                    <span className="hidden sm:block">Next</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </nav>
+                {/* Items info */}
+                <div className="text-sm text-gray-800">
+                  Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * limitNum + 1}</span> to {" "}
+                  <span className="font-semibold text-slate-900">{Math.min(currentPage * limitNum, filteredBatteries.length)}</span> of {" "}
+                  <span className="font-semibold text-slate-900">{filteredBatteries.length}</span> results
                 </div>
+              </div>
             )}
 
             {/* Detail Modal */}

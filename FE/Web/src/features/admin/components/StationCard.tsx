@@ -11,6 +11,7 @@ interface StationCardProps {
     onEdit: (station: Station) => void;
     onViewDetails?: (station: Station) => void;
     onViewStaff?: (station: Station) => void;
+    onDelete?: (station: Station) => void;
     isSaving?: boolean;
     staffCount?: number;
 }
@@ -21,6 +22,7 @@ export const StationCard: React.FC<StationCardProps> = ({
     onEdit,
     onViewDetails,
     onViewStaff,
+    onDelete,
     isSaving = false,
     staffCount = 0
 }) => {
@@ -124,6 +126,20 @@ export const StationCard: React.FC<StationCardProps> = ({
                             'Edit'
                         )}
                     </Button>
+                    {onDelete && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(station);
+                            }}
+                            disabled={isSaving}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
+                        >
+                            Delete
+                        </Button>
+                    )}
                 </div>
             </CardContent>
         </Card>

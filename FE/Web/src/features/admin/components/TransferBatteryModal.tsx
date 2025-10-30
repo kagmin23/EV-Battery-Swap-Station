@@ -150,8 +150,8 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
 
                     {/* Select Battery */}
                     <div className="space-y-2">
-                        <Label htmlFor="batteryId" className="text-sm font-medium text-slate-700">
-                            Chọn pin cần chuyển <span className="text-red-500">*</span>
+                        <Label htmlFor="batteryId" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                            Chọn pin cần chuyển
                         </Label>
                         <Select
                             value={selectedBatteryId}
@@ -182,10 +182,7 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
                             </SelectContent>
                         </Select>
                         {errors.batteryId && (
-                            <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                <AlertCircle className="h-4 w-4" />
-                                <span>{errors.batteryId}</span>
-                            </div>
+                            <p className="text-sm text-red-500">{errors.batteryId}</p>
                         )}
                     </div>
 
@@ -222,8 +219,8 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
 
                     {/* Select Target Station */}
                     <div className="space-y-2">
-                        <Label htmlFor="stationId" className="text-sm font-medium text-slate-700">
-                            Chọn trạm đích <span className="text-red-500">*</span>
+                        <Label htmlFor="stationId" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                            Chọn trạm đích
                         </Label>
                         <Select
                             value={selectedStationId}
@@ -251,10 +248,7 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
                             </SelectContent>
                         </Select>
                         {errors.stationId && (
-                            <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                <AlertCircle className="h-4 w-4" />
-                                <span>{errors.stationId}</span>
-                            </div>
+                            <p className="text-sm text-red-500">{errors.stationId}</p>
                         )}
                     </div>
 

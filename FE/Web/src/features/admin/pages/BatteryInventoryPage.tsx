@@ -103,7 +103,6 @@ export const BatteryInventoryPage: React.FC = () => {
 
             // Convert API batteries to UI format
             const convertedBatteries: Battery[] = apiBatteries.map((apiBattery: ApiBattery & { stationName?: string }) => {
-                console.log('API Battery data:', apiBattery); // Debug API response
 
                 // Extract all available fields from API response
                 const batteryData = {
@@ -127,7 +126,6 @@ export const BatteryInventoryPage: React.FC = () => {
                     price: (apiBattery as any).price || 0,
                 };
 
-                console.log('Converted battery data:', batteryData);
                 return batteryData;
             });
 

@@ -219,7 +219,7 @@ export class StationService {
     // Update station
     static async updateStation(id: string, data: UpdateStationRequest): Promise<Station> {
         try {
-            const response = await api.put(`/admin/stations/${id}`, data);
+            const response = await api.patch(`/admin/stations/${id}`, data);
             if (response.data.success) {
                 return response.data.data;
             }

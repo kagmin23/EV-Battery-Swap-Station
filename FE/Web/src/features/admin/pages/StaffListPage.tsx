@@ -361,8 +361,8 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
         <div className="p-6 space-y-8">
             {/* Header */}
             <PageHeader
-                title="Danh sách nhân viên"
-                description="Quản lý thông tin nhân viên trạm đổi pin"
+                title="Staff List"
+                description="Manage staff information"
             />
 
             {/* Error Alert */}
