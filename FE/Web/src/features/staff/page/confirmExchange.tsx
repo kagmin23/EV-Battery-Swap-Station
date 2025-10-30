@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { getSwapRequests, confirmSwapRequest } from '../apis/SwapApi';
 import type { SwapRequest } from '../apis/SwapApi';
 import { Spinner } from '@/components/ui/spinner';
+import Pagination from '../components/Pagination';
 
 export default function ConfirmExchange() {
   const navigate = useNavigate();
@@ -12,6 +13,8 @@ export default function ConfirmExchange() {
   const [isLoading, setIsLoading] = useState(true);
   const [isConfirming, setIsConfirming] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchSwapRequests();
@@ -23,6 +26,7 @@ export default function ConfirmExchange() {
       setError(null);
       const data = await getSwapRequests();
       setSwapRequests(data);
+      setCurrentPage(1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch swap requests');
       console.error('Error fetching swap requests:', err);
@@ -31,35 +35,33 @@ export default function ConfirmExchange() {
     }
   };
 
+  const handlePageChange = (page: number) => {
+    const totalPages = Math.max(1, Math.ceil(swapRequests.length / itemsPerPage));
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const totalItems = swapRequests.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentRequests = swapRequests.slice(startIndex, endIndex);
+
   const handleViewDetails = (requestId: string) => {
     navigate(`/staff/swap-request/${requestId}`);
   };
 
-  const handleConfirmExchange = async (request: SwapRequest) => {
-    try {
-      setIsConfirming(request.booking_id || request._id || '');
-      const requestId = request.booking_id || request._id;
-      if (!requestId) {
-        throw new Error('Request ID not found');
-      }
-      await confirmSwapRequest(requestId);
-      toast.success('Battery swap confirmed successfully!');
-      // Refresh the list
-      await fetchSwapRequests();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Unable to confirm battery swap');
-    } finally {
-      setIsConfirming(null);
-    }
-  };
+  
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending' },
       confirmed: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Confirmed' },
+      ready: { bg: 'bg-indigo-100', text: 'text-indigo-800', label: 'Ready' },
       completed: { bg: 'bg-green-100', text: 'text-green-800', label: 'Completed' },
       cancelled: { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelled' }
-    };
+    } as const;
     
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     return (
@@ -162,7 +164,7 @@ export default function ConfirmExchange() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {swapRequests.map((request) => {
+                {currentRequests.map((request) => {
                   const requestId = request.booking_id || request._id || '';
                   const isConfirmingThis = isConfirming === requestId;
                   
@@ -175,7 +177,7 @@ export default function ConfirmExchange() {
                         {request.user.phone}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {request.battery_info.serial}
+                        {request.battery_info?.serial || '--'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {request.station_name}
@@ -196,11 +198,49 @@ export default function ConfirmExchange() {
                             <Eye className="w-4 h-4" />
                           </button>
                           {request.status === 'pending' && (
+                            <>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    setIsConfirming(requestId);
+                                    await confirmSwapRequest(requestId);
+                                    toast.success('Booking confirmed');
+                                    await fetchSwapRequests();
+                                  } catch (err) {
+                                    toast.error(err instanceof Error ? err.message : 'Failed to confirm');
+                                  } finally {
+                                    setIsConfirming(null);
+                                  }
+                                }}
+                                disabled={isConfirmingThis}
+                                className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Confirm"
+                              >
+                                {isConfirmingThis ? (
+                                  <Clock className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <CheckCircle className="w-4 h-4" />
+                                )}
+                              </button>
+                            </>
+                          )}
+                          {request.status === 'ready' && (
                             <button
-                              onClick={() => handleConfirmExchange(request)}
+                              onClick={async () => {
+                                try {
+                                  setIsConfirming(requestId);
+                                  await confirmSwapRequest(requestId, 'completed');
+                                  toast.success('Swap completed');
+                                  await fetchSwapRequests();
+                                } catch (err) {
+                                  toast.error(err instanceof Error ? err.message : 'Failed to complete');
+                                } finally {
+                                  setIsConfirming(null);
+                                }
+                              }}
                               disabled={isConfirmingThis}
                               className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Confirm Swap"
+                              title="Complete Swap"
                             >
                               {isConfirmingThis ? (
                                 <Clock className="w-4 h-4 animate-spin" />
@@ -218,6 +258,14 @@ export default function ConfirmExchange() {
             </table>
           </div>
         </div>
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+        />
 
         {/* Summary */}
         <div className="mt-6 text-sm text-gray-600">

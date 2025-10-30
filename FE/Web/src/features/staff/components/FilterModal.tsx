@@ -6,6 +6,7 @@ interface FilterModalProps {
   onClose: () => void;
   onApply: (filters: FilterValues) => void;
   onReset: () => void;
+  models: string[];
 }
 
 export interface FilterValues {
@@ -19,28 +20,12 @@ export interface FilterValues {
   dateTo?: string;
 }
 
-const batteryModels = [
-  "VinFast VF8 75kWh",
-  "VinFast VF9 92kWh",
-  "Tesla Model 3 60kWh",
-  "Tesla Model S 100kWh",
-  "BYD Blade 82kWh",
-];
-
-const statusOptions = [
-  { value: "charging", label: "Charging" },
-  { value: "full", label: "Full" },
-  { value: "faulty", label: "Faulty" },
-  { value: "in-use", label: "In Use" },
-  { value: "idle", label: "Idle" },
-  { value: "is-booking", label: "Is Booking" },
-];
-
 export default function FilterModal({
   isOpen,
   onClose,
   onApply,
   onReset,
+  models,
 }: FilterModalProps) {
   const [filters, setFilters] = useState<FilterValues>({
     model: "",
@@ -122,7 +107,7 @@ export default function FilterModal({
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
               >
                 <option value="">All Models</option>
-                {batteryModels.map((model) => (
+                {models.map((model) => (
                   <option key={model} value={model}>
                     {model}
                   </option>
@@ -141,11 +126,12 @@ export default function FilterModal({
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
               >
                 <option value="">All Status</option>
-                {statusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
+                <option value="charging">Charging</option>
+                <option value="full">Full</option>
+                <option value="faulty">Faulty</option>
+                <option value="in-use">In Use</option>
+                <option value="idle">Idle</option>
+                <option value="is-booking">Is Booking</option>
               </select>
             </div>
 

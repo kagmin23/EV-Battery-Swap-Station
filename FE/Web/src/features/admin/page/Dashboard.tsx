@@ -134,7 +134,25 @@ export default function Dashboard() {
     idle: batteries.filter(b => b.status === 'idle').length,
     full: batteries.filter(b => b.status === 'full').length,
     'in-use': batteries.filter(b => b.status === 'in-use').length,
+    'is-booking': batteries.filter(b => b.status === 'is-booking').length,
+  } as const;
+
+  // Display mapping: label and color for each raw status key
+  const statusDisplayMap: Record<keyof typeof batteryByStatus, { label: string; color: string }> = {
+    charging: { label: 'Charging', color: '#F97316' }, // orange-500
+    faulty: { label: 'Faulty', color: '#EF4444' }, // red-500
+    idle: { label: 'Idle', color: '#6B7280' }, // gray-500
+    full: { label: 'Full', color: '#22C55E' }, // green-500
+    'in-use': { label: 'In Use', color: '#3B82F6' }, // blue-500
+    'is-booking': { label: 'Is Booking', color: '#6C47FF' }, // violet custom
   };
+
+  // Convert to display-friendly object for chart consumption
+  const batteryByStatusDisplay = Object.entries(batteryByStatus).reduce<Record<string, number>>((acc, [key, value]) => {
+    const display = statusDisplayMap[key as keyof typeof batteryByStatus];
+    acc[display.label] = value;
+    return acc;
+  }, {});
 
   const pendingSupport = getPendingSupportRequestsCount();
   const lowHealthBatteries = batteries.filter(b => b.soh < 85).length;
@@ -223,13 +241,31 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Battery Status & Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
-        <BatteryStatusChart batteryByStatus={batteryByStatus} />
-        <AlertsPanel
-          lowHealthBatteries={lowHealthBatteries}
-          pendingSupport={pendingSupport}
-        />
+      {/* Battery Status (only one below, with legend and numbers) */}
+      <div className="mb-8">
+        <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+          <h2 className="text-xl font-bold mb-4 text-slate-900">Battery Status Distribution</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            <div>
+              {Object.keys(batteryByStatus).map((rawKey) => {
+                const { label, color } = statusDisplayMap[rawKey as keyof typeof batteryByStatus];
+                return (
+                  <div key={rawKey} className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: color }}></span>
+                      <span className="text-slate-700">{label}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex flex-col items-end text-right">
+              {Object.keys(batteryByStatus).map((rawKey) => (
+                <div key={rawKey} className="mb-4 text-slate-900 text-base">{batteryByStatus[rawKey as keyof typeof batteryByStatus]}</div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Recent Transactions */}
