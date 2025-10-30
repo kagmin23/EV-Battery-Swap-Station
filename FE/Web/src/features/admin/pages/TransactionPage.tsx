@@ -11,10 +11,13 @@ import {
     TrendingUp,
     Users,
     RotateCcw,
+    Grid,
+    List,
     ChevronLeft,
     ChevronRight
 } from 'lucide-react';
 import { TransactionCard } from '../components/TransactionCard';
+import { TransactionTable } from '../components/TransactionTable';
 import { TransactionDetailModal } from '../components/TransactionDetailModal';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
@@ -25,6 +28,7 @@ import type { Transaction, TransactionFilters } from '../types/transaction';
 
 export const TransactionPage: React.FC = () => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const [stations, setStations] = useState<Array<{ id: string; name: string }>>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -130,6 +134,7 @@ export const TransactionPage: React.FC = () => {
             // Success message removed to avoid notification spam
             // Note: Filtering is done client-side, pagination will be handled in render
         } catch (err) {
+            setTransactions([]);
             setError('Unable to load transactions. Please try again later.');
             console.error('Error loading transactions:', err);
         } finally {
@@ -239,7 +244,7 @@ export const TransactionPage: React.FC = () => {
                 />
                 <StatsCard
                     title="Total Revenue"
-                    value={new Intl.NumberFormat('vi-VN', {
+                    value={new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: 'VND',
                         notation: 'compact'
@@ -252,7 +257,7 @@ export const TransactionPage: React.FC = () => {
                 />
                 <StatsCard
                     title="Average Cost"
-                    value={new Intl.NumberFormat('vi-VN', {
+                    value={new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: 'VND',
                         notation: 'compact'
@@ -377,6 +382,24 @@ export const TransactionPage: React.FC = () => {
                                 {transactions.length}
                             </span>
                         </CardTitle>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant={viewMode === 'grid' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setViewMode('grid')}
+                                className={`h-9 ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white'} rounded-lg`}
+                            >
+                                <Grid className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant={viewMode === 'table' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setViewMode('table')}
+                                className={`h-9 ${viewMode === 'table' ? 'bg-blue-600 text-white' : 'bg-white'} rounded-lg`}
+                            >
+                                <List className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent className="m-0 p-6 max-h-[600px] overflow-y-auto custom-scrollbar">
@@ -393,15 +416,19 @@ export const TransactionPage: React.FC = () => {
                             </p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {paginatedTransactions.map((transaction) => (
-                                <TransactionCard
-                                    key={transaction.id}
-                                    transaction={transaction}
-                                    onViewDetails={handleViewTransactionDetails}
-                                />
-                            ))}
-                        </div>
+                        viewMode === 'grid' ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {paginatedTransactions.map((transaction) => (
+                                    <TransactionCard
+                                        key={transaction.id}
+                                        transaction={transaction}
+                                        onViewDetails={handleViewTransactionDetails}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <TransactionTable transactions={paginatedTransactions} onViewDetails={handleViewTransactionDetails} />
+                        )
                     )}
                 </CardContent>
             </Card>

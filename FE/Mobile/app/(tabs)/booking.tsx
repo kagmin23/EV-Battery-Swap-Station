@@ -327,6 +327,7 @@ export default function BookingScreen() {
                     vehicles={vehicles}
                     getSelectedBatteryId={getSelectedBatteryId}
                     checkDuplicateBooking={checkDuplicateBooking}
+                    batteryPrice={getSelectedBatteryInfo()?.price || 0}
                 />
 
                 <Modal visible={showDatePicker} transparent animationType="fade" onRequestClose={() => setShowDatePicker(false)}>

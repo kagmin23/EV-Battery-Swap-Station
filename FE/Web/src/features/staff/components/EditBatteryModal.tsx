@@ -31,7 +31,7 @@ export default function EditBatteryModal({ isOpen, onClose, battery, onSave }: E
 
     const sohValue = parseInt(soh);
     if (isNaN(sohValue) || sohValue < 0 || sohValue > 100) {
-      setError('SOH phải là số từ 0 đến 100');
+      setError('SOH must be a number from 0 to 100');
       return;
     }
 
@@ -43,7 +43,7 @@ export default function EditBatteryModal({ isOpen, onClose, battery, onSave }: E
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không thể cập nhật pin');
+      setError(err instanceof Error ? err.message : 'Unable to update battery');
     } finally {
       setIsSaving(false);
     }
@@ -55,9 +55,9 @@ export default function EditBatteryModal({ isOpen, onClose, battery, onSave }: E
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Cập nhật Pin</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Update Battery</h2>
             <p className="text-sm text-gray-600 mt-1">
-              Số Serial: {battery.serial}
+              Serial Number: {battery.serial}
             </p>
           </div>
           <button
@@ -80,7 +80,7 @@ export default function EditBatteryModal({ isOpen, onClose, battery, onSave }: E
           {/* Status */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Trạng thái <span className="text-red-500">*</span>
+              Status <span className="text-red-500">*</span>
             </label>
             <select
               value={status}
@@ -114,7 +114,7 @@ export default function EditBatteryModal({ isOpen, onClose, battery, onSave }: E
               required
             />
             <p className="text-xs text-gray-500 mt-1">
-              Nhập giá trị từ 0 đến 100
+              Enter a value from 0 to 100
             </p>
           </div>
 
@@ -126,14 +126,14 @@ export default function EditBatteryModal({ isOpen, onClose, battery, onSave }: E
               className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               disabled={isSaving}
             >
-              Hủy
+              Cancel
             </button>
             <button
               type="submit"
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSaving}
             >
-              {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </form>

@@ -67,6 +67,22 @@ export interface BatteryResponse {
     };
 }
 
+export interface BatteryLogsResponse {
+    success: boolean;
+    data: {
+        battery: {
+            id: string;
+            serial: string;
+            model?: string;
+            status: string;
+            soh: number;
+            station?: { _id: string; stationName: string; address?: string };
+            lastUpdated?: string;
+        };
+        history: Array<any>;
+    };
+}
+
 // Create axios instance
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -205,6 +221,43 @@ export class BatteryService {
                             throw new Error('Forbidden: You do not have permission to access batteries');
                         case 404:
                             throw new Error('Not Found: Batteries endpoint not found');
+                        case 500:
+                            throw new Error('Internal Server Error: Please try again later');
+                        default:
+                            throw new Error(`Error ${status}: ${message}`);
+                    }
+                } else if (error.request) {
+                    throw new Error('Network Error: Please check your internet connection');
+                } else {
+                    throw new Error(`Request Error: ${error.message}`);
+                }
+            }
+            throw new Error('An unexpected error occurred');
+        }
+    }
+
+    // Get battery logs/history (admin)
+    static async getBatteryLogs(id: string): Promise<BatteryLogsResponse['data']> {
+        try {
+            const response = await api.get(`/batteries/${id}/logs`);
+            if (response.data.success) {
+                return response.data.data;
+            }
+            throw new Error(response.data.message || 'Failed to fetch battery logs');
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    const status = error.response.status;
+                    const message = error.response.data?.message || 'Server error';
+                    switch (status) {
+                        case 400:
+                            throw new Error(`Bad Request: ${message}`);
+                        case 401:
+                            throw new Error('Unauthorized: Please login again');
+                        case 403:
+                            throw new Error('Forbidden: You do not have permission to access this resource');
+                        case 404:
+                            throw new Error('Not Found: Battery not found');
                         case 500:
                             throw new Error('Internal Server Error: Please try again later');
                         default:

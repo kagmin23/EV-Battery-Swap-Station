@@ -83,9 +83,9 @@ export default function TransferBatteryModal({
               <MapPin className="w-6 h-6 text-text-primary" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-text-primary"> Chuyển đến Trạm</h2>
+              <h2 className="text-2xl font-bold text-text-primary">Transfer to Station</h2>
               <p className="text-sm text-text-secondary mt-1">
-                Trạm hiện tại: {currentStationData?.station_name}
+                Current Station: {currentStationData?.station_name}
               </p>
             </div>
           </div>
@@ -115,13 +115,13 @@ export default function TransferBatteryModal({
               <div>
                 <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
                   <BatteryIcon className="w-5 h-5" />
-                  Chọn Pin ({selectedBatteries.length} đã chọn)
+                  Select Batteries ({selectedBatteries.length} selected)
                 </h3>
                 <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                   {availableBatteries.length === 0 ? (
                     <div className="text-center py-8 text-text-secondary">
                       <AlertCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      Không có pin nào để chuyển
+                      No batteries available to transfer
                     </div>
                   ) : (
                     availableBatteries.map((battery) => (
@@ -144,15 +144,15 @@ export default function TransferBatteryModal({
                         </div>
                         <div className="space-y-1 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-text-secondary">Mẫu:</span>
+                            <span className="text-text-secondary">Model:</span>
                             <span className="text-text-primary">{battery.model || 'N/A'}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-text-secondary">Dung lượng:</span>
+                            <span className="text-text-secondary">Capacity:</span>
                             <span className="text-text-primary">{battery.capacity_kWh || 0} kWh</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-text-secondary">Tình trạng:</span>
+                            <span className="text-text-secondary">Health (SOH):</span>
                             <span className={`font-semibold ${
                               battery.soh >= 90 ? 'text-green-400' :
                               battery.soh >= 70 ? 'text-yellow-400' :
@@ -162,7 +162,7 @@ export default function TransferBatteryModal({
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-text-secondary">Trạng thái:</span>
+                            <span className="text-text-secondary">Status:</span>
                             <span className={`text-xs px-2 py-1 rounded ${
                               battery.status === 'full' ? 'bg-green-600 text-white' :
                               battery.status === 'charging' ? 'bg-blue-600 text-white' :
@@ -184,7 +184,7 @@ export default function TransferBatteryModal({
               <div>
                 <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
                   <MapPin className="w-5 h-5" />
-                  Chọn Trạm
+                  Select Station
                 </h3>
                 <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                   {availableStations.map((station) => (
@@ -210,11 +210,11 @@ export default function TransferBatteryModal({
                       </div>
                       <div className="space-y-1 text-sm">
                         <div className="flex items-start gap-2">
-                          <span className="text-text-secondary">Vị trí:</span>
+                          <span className="text-text-secondary">Location:</span>
                           <span className="text-text-primary flex-1">{station.location}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-text-secondary">Dung lượng</span>
+                          <span className="text-text-secondary">Capacity</span>
                           <span className="text-text-primary font-medium">{station.capacity} batteries</span>
                         </div>
                         <div className="flex justify-between">

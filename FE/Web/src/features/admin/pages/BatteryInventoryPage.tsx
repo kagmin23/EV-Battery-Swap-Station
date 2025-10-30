@@ -19,13 +19,15 @@ import {
     Plus,
     Edit,
     Trash2,
-    Loader2
+    Loader2,
+    BookOpen
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
 import { PageLoadingSpinner, ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
 import { BatteryService, type Battery as ApiBattery, type BatteryFilters as ApiBatteryFilters } from '@/services/api/batteryService';
+import { UserService } from '@/services/api/userService';
 import { StationService, type Station as ApiStation } from '@/services/api/stationService';
 import { AddBatteryModal } from '../components/AddBatteryModal';
 import { EditBatteryModal } from '../components/EditBatteryModal';
@@ -55,6 +57,11 @@ export const BatteryInventoryPage: React.FC = () => {
     const [editingBattery, setEditingBattery] = useState<Battery | null>(null);
     const [deletingBatteryId, setDeletingBatteryId] = useState<string | null>(null);
     const [submitError, setSubmitError] = useState<string | null>(null);
+    const [logsOpen, setLogsOpen] = useState(false);
+    const [logsLoading, setLogsLoading] = useState(false);
+    const [logsBattery, setLogsBattery] = useState<Battery | null>(null);
+    const [logsData, setLogsData] = useState<{ battery: any; history: any[] } | null>(null);
+    const [logsUserNameMap, setLogsUserNameMap] = useState<Record<string, string>>({});
 
     // Confirmation modal states
     const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
@@ -72,6 +79,36 @@ export const BatteryInventoryPage: React.FC = () => {
             setStations(stationList);
         } catch (err) {
             console.error('Error loading stations:', err);
+        }
+    };
+
+    const handleOpenLogs = async (battery: Battery) => {
+        try {
+            setLogsBattery(battery);
+            setLogsOpen(true);
+            setLogsLoading(true);
+            const data = await BatteryService.getBatteryLogs(battery.id);
+            setLogsData(data);
+            // Resolve user names referenced by ids within logs
+            const ids = new Set<string>();
+            (data.history || []).forEach((raw: any) => {
+                let item = raw;
+                if (typeof raw === 'string') { try { item = JSON.parse(raw); } catch { item = {}; } }
+                const uid = item.user?._id || item.driver?._id || item.user_id || item.driver_id;
+                if (uid && typeof uid === 'string') ids.add(uid);
+            });
+            if (ids.size > 0) {
+                const entries = await Promise.all(Array.from(ids).map(async (id) => {
+                    try { const res = await UserService.getUserById(id); return [id, res.data.fullName] as const; } catch { return [id, 'Unknown']; }
+                }));
+                const map: Record<string, string> = {};
+                entries.forEach(([id, name]) => { map[id] = name; });
+                setLogsUserNameMap(map);
+            }
+        } catch (err) {
+            console.error('Failed to load battery logs', err);
+        } finally {
+            setLogsLoading(false);
         }
     };
 
@@ -422,6 +459,12 @@ export const BatteryInventoryPage: React.FC = () => {
                                     >
                                         Idle
                                     </SelectItem>
+                                    <SelectItem
+                                        value="is-booking"
+                                        className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                                    >
+                                        Đặt trước
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -623,6 +666,14 @@ export const BatteryInventoryPage: React.FC = () => {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
+                                                onClick={(e) => { e.stopPropagation(); handleOpenLogs(battery); }}
+                                                className="hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 transition-all duration-200 border-slate-200 hover:shadow-sm"
+                                            >
+                                                <BookOpen className="h-4 w-4 mr-2" />Logs
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleEditBattery(battery);
@@ -662,6 +713,7 @@ export const BatteryInventoryPage: React.FC = () => {
                                 batteries={filteredBatteries}
                                 onEdit={handleEditBattery}
                                 onDelete={handleDeleteBattery}
+                                onLogs={handleOpenLogs}
                                 deletingBatteryId={deletingBatteryId}
                             />
                         </div>
@@ -850,6 +902,94 @@ export const BatteryInventoryPage: React.FC = () => {
                 type={confirmationAction || 'edit'}
                 isLoading={deletingBatteryId === confirmationBattery?.id}
             />
+
+            {/* Battery Logs Modal */}
+            {logsOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setLogsOpen(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center space-x-3">
+                                    <div className="p-3 bg-amber-100 rounded-xl">
+                                        <BookOpen className="h-8 w-8 text-amber-600" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-slate-800">Battery Logs</h2>
+                                        <p className="text-slate-500">Battery #{logsBattery?.batteryId}</p>
+                                    </div>
+                                </div>
+                                <Button variant="ghost" size="icon" onClick={() => setLogsOpen(false)} className="h-10 w-10 rounded-full hover:bg-slate-100">×</Button>
+                            </div>
+
+                            {logsLoading ? (
+                                <div className="py-10 flex justify-center"><PageLoadingSpinner text="Loading logs..." /></div>
+                            ) : logsData ? (
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                            <div className="text-slate-500 text-sm">Status</div>
+                                            <div className="font-semibold text-slate-900 capitalize">{logsData.battery.status}</div>
+                                        </div>
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                            <div className="text-slate-500 text-sm">SOH</div>
+                                            <div className="font-semibold text-slate-900">{logsData.battery.soh}%</div>
+                                        </div>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 p-4">
+                                        <div className="text-slate-700 font-semibold mb-3">History</div>
+                                        {logsData.history && logsData.history.length > 0 ? (
+                                            <ul className="space-y-3">
+                                                {logsData.history.map((raw, idx) => {
+                                                    let item: any = raw;
+                                                    if (typeof raw === 'string') {
+                                                        try { item = JSON.parse(raw); } catch { item = { details: raw }; }
+                                                    }
+                                                    const at = item.at || item.createdAt || item.updatedAt;
+                                                    const time = at ? new Date(at) : null;
+                                                    const idGuess = item.user?._id || item.driver?._id || item.user_id || item.driver_id;
+                                                    const userName = item.driver?.name || item.user?.fullName || item.user?.name || (idGuess ? logsUserNameMap[idGuess] : undefined);
+                                                    // Only show vehicle if we have a friendly plate/name
+                                                    const vehicle = item.vehicle?.plate || item.vehiclePlate || item.vehicleName || undefined;
+                                                    const soh = item.soh ?? item.SOH ?? undefined;
+                                                    const action = (item.action || item.status || 'update') as string;
+                                                    const stationName = item.station?.stationName || item.station?.name || undefined;
+                                                    const details = item.details || '';
+                                                    const actionColor =
+                                                        action === 'swap' ? 'bg-blue-100 border-blue-200 text-blue-700'
+                                                        : action === 'return' ? 'bg-green-100 border-green-200 text-green-700'
+                                                        : action === 'check-out' || action === 'checkout' ? 'bg-amber-100 border-amber-200 text-amber-700'
+                                                        : 'bg-slate-100 border-slate-200 text-slate-700';
+                                                    return (
+                                                        <li key={idx} className="border rounded-lg p-3 bg-white">
+                                                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                                                                <span className={`px-2 py-0.5 text-xs rounded-full border capitalize ${actionColor}`}>{action}</span>
+                                                                {time && <span className="text-xs text-slate-500">{new Intl.DateTimeFormat('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(time)}</span>}
+                                                                {typeof soh === 'number' && <span className="text-xs text-slate-600">SOH: <span className="font-semibold">{soh}%</span></span>}
+                                                            </div>
+                                                            <div className="text-sm text-slate-800">
+                                                                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                                                    {userName && <span><span className="text-slate-500">User:</span> {userName}</span>}
+                                                                    {vehicle && <span><span className="text-slate-500">Vehicle:</span> {vehicle}</span>}
+                                                                    {stationName && <span><span className="text-slate-500">Station:</span> {stationName}</span>}
+                                                                </div>
+                                                                {details && <div className="mt-1 text-slate-700">{details}</div>}
+                                                            </div>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        ) : (
+                                            <div className="text-slate-600 text-sm">No history entries.</div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-slate-600">No data.</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

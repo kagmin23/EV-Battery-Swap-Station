@@ -19,14 +19,14 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
     onViewDetails
 }) => {
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('vi-VN', {
+        return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'VND'
         }).format(amount);
     };
 
     const formatDateTime = (date: Date) => {
-        return new Intl.DateTimeFormat('vi-VN', {
+        return new Intl.DateTimeFormat('en-US', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -37,13 +37,13 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
 
     const getTransactionType = () => {
         if (transaction.batteryGiven && transaction.batteryReturned) {
-            return { label: 'Đổi pin', variant: 'default' as const };
+            return { label: 'Swap', variant: 'default' as const };
         } else if (transaction.batteryGiven) {
-            return { label: 'Lấy pin', variant: 'success' as const };
+            return { label: 'Pick Up', variant: 'success' as const };
         } else if (transaction.batteryReturned) {
-            return { label: 'Trả pin', variant: 'warning' as const };
+            return { label: 'Return', variant: 'warning' as const };
         }
-        return { label: 'Không xác định', variant: 'secondary' as const };
+        return { label: 'Unknown', variant: 'secondary' as const };
     };
 
     const transactionType = getTransactionType();
@@ -78,7 +78,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
                     <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-2 rounded-lg">
                         <MapPin className="h-4 w-4 mr-2 text-blue-500" />
                         <span className="truncate font-medium">
-                            {transaction.stationName || 'Trạm không xác định'}
+                            {transaction.stationName || 'Unknown station'}
                         </span>
                     </div>
 
@@ -93,7 +93,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
                         <div className="flex items-center text-sm text-slate-600 bg-green-50 p-2 rounded-lg">
                             <Battery className="h-4 w-4 mr-2 text-green-500" />
                             <span className="truncate font-medium">
-                                Pin lấy: {transaction.batteryGiven}
+                                Battery picked: {transaction.batteryGiven}
                             </span>
                         </div>
                     )}
@@ -102,7 +102,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
                         <div className="flex items-center text-sm text-slate-600 bg-orange-50 p-2 rounded-lg">
                             <Battery className="h-4 w-4 mr-2 text-orange-500" />
                             <span className="truncate font-medium">
-                                Pin trả: {transaction.batteryReturned}
+                                Battery returned: {transaction.batteryReturned}
                             </span>
                         </div>
                     )}
@@ -117,7 +117,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
                     )}
 
                     <div className="flex items-center justify-between text-xs text-slate-500 bg-slate-100 px-3 py-2 rounded-lg">
-                        <span className="font-medium">Chi phí:</span>
+                        <span className="font-medium">Cost:</span>
                         <span className="font-semibold text-green-600">
                             {formatCurrency(transaction.cost)}
                         </span>
