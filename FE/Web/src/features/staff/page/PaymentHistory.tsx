@@ -46,7 +46,7 @@ const mockPaymentTransactions: PaymentTransaction[] = [
   {
     transaction_id: "TXN001",
     user_id: "USR001",
-    user_name: "Nguyen Van A",
+    user_name: "John Smith",
     station_id: "ST001",
     station_name: "Downtown Swap Station",
     battery_given: "BAT015",
@@ -60,7 +60,7 @@ const mockPaymentTransactions: PaymentTransaction[] = [
   {
     transaction_id: "TXN002",
     user_id: "USR002",
-    user_name: "Tran Thi B",
+    user_name: "Emily Johnson",
     station_id: "ST001",
     station_name: "Downtown Swap Station",
     battery_given: "BAT021",
@@ -74,7 +74,7 @@ const mockPaymentTransactions: PaymentTransaction[] = [
   {
     transaction_id: "TXN003",
     user_id: "USR003",
-    user_name: "Le Van C",
+    user_name: "Michael Brown",
     station_id: "ST001",
     station_name: "Downtown Swap Station",
     battery_given: "BAT012",
@@ -88,7 +88,7 @@ const mockPaymentTransactions: PaymentTransaction[] = [
   {
     transaction_id: "TXN004",
     user_id: "USR004",
-    user_name: "Pham Thi D",
+    user_name: "Sarah Davis",
     station_id: "ST001",
     station_name: "Downtown Swap Station",
     battery_given: "BAT017",
@@ -102,7 +102,7 @@ const mockPaymentTransactions: PaymentTransaction[] = [
   {
     transaction_id: "TXN005",
     user_id: "USR005",
-    user_name: "Hoang Van E",
+    user_name: "David Wilson",
     station_id: "ST001",
     station_name: "Downtown Swap Station",
     battery_given: "BAT022",
@@ -116,7 +116,7 @@ const mockPaymentTransactions: PaymentTransaction[] = [
   {
     transaction_id: "TXN006",
     user_id: "USR006",
-    user_name: "Vo Thi F",
+    user_name: "Emma Martinez",
     station_id: "ST001",
     station_name: "Downtown Swap Station",
     battery_given: "BAT009",
@@ -130,7 +130,7 @@ const mockPaymentTransactions: PaymentTransaction[] = [
   {
     transaction_id: "TXN007",
     user_id: "USR007",
-    user_name: "Nguyen Van G",
+    user_name: "James Anderson",
     station_id: "ST001",
     station_name: "Downtown Swap Station",
     battery_given: "BAT019",
@@ -144,7 +144,7 @@ const mockPaymentTransactions: PaymentTransaction[] = [
   {
     transaction_id: "TXN008",
     user_id: "USR001",
-    user_name: "Nguyen Van A",
+    user_name: "John Smith",
     station_id: "ST001",
     station_name: "Downtown Swap Station",
     battery_given: "BAT011",

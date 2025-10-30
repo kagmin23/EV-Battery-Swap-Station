@@ -3,32 +3,30 @@ import axios from 'axios';
 const API_BASE_URL = 'http://localhost:8001/api';
 
 export interface SwapRequest {
-    _id: string;
-    driver: {
-        _id: string;
-        fullName: string;
-        phoneNumber: string;
-        email: string;
+    booking_id: string;
+    user: {
+        id: string;
+        name: string;
+        phone: string;
+        email?: string;
     };
-    oldBattery: {
-        _id: string;
+    vehicle_id: string;
+    station_id: string;
+    station_name: string;
+    battery_id: string;
+    battery_info: {
         serial: string;
-        model?: string;
+        model: string;
         soh: number;
         status: string;
+        manufacturer?: string;
+        capacity_kWh?: number;
+        voltage?: number;
     };
-    newBattery?: {
-        _id: string;
-        serial: string;
-        model?: string;
-        soh: number;
-        status: string;
-    };
-    station: string;
+    scheduled_time: string;
     status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-    requestedAt: string;
-    confirmedAt?: string;
-    completedAt?: string;
+    created_at: string;
+    _id?: string; // Keep for backward compatibility
 }
 
 export interface ApiResponse<T> {

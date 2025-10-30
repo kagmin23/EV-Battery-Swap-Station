@@ -28,11 +28,12 @@ const batteryModels = [
 ];
 
 const statusOptions = [
-  { value: "available", label: "Sẵn sàng" },
-  { value: "in_use", label: "Đang sử dụng" },
-  { value: "charging", label: "Đang sạc" },
-  { value: "maintenance", label: "Bảo trì" },
-  { value: "retired", label: "Ngừng sử dụng" },
+  { value: "charging", label: "Charging" },
+  { value: "full", label: "Full" },
+  { value: "faulty", label: "Faulty" },
+  { value: "in-use", label: "In Use" },
+  { value: "idle", label: "Idle" },
+  { value: "is-booking", label: "Is Booking" },
 ];
 
 export default function FilterModal({
@@ -95,14 +96,14 @@ export default function FilterModal({
                 <Filter className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Bộ lọc nâng cao</h2>
-                <p className="text-sm text-gray-600">Tùy chỉnh tiêu chí tìm kiếm</p>
+                <h2 className="text-xl font-bold text-gray-900">Advanced Filters</h2>
+                <p className="text-sm text-gray-600">Customize search criteria</p>
               </div>
             </div>
             <button
               onClick={onClose}
               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-200 transition-colors"
-              aria-label="Đóng"
+              aria-label="Close"
             >
               <X className="w-5 h-5 text-gray-600" />
             </button>
@@ -113,14 +114,14 @@ export default function FilterModal({
             {/* Model Filter */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Mẫu pin
+                Battery Model
               </label>
               <select
                 value={filters.model}
                 onChange={(e) => updateFilter("model", e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
               >
-                <option value="">Tất cả mẫu</option>
+                <option value="">All Models</option>
                 {batteryModels.map((model) => (
                   <option key={model} value={model}>
                     {model}
@@ -132,14 +133,14 @@ export default function FilterModal({
             {/* Status Filter */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Trạng thái
+                Status
               </label>
               <select
                 value={filters.status}
                 onChange={(e) => updateFilter("status", e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
               >
-                <option value="">Tất cả trạng thái</option>
+                <option value="">All Status</option>
                 {statusOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -151,11 +152,11 @@ export default function FilterModal({
             {/* SOH Range */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Tình trạng sức khỏe (SOH)
+                State of Health (SOH)
               </label>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Từ (%)</label>
+                  <label className="block text-xs text-gray-600 mb-1">From (%)</label>
                   <input
                     type="number"
                     min="0"
@@ -167,7 +168,7 @@ export default function FilterModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Đến (%)</label>
+                  <label className="block text-xs text-gray-600 mb-1">To (%)</label>
                   <input
                     type="number"
                     min="0"
@@ -184,11 +185,11 @@ export default function FilterModal({
             {/* Capacity Range */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Dung lượng (kWh)
+                Capacity (kWh)
               </label>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Từ (kWh)</label>
+                  <label className="block text-xs text-gray-600 mb-1">From (kWh)</label>
                   <input
                     type="number"
                     min="0"
@@ -199,7 +200,7 @@ export default function FilterModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Đến (kWh)</label>
+                  <label className="block text-xs text-gray-600 mb-1">To (kWh)</label>
                   <input
                     type="number"
                     min="0"
@@ -215,11 +216,11 @@ export default function FilterModal({
             {/* Date Range */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Khoảng thời gian
+                Time Range
               </label>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Từ ngày</label>
+                  <label className="block text-xs text-gray-600 mb-1">From Date</label>
                   <input
                     type="date"
                     value={filters.dateFrom}
@@ -228,7 +229,7 @@ export default function FilterModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Đến ngày</label>
+                  <label className="block text-xs text-gray-600 mb-1">To Date</label>
                   <input
                     type="date"
                     value={filters.dateTo}
@@ -247,20 +248,20 @@ export default function FilterModal({
               className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <RotateCcw className="w-4 h-4" />
-              Đặt lại
+              Reset
             </button>
             <div className="flex gap-3">
               <button
                 onClick={onClose}
                 className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                Hủy
+                Cancel
               </button>
               <button
                 onClick={handleApply}
                 className="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
               >
-                Áp dụng bộ lọc
+                Apply Filters
               </button>
             </div>
           </div>

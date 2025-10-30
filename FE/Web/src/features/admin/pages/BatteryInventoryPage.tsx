@@ -422,6 +422,12 @@ export const BatteryInventoryPage: React.FC = () => {
                                     >
                                         Idle
                                     </SelectItem>
+                                    <SelectItem
+                                        value="is-booking"
+                                        className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                                    >
+                                        Đặt trước
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
