@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     Dialog,
     DialogContent,
@@ -11,13 +9,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Plus, Grid, List, Users, Activity, Car, Star, Calendar, User, AlertCircle, ChevronLeft, ChevronRight, UserX } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../components/PageHeader';
@@ -90,23 +81,10 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
     });
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        licenseNumber: '',
-        licenseType: '',
-        address: '',
-        city: '',
-        subscriptionPlan: '',
-        vehicleModel: '',
-        vehiclePlate: ''
-    });
     const [isLoading, setIsLoading] = useState(true);
     const [isResetting, setIsResetting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState<number>(1);
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [suspendingDriverId, setSuspendingDriverId] = useState<string | null>(null);
     const [activatingDriverId, setActivatingDriverId] = useState<string | null>(null);
     const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
