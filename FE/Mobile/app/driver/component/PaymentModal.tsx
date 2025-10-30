@@ -5,6 +5,7 @@ import { showErrorToast, showSuccessToast } from '@/utils/toast';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useMemo } from 'react';
 import { Linking, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import * as ExpoLinking from 'expo-linking';
 
 interface PaymentModalProps {
     visible: boolean;
@@ -16,6 +17,7 @@ interface PaymentModalProps {
     vehicles: any[];
     getSelectedBatteryId: () => string | null;
     checkDuplicateBooking: (vehicleId: string, stationId: string, scheduledTime: Date) => boolean;
+    batteryPrice: number; // Giá pin được truyền từ booking.tsx
 }
 
 export default function PaymentModal({
@@ -28,6 +30,7 @@ export default function PaymentModal({
     vehicles,
     getSelectedBatteryId,
     checkDuplicateBooking,
+    batteryPrice, // destructure nhận giá pin
 }: PaymentModalProps) {
     const router = useRouter();
     const createBookingMutation = useCreateBooking();
@@ -78,6 +81,7 @@ export default function PaymentModal({
 
     const handlePayWithVnPay = useCallback(async () => {
         const vehicle = vehicles.find(x => x.vehicleId === selectedVehicleId);
+
         if (!vehicle) return showErrorToast('Vehicle not found');
 
         const batteryId = getSelectedBatteryId();
@@ -100,16 +104,21 @@ export default function PaymentModal({
             }
 
             // 2. create payment VNPAY
-            // ✅ Dùng deep link của Expo
-            const returnUrl = "exp://192.168.1.38:8081/--/payment-success";
+            // ✅ Tạo returnUrl tự động theo môi trường (Expo Go hay app build)
+            const returnUrl = ExpoLinking.createURL('/payment-success', {
+                queryParams: {
+                    amount: String(batteryPrice),
+                    stationName: station.name || station.stationName || '',
+                },
+            });
 
             const paymentRes = await createPayment({
-                amount: vehicle.price || 100000,
+                amount: batteryPrice,
                 bookingId: bookingId,
                 returnUrl,
             });
 
-
+            console.log('paymentRes', paymentRes);
             if (!paymentRes) {
                 return showErrorToast('Payment failed - no response');
             }
@@ -134,7 +143,7 @@ export default function PaymentModal({
         }
     }, [
         vehicles, selectedVehicleId, station, scheduled,
-        getSelectedBatteryId, createBooking, createPayment, onClose
+        getSelectedBatteryId, createBooking, createPayment, onClose, batteryPrice
     ]);
 
     return (

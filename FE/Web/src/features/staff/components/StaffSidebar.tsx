@@ -5,7 +5,6 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
-  BarChart3,
   ClipboardCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -18,8 +17,8 @@ interface StaffSidebarProps {
 
 const menuItems = [
   {
-    id: 'dashboard',
-    label: 'Dashboard',
+    id: 'station',
+    label: 'Station',
     icon: Home,
     description: 'Overview',
     path: '/staff/dashboard'
@@ -37,13 +36,6 @@ const menuItems = [
     icon: ClipboardCheck,
     description: 'Transaction history',
     path: '/staff/payment-history'
-  },
-  {
-    id: 'statistics',
-    label: 'Statistics',
-    icon: BarChart3,
-    description: 'Statistical reports',
-    path: '/staff/statistics'
   }
 ];
 

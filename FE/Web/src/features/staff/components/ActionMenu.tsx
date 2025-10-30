@@ -37,7 +37,7 @@ export default function ActionMenu({ batteryId, onView, onEdit }: ActionMenuProp
           setIsOpen(!isOpen);
         }}
         className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-        aria-label="Menu hành động"
+        aria-label="Action menu"
       >
         <MoreVertical className="w-5 h-5" />
       </button>
@@ -53,7 +53,7 @@ export default function ActionMenu({ batteryId, onView, onEdit }: ActionMenuProp
               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
             >
               <Eye className="w-4 h-4" />
-              Xem chi tiết
+              View Details
             </button>
             <button
               onClick={(e) => {
@@ -63,7 +63,7 @@ export default function ActionMenu({ batteryId, onView, onEdit }: ActionMenuProp
               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
             >
               <Edit className="w-4 h-4" />
-              Cập nhật
+              Update
             </button>
           </div>
         </div>
