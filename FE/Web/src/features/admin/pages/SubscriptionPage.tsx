@@ -100,7 +100,9 @@ export const SubscriptionPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [deletingSubscription, setDeletingSubscription] = useState<Subscription | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [editSubmitError, setEditSubmitError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -108,7 +110,6 @@ export const SubscriptionPage: React.FC = () => {
   const filteredSubscriptions = subscriptions;
 
   const totalRevenue = subscriptions.reduce((sum, sub) => sum + sub.price, 0);
-  const totalSubscribers = subscriptions.length;
   const activePackages = subscriptions.filter(sub => sub.status === 'active').length;
 
   const fetchPlans = async () => {
@@ -245,9 +246,23 @@ export const SubscriptionPage: React.FC = () => {
       await fetchPlans();
       setIsConfirmationModalOpen(false);
       setDeletingSubscription(null);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unable to delete subscription plan';
-      setSubmitError(errorMessage);
+      toast.success('Successfully deleted subscription plan');
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || 'Unable to delete subscription plan';
+
+      // Check if the error indicates the plan is in use
+      if (errorMessage.toLowerCase().includes('in use') ||
+        errorMessage.toLowerCase().includes('active duration') ||
+        errorMessage.toLowerCase().includes('cannot delete plan')) {
+        // Show user-friendly info modal instead of error
+        setIsConfirmationModalOpen(false);
+        setInfoMessage('Cannot delete plan while it is within its active duration and in use by drivers');
+        setIsInfoModalOpen(true);
+        setDeletingSubscription(null);
+      } else {
+        setSubmitError(errorMessage);
+        toast.error(errorMessage);
+      }
     } finally {
       setActionLoading(false);
     }
@@ -328,7 +343,7 @@ export const SubscriptionPage: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatsCard
           title="Total Revenue"
           value={formatCurrency(totalRevenue)}
@@ -337,15 +352,6 @@ export const SubscriptionPage: React.FC = () => {
           gradientTo="to-blue-100/50"
           textColor="text-blue-900"
           iconBg="bg-blue-500"
-        />
-        <StatsCard
-          title="Subscribers"
-          value={totalSubscribers.toLocaleString()}
-          icon={Users}
-          gradientFrom="from-green-50"
-          gradientTo="to-green-100/50"
-          textColor="text-green-900"
-          iconBg="bg-green-500"
         />
         <StatsCard
           title="Active Plans"
@@ -369,11 +375,11 @@ export const SubscriptionPage: React.FC = () => {
 
 
       {/* Subscription Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
         {filteredSubscriptions.map((subscription) => (
           <Card
             key={subscription.id}
-            className="p-6 bg-white hover:shadow-xl transition-all duration-300 border-0 shadow-lg relative overflow-hidden flex flex-col h-full"
+            className="p-4 sm:p-6 bg-white hover:shadow-xl transition-all duration-300 border-0 shadow-lg relative overflow-hidden flex flex-col h-full min-w-0"
           >
             {/* Badge for status */}
             <div className="absolute top-4 right-4">
@@ -387,18 +393,18 @@ export const SubscriptionPage: React.FC = () => {
 
             {/* Header */}
             <div className="mb-4">
-              <h3 className="text-xl font-bold text-slate-800 mb-2">{subscription.subscriptionName}</h3>
-              <p className="inline-block text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-100 rounded-md px-2 py-1">{subscription.description}</p>
+              <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-2 break-words">{subscription.subscriptionName}</h3>
+              <p className="inline-block text-xs sm:text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-100 rounded-md px-2 py-1 break-words">{subscription.description}</p>
             </div>
 
             {/* Price */}
-            <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <div className="mb-4 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-100">
               <div className="flex items-baseline justify-center">
-                <span className="text-3xl font-bold text-blue-600">{formatCurrency(subscription.price)}</span>
+                <span className="text-2xl sm:text-3xl font-bold text-blue-600 break-words">{formatCurrency(subscription.price)}</span>
               </div>
               <div className="flex items-center justify-center mt-1 text-slate-600">
-                <Clock className="h-4 w-4 mr-1" />
-                <span className="text-sm">{subscription.durations} days</span>
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                <span className="text-xs sm:text-sm">{subscription.durations} days</span>
               </div>
             </div>
 
@@ -408,27 +414,27 @@ export const SubscriptionPage: React.FC = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-4 mb-4 pt-2">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 pt-2">
               <div className="text-center">
-                <Users className="h-4 w-4 mx-auto mb-1 text-slate-500" />
+                <Users className="h-3 w-3 sm:h-4 sm:w-4 mx-auto mb-1 text-slate-500" />
                 <p className="text-xs text-slate-500">Slots</p>
-                <p className="font-bold text-slate-800">{subscription.quantity_slot}</p>
+                <p className="font-bold text-sm sm:text-base text-slate-800">{subscription.quantity_slot}</p>
               </div>
               <div className="text-center">
-                <Zap className="h-4 w-4 mx-auto mb-1 text-slate-500" />
+                <Zap className="h-3 w-3 sm:h-4 sm:w-4 mx-auto mb-1 text-slate-500" />
                 <p className="text-xs text-slate-500">Swaps</p>
-                <p className="font-bold text-slate-800">{subscription.count_swap}</p>
+                <p className="font-bold text-sm sm:text-base text-slate-800">{subscription.count_swap}</p>
               </div>
             </div>
 
             {/* Actions - This will be pushed to the bottom */}
-            <div className="flex gap-3 mt-auto">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-auto">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleOpenEditModal(subscription)}
                 disabled={actionLoading}
-                className="px-5 py-2 bg-white text-slate-800 border-slate-200 hover:bg-slate-50 rounded-md"
+                className="px-3 sm:px-5 py-2 text-xs sm:text-sm bg-white text-slate-800 border-slate-200 hover:bg-slate-50 rounded-md"
               >
                 Edit
               </Button>
@@ -437,7 +443,7 @@ export const SubscriptionPage: React.FC = () => {
                 size="sm"
                 onClick={() => handleDelete(subscription)}
                 disabled={actionLoading}
-                className="px-5 py-2 bg-white text-red-600 border-red-200 hover:bg-red-50 rounded-md"
+                className="px-3 sm:px-5 py-2 text-xs sm:text-sm bg-white text-red-600 border-red-200 hover:bg-red-50 rounded-md"
               >
                 Delete
               </Button>
@@ -510,7 +516,7 @@ export const SubscriptionPage: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="price" className="after:ml-1 after:text-red-500 after:content-['*']">Price (VND)</Label>
                 <Input
@@ -521,6 +527,7 @@ export const SubscriptionPage: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
                   className="bg-white"
                 />
+                {fieldErrors.price && (<div className="text-sm text-red-600">{fieldErrors.price}</div>)}
               </div>
 
               <div className="space-y-2">
@@ -533,6 +540,22 @@ export const SubscriptionPage: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, durations: parseInt(e.target.value) || 0 })}
                   className="bg-white"
                 />
+                {fieldErrors.durations && (<div className="text-sm text-red-600">{fieldErrors.durations}</div>)}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="qty" className="after:ml-1 after:text-red-500 after:content-['*']">Quantity slot</Label>
+                <Input
+                  id="qty"
+                  type="number"
+                  placeholder="0"
+                  value={formData.quantity_slot || ''}
+                  onChange={(e) => setFormData({ ...formData, quantity_slot: parseInt(e.target.value) || 0 })}
+                  className="bg-white"
+                />
+                {fieldErrors.quantity_slot && (<div className="text-sm text-red-600">{fieldErrors.quantity_slot}</div>)}
               </div>
 
               <div className="space-y-2">
@@ -545,24 +568,11 @@ export const SubscriptionPage: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, count_swap: parseInt(e.target.value) || 0 })}
                   className="bg-white"
                 />
+                {fieldErrors.count_swap && (<div className="text-sm text-red-600">{fieldErrors.count_swap}</div>)}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="qty" className="after:ml-1 after:text-red-500 after:content-['*']">Quantity slot</Label>
-                <Input
-                  id="qty"
-                  type="number"
-                  placeholder="0"
-                  value={formData.quantity_slot || ''}
-                  onChange={(e) => setFormData({ ...formData, quantity_slot: parseInt(e.target.value) || 0 })}
-                  className="bg-white"
-                />
-              </div>
-              {fieldErrors.description && (<div className="text-sm text-red-600">{fieldErrors.description}</div>)}
-              {fieldErrors.price && (<div className="text-sm text-red-600">{fieldErrors.price}</div>)}
-              {fieldErrors.durations && (<div className="text-sm text-red-600">{fieldErrors.durations}</div>)}
-              {fieldErrors.count_swap && (<div className="text-sm text-red-600">{fieldErrors.count_swap}</div>)}
-              {fieldErrors.quantity_slot && (<div className="text-sm text-red-600">{fieldErrors.quantity_slot}</div>)}
             </div>
+
+            {fieldErrors.description && (<div className="text-sm text-red-600">{fieldErrors.description}</div>)}
 
             {/* Features removed per requirement */}
             {submitError && (
@@ -652,7 +662,7 @@ export const SubscriptionPage: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-price" className="after:ml-1 after:text-red-500 after:content-['*']">Price (VND)</Label>
                 <Input
@@ -676,6 +686,20 @@ export const SubscriptionPage: React.FC = () => {
                   className="bg-white"
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-qty" className="after:ml-1 after:text-red-500 after:content-['*']">Quantity slot</Label>
+                <Input
+                  id="edit-qty"
+                  type="number"
+                  placeholder="0"
+                  value={formData.quantity_slot}
+                  onChange={(e) => setFormData({ ...formData, quantity_slot: parseInt(e.target.value) || 0 })}
+                  className="bg-white"
+                />
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="edit-swapLimit" className="after:ml-1 after:text-red-500 after:content-['*']">Count swap</Label>
@@ -685,17 +709,6 @@ export const SubscriptionPage: React.FC = () => {
                   placeholder="0"
                   value={formData.count_swap}
                   onChange={(e) => setFormData({ ...formData, count_swap: parseInt(e.target.value) || 0 })}
-                  className="bg-white"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-qty" className="after:ml-1 after:text-red-500 after:content-['*']">Quantity slot</Label>
-                <Input
-                  id="edit-qty"
-                  type="number"
-                  placeholder="0"
-                  value={formData.quantity_slot}
-                  onChange={(e) => setFormData({ ...formData, quantity_slot: parseInt(e.target.value) || 0 })}
                   className="bg-white"
                 />
               </div>
@@ -757,6 +770,35 @@ export const SubscriptionPage: React.FC = () => {
         confirmText="Delete"
         type="delete"
         isLoading={actionLoading}
+      />
+
+      {/* Info Modal for when plan cannot be deleted */}
+      <ConfirmationModal
+        isOpen={isInfoModalOpen}
+        onClose={() => {
+          setIsInfoModalOpen(false);
+          setInfoMessage(null);
+        }}
+        onConfirm={() => {
+          setIsInfoModalOpen(false);
+          setInfoMessage(null);
+        }}
+        title="Cannot Delete Subscription Plan"
+        message={
+          <div>
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 mb-4 rounded-lg">
+              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+              <span className="font-medium">{infoMessage}</span>
+            </div>
+            <p className="text-slate-600">
+              Please wait until all drivers have completed their subscriptions or deactivate the plan instead.
+            </p>
+          </div>
+        }
+        confirmText="OK"
+        type="delete"
+        isLoading={false}
+        showWarning={false}
       />
     </div>
   );
