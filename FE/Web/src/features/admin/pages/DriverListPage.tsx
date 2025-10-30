@@ -9,7 +9,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Grid, List, Users, Activity, User, AlertCircle, ChevronLeft, ChevronRight, UserX, Mail, Phone, MapPin, Shield } from 'lucide-react';
+import { Grid, List, Users, Activity, User, AlertCircle, ChevronLeft, ChevronRight, UserX, Mail, Phone, MapPin, Shield, Clock, Zap, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 //
 import { toast } from 'sonner';
@@ -18,7 +18,7 @@ import { StatsCard } from '../components/StatsCard';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { DriverSearchBar } from '../components/DriverSearchBar';
 import { PageLoadingSpinner, ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
-import { DriverService } from '@/services/api/driverService';
+import { DriverService, type Driver as ApiDriver } from '@/services/api/driverService';
 import type { Driver, DriverFilters, SubscriptionPlan } from '../types/driver';
 
 // Mock data - trong thực tế sẽ lấy từ API
@@ -81,8 +81,11 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
         city: 'ALL',
         limit: '20'
     });
+    const [apiDrivers, setApiDrivers] = useState<Map<string, ApiDriver>>(new Map());
+    const [availablePlans, setAvailablePlans] = useState<SubscriptionPlan[]>([]);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+    const [selectedApiDriver, setSelectedApiDriver] = useState<ApiDriver | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isResetting, setIsResetting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -99,47 +102,112 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
         try {
             setIsLoading(true);
             setError(null);
-            const apiDrivers = await DriverService.getAllDrivers();
+            const apiDriversData = await DriverService.getAllDrivers();
+
+            // Store raw API driver data in a Map for easy lookup
+            const apiDriverMap = new Map<string, ApiDriver>();
+            apiDriversData.forEach(apiDriver => {
+                apiDriverMap.set(apiDriver._id, apiDriver);
+            });
+            setApiDrivers(apiDriverMap);
+
+            // Helper function to convert API subscription to UI format
+            const convertSubscriptionToUI = (subscription: any): SubscriptionPlan | null => {
+                if (!subscription || !subscription.plan) return null;
+                const plan = subscription.plan;
+                return {
+                    id: subscription.id || plan.id || '',
+                    name: plan.subscriptionName || 'Unknown Plan',
+                    type: 'BASIC' as const, // Default type since backend doesn't provide this
+                    price: plan.price || 0,
+                    currency: 'VND',
+                    duration: plan.durations || 0,
+                    maxSwapsPerMonth: -1, // Not available in backend response
+                    features: [],
+                    isActive: subscription.status === 'active',
+                    startDate: new Date(subscription.start_date),
+                    endDate: new Date(subscription.end_date)
+                };
+            };
+
+            // Extract unique subscription plans from all drivers for filter dropdown
+            const allPlansMap = new Map<string, SubscriptionPlan>();
+            apiDriversData.forEach(apiDriver => {
+                if (apiDriver.subscriptions && apiDriver.subscriptions.length > 0) {
+                    apiDriver.subscriptions.forEach(sub => {
+                        const uiPlan = convertSubscriptionToUI(sub);
+                        if (uiPlan && !allPlansMap.has(uiPlan.id)) {
+                            allPlansMap.set(uiPlan.id, uiPlan);
+                        }
+                    });
+                }
+            });
+            const uniquePlans = Array.from(allPlansMap.values());
+            setAvailablePlans(uniquePlans);
 
             // Convert API drivers to UI driver format
-            const convertedDrivers: Driver[] = apiDrivers.map((apiDriver) => ({
-                id: apiDriver._id,
-                name: apiDriver.fullName || 'Chưa cập nhật',
-                email: apiDriver.email || 'Chưa cập nhật',
-                phone: apiDriver.phoneNumber || 'Chưa cập nhật',
-                licenseNumber: 'Chưa cập nhật', // Not available in API response
-                licenseType: 'A1', // Default license type - not available in API response
-                status: apiDriver.status === 'active' ? 'ACTIVE' : 'INACTIVE',
-                subscriptionPlan: mockSubscriptionPlans[0], // Default plan
-                vehicleId: 'Chưa cập nhật', // Not available in API response
-                vehicleModel: 'Chưa cập nhật', // Not available in API response
-                vehiclePlate: 'Chưa cập nhật', // Not available in API response
-                totalSwaps: 0, // Not available in API response
-                totalDistance: 0, // Not available in API response
-                rating: 0, // Not available in API response
-                joinDate: new Date(apiDriver.createdAt),
-                lastActive: new Date(apiDriver.updatedAt),
-                address: 'Chưa cập nhật', // Not available in API response
-                city: 'Chưa cập nhật', // Not available in API response
-                avatar: apiDriver.avatar || undefined,
-                emergencyContact: {
-                    name: 'Chưa cập nhật',
-                    phone: 'Chưa cập nhật',
-                    relationship: 'Chưa cập nhật'
-                },
-                preferences: {
-                    preferredStations: [],
-                    notificationSettings: {
-                        email: true,
-                        sms: true,
-                        push: true
+            const convertedDrivers: Driver[] = apiDriversData.map((apiDriver) => {
+                // Get active subscription, or first subscription if no active
+                const activeSubscription = apiDriver.subscriptions?.find(s => s.status === 'active');
+                const firstSubscription = apiDriver.subscriptions && apiDriver.subscriptions.length > 0
+                    ? apiDriver.subscriptions[0]
+                    : null;
+                const subscriptionToUse = activeSubscription || firstSubscription;
+                const uiSubscriptionPlan = subscriptionToUse
+                    ? convertSubscriptionToUI(subscriptionToUse)
+                    : null;
+
+                return {
+                    id: apiDriver._id,
+                    name: apiDriver.fullName || 'Chưa cập nhật',
+                    email: apiDriver.email || 'Chưa cập nhật',
+                    phone: apiDriver.phoneNumber || 'Chưa cập nhật',
+                    licenseNumber: 'Chưa cập nhật', // Not available in API response
+                    licenseType: 'A1', // Default license type - not available in API response
+                    status: apiDriver.status === 'active' ? 'ACTIVE' : 'INACTIVE',
+                    subscriptionPlan: uiSubscriptionPlan || {
+                        id: 'none',
+                        name: 'None',
+                        type: 'BASIC' as const,
+                        price: 0,
+                        currency: 'VND',
+                        duration: 0,
+                        maxSwapsPerMonth: 0,
+                        features: [],
+                        isActive: false,
+                        startDate: new Date(),
+                        endDate: new Date()
                     },
-                    language: 'vi',
-                    timezone: 'Asia/Ho_Chi_Minh'
-                },
-                createdAt: new Date(apiDriver.createdAt),
-                updatedAt: new Date(apiDriver.updatedAt),
-            }));
+                    vehicleId: 'Chưa cập nhật', // Not available in API response
+                    vehicleModel: 'Chưa cập nhật', // Not available in API response
+                    vehiclePlate: 'Chưa cập nhật', // Not available in API response
+                    totalSwaps: 0, // Not available in API response
+                    totalDistance: 0, // Not available in API response
+                    rating: 0, // Not available in API response
+                    joinDate: new Date(apiDriver.createdAt),
+                    lastActive: new Date(apiDriver.updatedAt),
+                    address: 'Chưa cập nhật', // Not available in API response
+                    city: 'Chưa cập nhật', // Not available in API response
+                    avatar: apiDriver.avatar || undefined,
+                    emergencyContact: {
+                        name: 'Chưa cập nhật',
+                        phone: 'Chưa cập nhật',
+                        relationship: 'Chưa cập nhật'
+                    },
+                    preferences: {
+                        preferredStations: [],
+                        notificationSettings: {
+                            email: true,
+                            sms: true,
+                            push: true
+                        },
+                        language: 'vi',
+                        timezone: 'Asia/Ho_Chi_Minh'
+                    },
+                    createdAt: new Date(apiDriver.createdAt),
+                    updatedAt: new Date(apiDriver.updatedAt),
+                };
+            });
 
             setDrivers(convertedDrivers);
             // Success message removed to avoid notification spam
@@ -183,10 +251,29 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
         setCurrentPage(1);
     }, [filters.search, filters.status, filters.subscriptionPlan, filters.licenseType, filters.city, filters.limit]);
 
-    const handleDriverSelect = (driver: Driver) => {
+    const handleDriverSelect = async (driver: Driver) => {
         setSelectedDriver(driver);
         setIsDetailsModalOpen(true);
         onDriverSelect?.(driver);
+
+        // Fetch full driver details including subscriptions
+        try {
+            const apiDriver = apiDrivers.get(driver.id);
+            if (apiDriver && apiDriver.subscriptions) {
+                setSelectedApiDriver(apiDriver);
+            } else {
+                // If not in cache, fetch from API
+                const fullDriver = await DriverService.getDriverById(driver.id);
+                setSelectedApiDriver(fullDriver);
+            }
+        } catch (err) {
+            console.error('Error fetching driver details:', err);
+            // Use cached data if available
+            const apiDriver = apiDrivers.get(driver.id);
+            if (apiDriver) {
+                setSelectedApiDriver(apiDriver);
+            }
+        }
     };
 
 
@@ -331,7 +418,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                 <DriverSearchBar
                     filters={filters}
                     onFiltersChange={setFilters}
-                    subscriptionPlans={mockSubscriptionPlans}
+                    subscriptionPlans={availablePlans.length > 0 ? availablePlans : mockSubscriptionPlans}
                     isResetting={isResetting}
                     onResetFilters={async () => {
                         setIsResetting(true);
@@ -826,7 +913,11 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                             <MapPin className="h-5 w-5 text-orange-500" />
                                             <div>
                                                 <p className="text-sm text-slate-600">Subscription</p>
-                                                <p className="font-medium text-slate-800">{selectedDriver.subscriptionPlan.name}</p>
+                                                <p className="font-medium text-slate-800">
+                                                    {selectedApiDriver?.subscriptions && selectedApiDriver.subscriptions.length > 0
+                                                        ? selectedApiDriver.subscriptions.find(s => s.status === 'active')?.plan?.subscriptionName || 'None'
+                                                        : selectedApiDriver ? 'None' : selectedDriver.subscriptionPlan.name}
+                                                </p>
                                             </div>
                                         </div>
                                         <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
@@ -850,19 +941,87 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                 </CardHeader>
                                 <CardContent>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between"><span className="text-slate-600">Join date:</span><span className="font-medium">{selectedDriver.joinDate.toLocaleDateString('vi-VN')}</span></div>
-                                            <div className="flex justify-between"><span className="text-slate-600">Last active:</span><span className="font-medium">{selectedDriver.lastActive.toLocaleDateString('vi-VN')}</span></div>
-                                            <div className="flex justify-between"><span className="text-slate-600">Created date:</span><span className="font-medium">{selectedDriver.createdAt.toLocaleDateString('vi-VN')}</span></div>
-                                            <div className="flex justify-between"><span className="text-slate-600">Last updated:</span><span className="font-medium">{selectedDriver.updatedAt.toLocaleDateString('vi-VN')}</span></div>
+                                        <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
+                                            <Calendar className="h-5 w-5 text-blue-500" />
+                                            <div>
+                                                <p className="text-sm text-slate-600">Join Date</p>
+                                                <p className="font-medium text-slate-800">{selectedDriver.joinDate.toLocaleDateString('en-US')}</p>
+                                            </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between"><span className="text-slate-600">Subscription:</span><span className="font-medium">{selectedDriver.subscriptionPlan.name}</span></div>
-                                            <div className="flex justify-between"><span className="text-slate-600">Plan type:</span><span className="font-medium">{selectedDriver.subscriptionPlan.type}</span></div>
-                                            <div className="flex justify-between"><span className="text-slate-600">Price:</span><span className="font-medium">{selectedDriver.subscriptionPlan.price.toLocaleString('vi-VN')} VND</span></div>
-                                            <div className="flex justify-between"><span className="text-slate-600">Duration:</span><span className="font-medium">{selectedDriver.subscriptionPlan.duration} days</span></div>
+                                        <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
+                                            <Clock className="h-5 w-5 text-orange-500" />
+                                            <div>
+                                                <p className="text-sm text-slate-600">Last Updated</p>
+                                                <p className="font-medium text-slate-800">{selectedDriver.updatedAt.toLocaleDateString('en-US')}</p>
+                                            </div>
                                         </div>
                                     </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Subscription Information */}
+                            <Card className="shadow-sm border-slate-200">
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
+                                        <Clock className="h-5 w-5 mr-2 text-purple-600" />
+                                        Subscription Information
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    {selectedApiDriver?.subscriptions && selectedApiDriver.subscriptions.length > 0 ? (
+                                        selectedApiDriver.subscriptions.map((subscription) => {
+                                            const isActive = subscription.status === 'active';
+                                            return (
+                                                <div key={subscription.id} className={`p-4 rounded-lg border ${isActive ? 'bg-purple-50 border-purple-200' : 'bg-slate-50 border-slate-200'} mb-4 last:mb-0`}>
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <div className="flex items-center space-x-2">
+                                                            <h4 className="font-semibold text-slate-800">{subscription.plan?.subscriptionName || 'Unknown Plan'}</h4>
+                                                            <Badge variant={isActive ? 'default' : 'secondary'} className={isActive ? 'bg-green-500 hover:bg-green-600' : ''}>
+                                                                {subscription.status}
+                                                            </Badge>
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                                                        <div className="md:col-span-2">
+                                                            <p className="text-sm text-slate-600 mb-1">Plan Details</p>
+                                                            <p className="font-medium text-slate-800">{subscription.plan?.description || 'N/A'}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm text-slate-600 mb-1">Price</p>
+                                                            <p className="font-medium text-slate-800">{subscription.plan?.price ? subscription.plan.price.toLocaleString('vi-VN') + ' VND' : 'N/A'}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm text-slate-600 mb-1">Duration</p>
+                                                            <div className="flex items-center space-x-1">
+                                                                <Clock className="h-4 w-4 text-slate-500" />
+                                                                <p className="font-medium text-slate-800">{subscription.plan?.durations ? `${subscription.plan.durations} days` : 'N/A'}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm text-slate-600 mb-1">Remaining Swaps</p>
+                                                            <div className="flex items-center space-x-1">
+                                                                <Zap className="h-4 w-4 text-amber-500" />
+                                                                <p className="font-medium text-slate-800">{subscription.remaining_swaps}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm text-slate-600 mb-1">Start Date</p>
+                                                            <p className="font-medium text-slate-800">{new Date(subscription.start_date).toLocaleDateString('en-US')}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm text-slate-600 mb-1">End Date</p>
+                                                            <p className="font-medium text-slate-800">{new Date(subscription.end_date).toLocaleDateString('en-US')}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="text-center py-8 text-slate-500">
+                                            <p className="font-medium">None</p>
+                                            <p className="text-sm mt-1">This driver has no active subscriptions</p>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         </div>

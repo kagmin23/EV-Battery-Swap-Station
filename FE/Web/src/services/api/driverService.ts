@@ -4,6 +4,23 @@ import axios from 'axios';
 const API_BASE_URL = 'http://localhost:8001/api';
 
 // Types for driver management
+export interface SubscriptionPlanData {
+    id: string;
+    subscriptionName: string;
+    description?: string;
+    price: number;
+    durations: number;
+}
+
+export interface UserSubscription {
+    id: string;
+    plan: SubscriptionPlanData;
+    start_date: string;
+    end_date: string;
+    remaining_swaps: number;
+    status: string;
+}
+
 export interface Driver {
     _id: string;
     email: string;
@@ -28,6 +45,7 @@ export interface Driver {
     createdAt: string;
     updatedAt: string;
     __v: number;
+    subscriptions?: UserSubscription[];
 }
 
 export interface CreateDriverRequest {

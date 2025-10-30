@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Battery as BatteryIcon, Eye, AlertCircle, TrendingUp, Search, Grid, List, Plus, MapPin, RotateCcw, ChevronLeft, ChevronRight, Edit, Trash2, BookOpen } from 'lucide-react';
+import { AlertTriangle, Battery as BatteryIcon, Eye, AlertCircle, TrendingUp, Search, Grid, List, MapPin, RotateCcw, ChevronLeft, ChevronRight, Edit, Trash2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
