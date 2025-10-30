@@ -35,6 +35,8 @@ export const StationModal: React.FC<StationModalProps> = ({
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (station) {
@@ -104,18 +106,25 @@ export const StationModal: React.FC<StationModalProps> = ({
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSubmitError(null);
         if (!validateForm()) return;
-
-        if (station) {
-            onSave({
-                id: station.id,
-                ...formData
-            } as UpdateStationRequest);
-        } else {
-            onSave(formData as AddStationRequest);
+        try {
+            setIsSaving(true);
+            if (station) {
+                await onSave({ id: station.id, ...formData } as UpdateStationRequest);
+            } else {
+                await onSave(formData as AddStationRequest);
+            }
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Unable to save station information';
+            setSubmitError(msg);
+            return;
+        } finally {
+            setIsSaving(false);
         }
+        handleClose();
     };
 
     const handleClose = () => {
@@ -131,6 +140,7 @@ export const StationModal: React.FC<StationModalProps> = ({
             availableBatteries: 0,
         });
         setErrors({});
+        setSubmitError(null);
         onClose();
     };
 
@@ -296,21 +306,28 @@ export const StationModal: React.FC<StationModalProps> = ({
                             </div>
                         </CardContent>
                     </Card>
-
+                    {submitError && (
+                        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+                            <span className="inline-flex items-center justify-center w-4 h-4 mr-1">!</span>
+                            <span className="font-medium">{submitError}</span>
+                        </div>
+                    )}
                     <DialogFooter>
                         <Button
                             type="button"
                             variant="outline"
                             onClick={handleClose}
                             className="text-slate-600 hover:text-slate-700 hover:bg-slate-50 border-slate-200 hover:border-slate-300 transition-all duration-200 hover:shadow-sm"
+                            disabled={isSaving}
                         >
                             Cancel
                         </Button>
                         <Button
                             type="submit"
                             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-600 hover:border-blue-700"
+                            disabled={isSaving}
                         >
-                            {station ? 'Update' : 'Add Station'}
+                            {isSaving ? 'Saving...' : (station ? 'Update' : 'Add Station')}
                         </Button>
                     </DialogFooter>
                 </form>

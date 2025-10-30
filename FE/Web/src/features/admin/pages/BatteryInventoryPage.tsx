@@ -54,6 +54,7 @@ export const BatteryInventoryPage: React.FC = () => {
     const [isEditBatteryModalOpen, setIsEditBatteryModalOpen] = useState(false);
     const [editingBattery, setEditingBattery] = useState<Battery | null>(null);
     const [deletingBatteryId, setDeletingBatteryId] = useState<string | null>(null);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     // Confirmation modal states
     const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
@@ -226,12 +227,13 @@ export const BatteryInventoryPage: React.FC = () => {
         setConfirmationBattery(battery);
         setConfirmationAction('delete');
         setIsConfirmationModalOpen(true);
+        setSubmitError(null);
     };
 
     // Handle confirmation modal actions
     const handleConfirmationConfirm = async () => {
         if (!confirmationBattery || !confirmationAction) return;
-
+        setSubmitError(null);
         try {
             if (confirmationAction === 'edit') {
                 // Close confirmation modal first
@@ -251,8 +253,8 @@ export const BatteryInventoryPage: React.FC = () => {
                 handleConfirmationClose();
             }
         } catch (err) {
-            toast.error('Unable to delete battery. Please try again.');
-            console.error('Error:', err);
+            const msg = err instanceof Error ? err.message : 'Unable to delete battery. Please try again.';
+            setSubmitError(msg);
         } finally {
             setDeletingBatteryId(null);
         }
@@ -263,6 +265,7 @@ export const BatteryInventoryPage: React.FC = () => {
         setIsConfirmationModalOpen(false);
         setConfirmationAction(null);
         setConfirmationBattery(null);
+        setSubmitError(null);
     };
 
     return (
@@ -836,6 +839,12 @@ export const BatteryInventoryPage: React.FC = () => {
                             <div>
                                 Are you sure you want to delete battery <span className="font-bold text-slate-800">{confirmationBattery?.batteryId}</span>?<br />
                                 <span className="text-red-600 font-medium">This action cannot be undone.</span>
+                                {submitError && (
+                                    <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mt-3 mb-1 rounded-lg">
+                                        <AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" />
+                                        <span className="font-medium">{submitError}</span>
+                                    </div>
+                                )}
                             </div>
                         )
                 }

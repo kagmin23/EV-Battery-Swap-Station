@@ -29,6 +29,7 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
     const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     // Load stations when modal opens
     useEffect(() => {
@@ -75,6 +76,7 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSubmitError(null);
 
         if (!validateForm()) {
             return;
@@ -93,9 +95,8 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
             toast.success(`Battery ${selectedBattery?.batteryId} transferred to "${targetStation?.name}" successfully`);
             onSuccess();
             handleClose();
-        } catch (err) {
-            toast.error('Unable to transfer battery. Please try again.');
-            console.error('Error transferring battery:', err);
+        } catch (err: any) {
+            setSubmitError(err?.message || 'Unable to transfer battery. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -106,6 +107,7 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
         setSelectedStationId('');
         setSearchTerm('');
         setErrors({});
+        setSubmitError(null);
         onClose();
     };
 
@@ -255,6 +257,13 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
                             </div>
                         )}
                     </div>
+
+                    {submitError && (
+                        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-2 rounded-lg">
+                            <AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" />
+                            <span className="font-medium">{submitError}</span>
+                        </div>
+                    )}
 
                     <DialogFooter className="flex justify-end space-x-3 pt-6">
                         <Button

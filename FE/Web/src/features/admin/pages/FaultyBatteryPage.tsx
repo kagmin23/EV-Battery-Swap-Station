@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Battery as BatteryIcon, Eye, AlertCircle, TrendingUp, Search, Grid, List, Plus, MapPin, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Battery as BatteryIcon, Eye, AlertCircle, TrendingUp, Search, Grid, List, Plus, MapPin, RotateCcw, ChevronLeft, ChevronRight, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,13 +11,18 @@ import { PageLoadingSpinner, ButtonLoadingSpinner } from '@/components/ui/loadin
 import { BatteryService, type Battery as ApiBattery } from '@/services/api/batteryService';
 import { StationService, type Station as ApiStation } from '@/services/api/stationService';
 import type { BatteryStatus } from '../types/battery';
+import { EditBatteryModal } from '../components/EditBatteryModal';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 
 interface FaultyBatteryCardProps {
     battery: ApiBattery;
     onClick: () => void;
+    onEdit: (battery: ApiBattery) => void;
+    onDelete: (battery: ApiBattery) => void;
+    deletingId: string | null;
 }
 
-const FaultyBatteryCard: React.FC<FaultyBatteryCardProps> = ({ battery, onClick }) => {
+const FaultyBatteryCard: React.FC<FaultyBatteryCardProps> = ({ battery, onClick, onEdit, onDelete, deletingId }) => {
     const getStatusColor = (status: BatteryStatus) => {
         switch (status) {
             case 'faulty':
@@ -116,6 +121,27 @@ const FaultyBatteryCard: React.FC<FaultyBatteryCardProps> = ({ battery, onClick 
                             </span>
                         </div>
                     </div>
+                </div>
+                <div className="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={e => { e.stopPropagation(); onEdit(battery); }}
+                        className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 border-slate-200"
+                    >
+                        <Edit className="h-4 w-4 mr-2" />Edit
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={e => { e.stopPropagation(); onDelete(battery); }}
+                        disabled={deletingId === battery._id}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
+                    >
+                        {deletingId === battery._id
+                            ? <ButtonLoadingSpinner size="sm" variant="default" text="Deleting..." />
+                            : <><Trash2 className="h-4 w-4 mr-2" />Delete</>}
+                    </Button>
                 </div>
             </CardContent>
         </Card>
@@ -312,11 +338,6 @@ const FaultyBatteryDetailModal: React.FC<{
                         >
                             Close
                         </Button>
-                        <Button
-                            className="px-6 py-2 bg-red-600 hover:bg-red-700"
-                        >
-                            Report Repair
-                        </Button>
                     </div>
                 </div>
             </div>
@@ -338,6 +359,12 @@ const FaultyBatteryPage: React.FC = () => {
     const [limit, setLimit] = useState<string>('20');
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingBattery, setEditingBattery] = useState<ApiBattery | null>(null);
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [selectedDeleteId, setSelectedDeleteId] = useState<string | null>(null);
 
     // Load stations data
     const loadStations = async () => {
@@ -422,6 +449,41 @@ const FaultyBatteryPage: React.FC = () => {
     const handleCloseDetailModal = () => {
         setIsDetailModalOpen(false);
         setSelectedBattery(null);
+    };
+
+    const handleEditBattery = (battery: ApiBattery) => {
+        setEditingBattery(battery);
+        setIsEditModalOpen(true);
+    };
+    const handleEditSuccess = (updated?: ApiBattery) => {
+        setIsEditModalOpen(false);
+        setEditingBattery(null);
+        if (updated) {
+            setFilteredBatteries(prev => prev.map(b=>b._id === updated._id ? {...b, ...updated} : b));
+            setBatteries(prev => prev.map(b=>b._id === updated._id ? {...b, ...updated} : b));
+        }
+    };
+    const handleDeleteBattery = (battery: ApiBattery) => {
+        setSelectedDeleteId(battery._id);
+        setIsConfirmModalOpen(true);
+        setSubmitError(null);
+    };
+    const handleConfirmDelete = async () => {
+        if (!selectedDeleteId) return;
+        setSubmitError(null);
+        try {
+            setDeletingId(selectedDeleteId);
+            await BatteryService.deleteBattery(selectedDeleteId);
+            setFilteredBatteries(prev => prev.filter(b => b._id !== selectedDeleteId));
+            setBatteries(prev => prev.filter(b => b._id !== selectedDeleteId));
+            setIsConfirmModalOpen(false);
+            setSelectedDeleteId(null);
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Failed to delete battery';
+            setSubmitError(msg);
+        } finally {
+            setDeletingId(null);
+        }
     };
 
     // Remove the early return for loading state - handle it inside the CardContent like StaffListPage
@@ -680,6 +742,9 @@ const FaultyBatteryPage: React.FC = () => {
                                     key={battery._id}
                                     battery={battery}
                                     onClick={() => handleBatteryClick(battery)}
+                                    onEdit={handleEditBattery}
+                                    onDelete={handleDeleteBattery}
+                                    deletingId={deletingId}
                                 />
                             ))}
                         </div>
@@ -747,7 +812,7 @@ const FaultyBatteryPage: React.FC = () => {
                                                 className="hover:bg-slate-50 cursor-pointer transition-colors"
                                                 onClick={() => handleBatteryClick(battery)}
                                             >
-                                                <td className但="px-6 py-4">
+                                                <td className="px-6 py-4">
                                                     <div className="flex items-center space-x-3">
                                                         <div className="w-10 h-10 flex-shrink-0 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md">
                                                             <BatteryIcon className="h-5 w-5 flex-shrink-0" />
@@ -772,6 +837,29 @@ const FaultyBatteryPage: React.FC = () => {
                                                 <td className="px-6 py-4 text-sm text-slate-800">{battery.capacity_kWh || 'N/A'}</td>
                                                 <td className="px-6 py-4 text-sm text-slate-800">{battery.voltage || 'N/A'}</td>
                                                 <td className="px-6 py-4 text-sm text-slate-800">{battery.manufacturer || 'N/A'}</td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex justify-end space-x-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={e => { e.stopPropagation(); handleEditBattery(battery); }}
+                                                            className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 border-slate-200"
+                                                        >
+                                                            <Edit className="h-4 w-4 mr-2" />Edit
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={e => { e.stopPropagation(); handleDeleteBattery(battery); }}
+                                                            disabled={deletingId === battery._id}
+                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
+                                                        >
+                                                            {deletingId === battery._id
+                                                                ? <ButtonLoadingSpinner size="sm" variant="default" text="Deleting..." />
+                                                                : <><Trash2 className="h-4 w-4 mr-2" />Delete</>}
+                                                        </Button>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         );
                                     })}
@@ -916,6 +1004,22 @@ const FaultyBatteryPage: React.FC = () => {
                 isOpen={isDetailModalOpen}
                 onClose={handleCloseDetailModal}
                 battery={selectedBattery}
+            />
+            <EditBatteryModal
+                isOpen={isEditModalOpen}
+                onClose={() => { setIsEditModalOpen(false); setEditingBattery(null); }}
+                onSuccess={updated => handleEditSuccess(updated)}
+                battery={editingBattery}
+            />
+            <ConfirmationModal
+                isOpen={isConfirmModalOpen}
+                onClose={() => { setIsConfirmModalOpen(false); setSelectedDeleteId(null); setSubmitError(null); }}
+                onConfirm={handleConfirmDelete}
+                title="Confirm delete battery"
+                message={<div>Are you sure you want to delete this battery? This action cannot be undone.{submitError && (<div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mt-3 mb-1 rounded-lg"><AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" /><span className="font-medium">{submitError}</span></div>)}</div>}
+                confirmText="Delete"
+                variant="delete"
+                isLoading={!!deletingId}
             />
         </div>
     );

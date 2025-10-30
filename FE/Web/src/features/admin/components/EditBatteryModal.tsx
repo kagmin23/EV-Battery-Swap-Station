@@ -53,6 +53,7 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
 
     // Confirmation modal state
     const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     // Load stations when modal opens
     useEffect(() => {
@@ -165,7 +166,7 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
 
     const handleConfirmUpdate = async () => {
         if (!battery) return;
-
+        setSubmitError(null);
         try {
             setIsLoading(true);
 
@@ -185,9 +186,9 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
             toast.success('Battery updated successfully');
             onSuccess();
             handleClose();
-        } catch (err) {
-            toast.error('Unable to update battery. Please check your inputs and try again.');
-            console.error('Error updating battery:', err);
+        } catch (err: any) {
+            setSubmitError(err?.message || 'Unable to update battery. Please check your inputs and try again.');
+            // Không được toast.error
         } finally {
             setIsLoading(false);
             setIsConfirmationModalOpen(false);
@@ -454,17 +455,14 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
             {/* Confirmation Modal */}
             <ConfirmationModal
                 isOpen={isConfirmationModalOpen}
-                onClose={() => setIsConfirmationModalOpen(false)}
+                onClose={() => { setIsConfirmationModalOpen(false); setSubmitError(null); }}
                 onConfirm={handleConfirmUpdate}
                 title={`Xác nhận cập nhật pin ${battery?.batteryId}`}
-                message={
-                    <div>
-                        Bạn có chắc chắn muốn cập nhật thông tin pin <span className="font-bold text-slate-800">{battery?.batteryId}</span>?
-                    </div>
-                }
+                message={<div>Bạn có chắc chắn muốn cập nhật thông tin pin <span className="font-bold text-slate-800">{battery?.batteryId}</span>?</div>}
                 confirmText="Cập nhật"
                 type="edit"
                 isLoading={isLoading}
+                submitError={submitError} // <-- truyền error xuống để show ngay trong modal
             />
         </Dialog>
     );

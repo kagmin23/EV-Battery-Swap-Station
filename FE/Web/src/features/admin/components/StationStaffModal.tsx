@@ -20,7 +20,8 @@ import {
     Phone,
     MapPin,
     Calendar,
-    Trash2
+    Trash2,
+    AlertCircle
 } from 'lucide-react';
 import type { Station } from '../types/station';
 import type { Staff } from '../types/staff';
@@ -46,6 +47,7 @@ export const StationStaffModal: React.FC<StationStaffModalProps> = ({
 }) => {
     const [showRemoveConfirm, setShowRemoveConfirm] = useState<boolean>(false);
     const [staffToRemove, setStaffToRemove] = useState<Staff | null>(null);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     if (!station) return null;
 
@@ -68,16 +70,15 @@ export const StationStaffModal: React.FC<StationStaffModalProps> = ({
     // Confirm remove staff
     const confirmRemoveStaff = async () => {
         if (!staffToRemove || !station || !onRemoveStaff) return;
-
+        setSubmitError(null);
         try {
             await onRemoveStaff(station.id, staffToRemove.id);
             setStaffToRemove(null);
             setShowRemoveConfirm(false);
-            if (onReloadStaff) {
-                await onReloadStaff();
-            }
-        } catch (error) {
-            toast.error('Unable to remove staff member. Please try again.');
+            setSubmitError(null);
+            if (onReloadStaff) await onReloadStaff();
+        } catch (error: any) {
+            setSubmitError(error?.message || 'Unable to remove staff member. Please try again.');
         }
     };
 
@@ -226,6 +227,12 @@ export const StationStaffModal: React.FC<StationStaffModalProps> = ({
                             )}
                         </AlertDialogAction>
                     </AlertDialogFooter>
+                    {submitError && (
+                        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mt-2 rounded-lg">
+                            <AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" />
+                            <span className="font-medium">{submitError}</span>
+                        </div>
+                    )}
                 </AlertDialogContent>
             </AlertDialog>
         </>

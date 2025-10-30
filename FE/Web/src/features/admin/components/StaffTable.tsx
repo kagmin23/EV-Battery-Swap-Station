@@ -12,6 +12,7 @@ interface StaffTableProps {
   onEdit: (staff: Staff) => void;
   onSuspend: (staff: Staff) => void;
   onViewDetails?: (staff: Staff) => void;
+  onDelete?: (staff: Staff) => void;
   suspendingStaffId?: string | null;
   savingStaffId?: string | null;
 }
@@ -22,6 +23,7 @@ export const StaffTable: React.FC<StaffTableProps> = ({
   onEdit,
   onSuspend,
   onViewDetails,
+  onDelete,
   suspendingStaffId = null,
   savingStaffId = null
 }) => {
@@ -134,6 +136,20 @@ export const StaffTable: React.FC<StaffTableProps> = ({
                       className="flex-2 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 border-slate-200 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       View Details
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(staffMember);
+                      }}
+                      disabled={savingStaffId === staffMember.id || suspendingStaffId === staffMember.id}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
+                    >
+                      Delete
                     </Button>
                   )}
                   <Button

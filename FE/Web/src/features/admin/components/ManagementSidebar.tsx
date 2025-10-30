@@ -114,11 +114,11 @@ const menuItems = [
   },
 
   {
-    id: 'complaints',
-    label: 'Complaints',
+    id: 'feedbacks',
+    label: 'Feedbacks',
     icon: MessageSquareText,
-    description: 'Manage complaints',
-    route: '/complaints'
+    description: 'Manage feedbacks',
+    route: '/feedbacks'
   }
 ];
 

@@ -79,16 +79,16 @@ export const OverviewPage: React.FC = () => {
             setError(null);
 
             // Fetch data from multiple APIs in parallel
-            const [stations, staff, complaints, transactions] = await Promise.all([
+            const [stations, staff, feedbacks, transactions] = await Promise.all([
                 StationService.getAllStations().catch(() => []),
                 StaffService.getAllStaff().catch(() => []),
-                AdminService.getAllComplaints().catch(() => []),
+                AdminService.getFeedbacks().catch(() => []),
                 TransactionService.getAllTransactions({}).catch(() => ({ data: [] }))
             ]);
 
             // Calculate detailed stats
-            const activeComplaints = complaints.filter((c: any) => c.status === 'pending');
-            const resolvedComplaints = complaints.filter((c: any) => c.status === 'resolved');
+            const activeComplaints: any[] = [];
+            const resolvedComplaints: any[] = [];
             const totalRevenue = transactions.data.reduce((sum: number, t: any) => sum + (t.cost || 0), 0);
             const averageTransactionCost = transactions.data.length > 0 ? totalRevenue / transactions.data.length : 0;
 
@@ -116,7 +116,7 @@ export const OverviewPage: React.FC = () => {
                 maintenanceStations,
                 activeStaff,
                 suspendedStaff,
-                totalComplaints: complaints.length,
+                totalComplaints: feedbacks.length,
                 resolvedComplaints: resolvedComplaints.length,
                 averageTransactionCost
             });

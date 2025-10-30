@@ -113,6 +113,8 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
     const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
     const [actionType, setActionType] = useState<'suspend' | 'activate' | null>(null);
     const [targetDriver, setTargetDriver] = useState<Driver | null>(null);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [addSubmitError, setAddSubmitError] = useState<string | null>(null);
 
     // Load drivers data from API
     const loadDrivers = async () => {
@@ -210,11 +212,13 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
     };
 
     const handleAddDriver = () => {
+        setAddSubmitError(null);
         setIsAddModalOpen(true);
     };
 
     const handleCloseModal = () => {
         setIsAddModalOpen(false);
+        setAddSubmitError(null);
         setFormData({
             name: '',
             email: '',
@@ -232,13 +236,16 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
     const handleSubmit = async () => {
         try {
             setIsSubmitting(true);
-            // TODO: Implement add driver API call
-            console.log('Add driver:', formData);
+            setAddSubmitError(null);
+            // TODO: Implement add driver API call; simulate validation example
+            if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim()) {
+                throw new Error('Please fill in required fields: name, email, phone');
+            }
+            // success flow (placeholder)
             handleCloseModal();
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Error adding driver';
-            setError(errorMessage);
-            console.error('Error adding driver:', err);
+            setAddSubmitError(errorMessage);
         } finally {
             setIsSubmitting(false);
         }
@@ -258,53 +265,49 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
     const handleSuspendDriver = (driver: Driver) => {
         setTargetDriver(driver);
         setActionType('suspend');
+        setSubmitError(null);
         setIsConfirmationModalOpen(true);
     };
 
     const handleActivateDriver = (driver: Driver) => {
         setTargetDriver(driver);
         setActionType('activate');
+        setSubmitError(null);
         setIsConfirmationModalOpen(true);
     };
 
     const handleConfirmAction = async () => {
         if (!targetDriver || !actionType) return;
-
+        setSubmitError(null);
         try {
             if (actionType === 'suspend') {
                 setSuspendingDriverId(targetDriver.id);
                 await DriverService.changeDriverStatus(targetDriver.id, 'locked');
-
-                // Update local state
                 setDrivers(prev => prev.map(d =>
                     d.id === targetDriver.id
                         ? { ...d, status: 'INACTIVE' as const, updatedAt: new Date() }
                         : d
                 ));
-
                 toast.success(`Driver "${targetDriver.name}" locked successfully`);
             } else {
                 setActivatingDriverId(targetDriver.id);
                 await DriverService.changeDriverStatus(targetDriver.id, 'active');
-
-                // Update local state
                 setDrivers(prev => prev.map(d =>
                     d.id === targetDriver.id
                         ? { ...d, status: 'ACTIVE' as const, updatedAt: new Date() }
                         : d
                 ));
-
                 toast.success(`Driver "${targetDriver.name}" activated successfully`);
             }
-        } catch (err) {
-            toast.error(`Unable to ${actionType === 'suspend' ? 'lock' : 'activate'} driver. Please try again.`);
-            console.error(`Error ${actionType}ing driver:`, err);
-        } finally {
-            setSuspendingDriverId(null);
-            setActivatingDriverId(null);
             setIsConfirmationModalOpen(false);
             setTargetDriver(null);
             setActionType(null);
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : `Unable to ${actionType === 'suspend' ? 'lock' : 'activate'} driver. Please try again.`;
+            setSubmitError(msg);
+        } finally {
+            setSuspendingDriverId(null);
+            setActivatingDriverId(null);
         }
     };
 
@@ -312,6 +315,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
         setIsConfirmationModalOpen(false);
         setTargetDriver(null);
         setActionType(null);
+        setSubmitError(null);
     };
 
     const getStatusColor = (status: string) => {
@@ -1202,6 +1206,13 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                         </div>
                     </div>
 
+                    {addSubmitError && (
+                        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-2 rounded-lg">
+                            <AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" />
+                            <span className="font-medium">{addSubmitError}</span>
+                        </div>
+                    )}
+
                     <DialogFooter>
                         <Button
                             variant="outline"
@@ -1235,6 +1246,12 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                 message={
                     <div>
                         Are you sure you want to {actionType === 'suspend' ? 'lock' : 'activate'} driver <span className="font-bold text-slate-800">{targetDriver?.name}</span>?
+                        {submitError && (
+                            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mt-3 mb-1 rounded-lg">
+                                <AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" />
+                                <span className="font-medium">{submitError}</span>
+                            </div>
+                        )}
                     </div>
                 }
                 confirmText={actionType === 'suspend' ? 'Lock' : 'Activate'}

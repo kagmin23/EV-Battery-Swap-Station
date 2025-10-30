@@ -13,6 +13,7 @@ interface StaffCardProps {
   onEdit: (staff: Staff) => void;
   onSuspend: (staff: Staff) => void;
   onViewDetails?: (staff: Staff) => void;
+  onDelete?: (staff: Staff) => void;
   isSuspending?: boolean;
   isSaving?: boolean;
 }
@@ -23,6 +24,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
   onEdit,
   onSuspend,
   onViewDetails,
+  onDelete,
   isSuspending = false,
   isSaving = false
 }) => {
@@ -158,6 +160,20 @@ export const StaffCard: React.FC<StaffCardProps> = ({
               'Edit'
             )}
           </Button>
+          {onDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(staff);
+              }}
+              disabled={isSaving || isSuspending}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
+            >
+              Delete
+            </Button>
+          )}
           {staff.status === 'SUSPENDED' || staff.status === 'locked' ? (
             <Button
               variant="outline"

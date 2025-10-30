@@ -106,6 +106,8 @@ export const SubscriptionPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [deletingSubscription, setDeletingSubscription] = useState<Subscription | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [editSubmitError, setEditSubmitError] = useState<string | null>(null);
 
   const filteredSubscriptions = subscriptions;
 
@@ -141,6 +143,13 @@ export const SubscriptionPage: React.FC = () => {
     }).format(amount);
   };
 
+  // Validation helper
+  const validateForm = (fd: Partial<Subscription>) => {
+    if (!fd.duration || fd.duration <= 0) return 'Duration must be greater than 0';
+    if (typeof fd.swapLimit === 'undefined' || fd.swapLimit <= 0) return 'Swap limit must be greater than 0';
+    return '';
+  };
+
   const handleOpenAddModal = () => {
     setFormData({
       name: '',
@@ -152,6 +161,7 @@ export const SubscriptionPage: React.FC = () => {
       status: 'active'
     });
     setNewFeature('');
+    setSubmitError(null);
     setIsAddModalOpen(true);
   };
 
@@ -167,6 +177,7 @@ export const SubscriptionPage: React.FC = () => {
       status: subscription.status
     });
     setNewFeature('');
+    setEditSubmitError(null);
     setIsEditModalOpen(true);
   };
 
@@ -187,6 +198,12 @@ export const SubscriptionPage: React.FC = () => {
   };
 
   const handleSaveAdd = async () => {
+    const clientError = validateForm(formData);
+    if (clientError) {
+      setSubmitError(clientError);
+      return;
+    }
+    setSubmitError(null);
     try {
       setActionLoading(true);
       const apiData = convertUIToApi(formData) as CreateSubscriptionPlanRequest;
@@ -197,13 +214,19 @@ export const SubscriptionPage: React.FC = () => {
       toast.success('Successfully created subscription plan');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unable to create subscription plan';
-      toast.error(errorMessage);
+      setSubmitError(errorMessage);
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleSaveEdit = async () => {
+    const clientError = validateForm(formData);
+    if (clientError) {
+      setEditSubmitError(clientError);
+      return;
+    }
+    setEditSubmitError(null);
     if (editingSubscription) {
       try {
         setActionLoading(true);
@@ -219,7 +242,7 @@ export const SubscriptionPage: React.FC = () => {
         toast.success('Successfully updated subscription plan');
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unable to update subscription plan';
-        toast.error(errorMessage);
+        setEditSubmitError(errorMessage);
       } finally {
         setActionLoading(false);
       }
@@ -228,30 +251,31 @@ export const SubscriptionPage: React.FC = () => {
 
   const handleDelete = (subscription: Subscription) => {
     setDeletingSubscription(subscription);
+    setSubmitError(null);
     setIsConfirmationModalOpen(true);
   };
 
   const handleConfirmDelete = async () => {
     if (!deletingSubscription) return;
-
+    setSubmitError(null);
     try {
       setActionLoading(true);
       await SubscriptionService.deletePlan(deletingSubscription.id);
       setSubscriptions(subscriptions.filter(sub => sub.id !== deletingSubscription.id));
-      toast.success('Successfully deleted subscription plan');
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unable to delete subscription plan';
-      toast.error(errorMessage);
-    } finally {
-      setActionLoading(false);
       setIsConfirmationModalOpen(false);
       setDeletingSubscription(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unable to delete subscription plan';
+      setSubmitError(errorMessage);
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleCancelDelete = () => {
     setIsConfirmationModalOpen(false);
     setDeletingSubscription(null);
+    setSubmitError(null);
   };
 
   // Loading state
@@ -461,7 +485,10 @@ export const SubscriptionPage: React.FC = () => {
       )}
 
       {/* Add Modal */}
-      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+      <Dialog open={isAddModalOpen} onOpenChange={(open) => {
+        setIsAddModalOpen(open);
+        if (!open) setSubmitError(null);
+      }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-slate-800">Add New Plan</DialogTitle>
@@ -575,6 +602,12 @@ export const SubscriptionPage: React.FC = () => {
                 ))}
               </div>
             </div>
+            {submitError && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-2 rounded-lg">
+                <AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" />
+                <span className="font-medium">{submitError}</span>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -604,7 +637,10 @@ export const SubscriptionPage: React.FC = () => {
       </Dialog>
 
       {/* Edit Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+      <Dialog open={isEditModalOpen} onOpenChange={(open) => {
+        setIsEditModalOpen(open);
+        if (!open) setEditSubmitError(null);
+      }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-slate-800">Edit Plan</DialogTitle>
@@ -718,6 +754,12 @@ export const SubscriptionPage: React.FC = () => {
                 ))}
               </div>
             </div>
+            {editSubmitError && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-2 rounded-lg">
+                <AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" />
+                <span className="font-medium">{editSubmitError}</span>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -746,7 +788,7 @@ export const SubscriptionPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Confirmation Modal */}
+      {/* Confirmation Modal: show submitError if any, above the buttons */}
       <ConfirmationModal
         isOpen={isConfirmationModalOpen}
         onClose={handleCancelDelete}
@@ -756,6 +798,12 @@ export const SubscriptionPage: React.FC = () => {
           <div>
             Are you sure you want to delete plan <span className="font-bold text-slate-800">{deletingSubscription?.name}</span>?<br />
             <span className="text-red-600 font-medium">This action cannot be undone.</span>
+            {submitError && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mt-4 mb-1 rounded-lg">
+                <AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" />
+                <span className="font-medium">{submitError}</span>
+              </div>
+            )}
           </div>
         }
         confirmText="Delete"

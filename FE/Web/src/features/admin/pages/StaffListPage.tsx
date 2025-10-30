@@ -40,11 +40,17 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [suspendingStaffId, setSuspendingStaffId] = useState<string | null>(null);
+    const [deletingStaffId, setDeletingStaffId] = useState<string | null>(null);
     const [savingStaffId, setSavingStaffId] = useState<string | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
     const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+    const [suspendAction, setSuspendAction] = useState<'lock' | 'activate'>('lock');
+    const [suspendTargetName, setSuspendTargetName] = useState<string>('');
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [suspendingStaff, setSuspendingStaff] = useState<Staff | null>(null);
+    const [deletingStaff, setDeletingStaff] = useState<Staff | null>(null);
+    const [deleteTargetName, setDeleteTargetName] = useState<string>('');
 
     // Load stations data from API
     const loadStations = async () => {
@@ -189,7 +195,16 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
 
     const handleStaffSuspend = (staffMember: Staff) => {
         setSuspendingStaff(staffMember);
+        const isCurrentlyActive = staffMember.status === 'ONLINE' || staffMember.status === 'SHIFT_ACTIVE' || staffMember.status === 'active';
+        setSuspendAction(isCurrentlyActive ? 'lock' : 'activate');
+        setSuspendTargetName(staffMember.name || '');
         setIsConfirmationModalOpen(true);
+    };
+
+    const handleStaffDelete = (staffMember: Staff) => {
+        setDeletingStaff(staffMember);
+        setDeleteTargetName(staffMember.name || '');
+        setIsDeleteModalOpen(true);
     };
 
     const handleConfirmSuspend = async () => {
@@ -231,8 +246,13 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
     };
 
     const handleCancelSuspend = () => {
+        // Close modal only; keep suspendingStaff until fully closed to avoid flicker/opposite state during fade-out
         setIsConfirmationModalOpen(false);
-        setSuspendingStaff(null);
+    };
+
+    const handleCancelDelete = () => {
+        // Close modal only; keep deletingStaff to prevent content flicker during closing animation
+        setIsDeleteModalOpen(false);
     };
 
     const handleAddStaff = () => {
@@ -262,7 +282,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
     const handleSaveStaff = async (data: AddStaffRequest | UpdateStaffRequest): Promise<void> => {
         try {
             setSavingStaffId('id' in data ? data.id as string : 'new');
-            setError(null);
+            // setError(null); // Remove global error
 
             if ('id' in data) {
                 // Update existing staff
@@ -327,9 +347,11 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
             setIsModalOpen(false);
             setEditingStaff(null);
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Error saving staff information';
-            setError(errorMessage);
-            console.error('Error saving staff:', err);
+            // Global error removed: let modal/ui handle
+            // const errorMessage = err instanceof Error ? err.message : 'Error saving staff information';
+            // setError(errorMessage);
+            // console.error('Error saving staff:', err);
+            throw err;
         } finally {
             setSavingStaffId(null);
         }
@@ -487,6 +509,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                                     onSelect={onStaffSelect || (() => { })}
                                     onEdit={handleStaffEdit}
                                     onSuspend={handleStaffSuspend}
+                                    onDelete={handleStaffDelete}
                                     onViewDetails={handleViewStaffDetails}
                                     isSuspending={suspendingStaffId === staffMember.id}
                                     isSaving={savingStaffId === staffMember.id}
@@ -500,6 +523,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                                 onSelect={onStaffSelect || (() => { })}
                                 onEdit={handleStaffEdit}
                                 onSuspend={handleStaffSuspend}
+                                onDelete={handleStaffDelete}
                                 onViewDetails={handleViewStaffDetails}
                                 suspendingStaffId={suspendingStaffId}
                                 savingStaffId={savingStaffId}
@@ -666,15 +690,38 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                 isOpen={isConfirmationModalOpen}
                 onClose={handleCancelSuspend}
                 onConfirm={handleConfirmSuspend}
-                title={`Confirm ${suspendingStaff?.status === 'ONLINE' ? 'lock' : 'activate'} staff`}
-                message={
-                    <div>
-                        Are you sure you want to {suspendingStaff?.status === 'ONLINE' ? 'lock' : 'activate'} staff <span className="font-bold text-slate-800">{suspendingStaff?.name}</span>?
-                    </div>
-                }
-                confirmText={suspendingStaff?.status === 'ONLINE' ? 'Lock' : 'Activate'}
+                title={`Confirm ${suspendAction} staff`}
+                message={<div>Are you sure you want to {suspendAction} staff <span className="font-bold text-slate-800">{suspendTargetName}</span>?</div>}
+                confirmText={suspendAction === 'lock' ? 'Lock' : 'Activate'}
                 type="delete"
                 isLoading={suspendingStaffId === suspendingStaff?.id}
+            />
+
+            {/* Delete Staff Modal */}
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={handleCancelDelete}
+                onConfirm={async () => {
+                    if (!deletingStaff) return;
+                    try {
+                        setDeletingStaffId(deletingStaff.id);
+                        await StaffService.deleteStaff(deletingStaff.id);
+                        setStaff(prev => prev.filter(s => s.id !== deletingStaff.id));
+                        toast.success(`Staff "${deletingStaff.name}" deleted`);
+                    } catch (err) {
+                        toast.error('Unable to delete staff. Please try again.');
+                        console.error('Error deleting staff:', err);
+                    } finally {
+                        setDeletingStaffId(null);
+                        setIsDeleteModalOpen(false);
+                        setDeletingStaff(null);
+                    }
+                }}
+                title="Confirm delete staff"
+                message={<div>Are you sure you want to delete staff <span className="font-bold text-slate-800">{deleteTargetName}</span>? This action cannot be undone.</div>}
+                confirmText="Delete"
+                type="delete"
+                isLoading={deletingStaffId === deletingStaff?.id}
             />
         </div>
     );

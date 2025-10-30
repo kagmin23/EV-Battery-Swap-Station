@@ -48,6 +48,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [sohTouched, setSohTouched] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     // Load stations when modal opens
     useEffect(() => {
@@ -117,6 +118,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSubmitError(null);
 
         if (!validateForm()) {
             return;
@@ -142,9 +144,8 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
             toast.success('Battery added successfully');
             onSuccess();
             handleClose();
-        } catch (err) {
-            toast.error('Unable to add battery. Please check your inputs and try again.');
-            console.error('Error creating battery:', err);
+        } catch (err: any) {
+            setSubmitError(err?.message || 'Unable to add battery. Please check your inputs and try again.');
         } finally {
             setIsLoading(false);
         }
@@ -164,6 +165,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
         });
         setErrors({});
         setSohTouched(false);
+        setSubmitError(null);
         onClose();
     };
 
@@ -187,6 +189,12 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {submitError && (
+                        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-2 rounded-lg">
+                            <AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" />
+                            <span className="font-medium">{submitError}</span>
+                        </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Serial Number */}
                         <div className="space-y-2">

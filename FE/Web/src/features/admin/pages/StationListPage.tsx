@@ -254,11 +254,10 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
 
     const handleSaveStation = async (data: AddStationRequest | UpdateStationRequest): Promise<void> => {
         try {
-            setSavingStationId('id' in data ? data.id as string : 'new');
-            setError(null);
+            setSavingStationId('id' in data ? (data.id as string) : 'new');
+            // do not set page-level error here; errors will be shown inside StationModal
 
             if ('id' in data) {
-                // Update existing station
                 const updateData: ApiUpdateStationRequest = {
                     stationName: data.name,
                     address: data.address,
@@ -273,8 +272,6 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                 };
 
                 const updatedStation = await StationService.updateStation(data.id as string, updateData);
-
-                // Convert API response to UI format
                 const convertedStation: Station = {
                     id: updatedStation._id,
                     name: updatedStation.stationName,
@@ -288,17 +285,14 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                     mapUrl: updatedStation.map_url,
                     capacity: updatedStation.capacity,
                     sohAvg: updatedStation.sohAvg,
-                    // Use available from batteryCounts if available (real-time data), fallback to availableBatteries
                     availableBatteries: updatedStation.batteryCounts?.available ?? updatedStation.availableBatteries,
                     batteryCounts: updatedStation.batteryCounts,
                     createdAt: new Date(updatedStation.createdAt),
                     updatedAt: new Date(updatedStation.updatedAt),
                 };
-
                 setStations(prev => prev.map(s => s.id === data.id ? convertedStation : s));
                 toast.success(`Station "${convertedStation.name}" updated successfully`);
             } else {
-                // Add new station
                 const createData: CreateStationRequest = {
                     stationName: data.name,
                     address: data.address,
@@ -313,8 +307,6 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                 };
 
                 const newStation = await StationService.createStation(createData);
-
-                // Convert API response to UI format
                 const convertedStation: Station = {
                     id: newStation._id,
                     name: newStation.stationName,
@@ -328,13 +320,11 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                     mapUrl: newStation.map_url,
                     capacity: newStation.capacity,
                     sohAvg: newStation.sohAvg,
-                    // Use available from batteryCounts if available (real-time data), fallback to availableBatteries
                     availableBatteries: newStation.batteryCounts?.available ?? newStation.availableBatteries,
                     batteryCounts: newStation.batteryCounts,
                     createdAt: new Date(newStation.createdAt),
                     updatedAt: new Date(newStation.updatedAt),
                 };
-
                 setStations(prev => [...prev, convertedStation]);
                 toast.success(`Station "${convertedStation.name}" added successfully`);
             }
@@ -342,8 +332,9 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
             setIsModalOpen(false);
             setEditingStation(null);
         } catch (err) {
-            toast.error('Unable to save station information. Please check your inputs and try again.');
-            console.error('Error saving station:', err);
+            // Rethrow so StationModal can display it inside
+            const message = err instanceof Error ? err.message : 'Unable to save station information. Please check your inputs and try again.';
+            throw new Error(message);
         } finally {
             setSavingStationId(null);
         }
