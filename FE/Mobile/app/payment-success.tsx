@@ -1,30 +1,22 @@
 import { formatDateVN, formatTimeVN } from '@/utils/dateTime';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 export default function PaymentSuccessScreen() {
+    const { amount, stationName } = useLocalSearchParams<{ amount: string; transactionId: string; stationName: string }>();
     const router = useRouter();
-
-    // @ts-ignore
-    const routeParams = (router as any).params ?? {};
-
-    const amountParam = routeParams.amount as string | undefined;
-    const transactionId = routeParams.transactionId as string | undefined;
-    const stationName = routeParams.stationName as string | undefined;
-
     const now = useMemo(() => new Date(), []);
     const formattedDate = useMemo(() => formatDateVN(now), [now]);
     const formattedTime = useMemo(() => formatTimeVN(now), [now]);
 
     const displayAmount = useMemo(() => {
-        if (!amountParam) return '—';
-        const n = Number(amountParam);
-        if (Number.isNaN(n)) return amountParam;
+        if (!amount) return '—';
+        const n = Number(amount);
+        if (Number.isNaN(n)) return amount;
         return n.toLocaleString('en-US', { style: 'currency', currency: 'VND' });
-    }, [amountParam]);
+    }, [amount]);
 
     return (
         <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
@@ -48,10 +40,7 @@ export default function PaymentSuccessScreen() {
                             <Text style={styles.infoLabel}>Station:</Text>
                             <Text style={styles.infoValue}>{stationName ?? '—'}</Text>
                         </View>
-                        <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>Transaction ID:</Text>
-                            <Text style={styles.infoValue}>{transactionId ?? '—'}</Text>
-                        </View>
+
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>Time:</Text>
                             <Text style={styles.infoValue}>{formattedDate} · {formattedTime}</Text>
