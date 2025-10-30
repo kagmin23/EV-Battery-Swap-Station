@@ -50,7 +50,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     };
 
     const shouldShowWarning = (showWarning ?? (resolvedVariant === 'delete'));
-    const resolvedWarningText = warningText || 'By deleting this, the user will no longer be able to access the system.';
+    const resolvedWarningText = warningText || 'By deleting this, the user will no longer be able to access this.';
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>

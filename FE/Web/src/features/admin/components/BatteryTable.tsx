@@ -9,6 +9,7 @@ interface BatteryTableProps {
     batteries: Battery[];
     onEdit: (battery: Battery) => void;
     onDelete: (battery: Battery) => void;
+    onLogs?: (battery: Battery) => void;
     deletingBatteryId?: string | null;
 }
 
@@ -16,6 +17,7 @@ export const BatteryTable: React.FC<BatteryTableProps> = ({
     batteries,
     onEdit,
     onDelete,
+    onLogs,
     deletingBatteryId = null
 }) => {
     const getStatusBadge = (status: BatteryStatus) => {
@@ -106,6 +108,19 @@ export const BatteryTable: React.FC<BatteryTableProps> = ({
                             <td className="px-6 py-4 text-sm text-slate-800">{battery.manufacturer || 'N/A'}</td>
                             <td className="px-6 py-4">
                                 <div className="flex space-x-2">
+                                    {onLogs && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onLogs(battery);
+                                        }}
+                                        className="hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 transition-all duration-200 border-slate-200 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Logs
+                                    </Button>
+                                    )}
                                     <Button
                                         variant="outline"
                                         size="sm"

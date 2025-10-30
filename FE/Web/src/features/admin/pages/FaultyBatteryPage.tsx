@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Battery as BatteryIcon, Eye, AlertCircle, TrendingUp, Search, Grid, List, Plus, MapPin, RotateCcw, ChevronLeft, ChevronRight, Edit, Trash2 } from 'lucide-react';
+import { AlertTriangle, Battery as BatteryIcon, Eye, AlertCircle, TrendingUp, Search, Grid, List, Plus, MapPin, RotateCcw, ChevronLeft, ChevronRight, Edit, Trash2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,7 @@ import { BatteryService, type Battery as ApiBattery } from '@/services/api/batte
 import { StationService, type Station as ApiStation } from '@/services/api/stationService';
 import type { BatteryStatus } from '../types/battery';
 import { EditBatteryModal } from '../components/EditBatteryModal';
+import { UserService } from '@/services/api/userService';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 
 interface FaultyBatteryCardProps {
@@ -19,10 +20,11 @@ interface FaultyBatteryCardProps {
     onClick: () => void;
     onEdit: (battery: ApiBattery) => void;
     onDelete: (battery: ApiBattery) => void;
+    onLogs: (battery: ApiBattery) => void;
     deletingId: string | null;
 }
 
-const FaultyBatteryCard: React.FC<FaultyBatteryCardProps> = ({ battery, onClick, onEdit, onDelete, deletingId }) => {
+const FaultyBatteryCard: React.FC<FaultyBatteryCardProps> = ({ battery, onClick, onEdit, onDelete, onLogs, deletingId }) => {
     const getStatusColor = (status: BatteryStatus) => {
         switch (status) {
             case 'faulty':
@@ -123,6 +125,14 @@ const FaultyBatteryCard: React.FC<FaultyBatteryCardProps> = ({ battery, onClick,
                     </div>
                 </div>
                 <div className="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={e => { e.stopPropagation(); onLogs(battery); }}
+                        className="hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 border-slate-200"
+                    >
+                        <BookOpen className="h-4 w-4 mr-2" />Logs
+                    </Button>
                     <Button
                         variant="outline"
                         size="sm"
@@ -365,6 +375,11 @@ const FaultyBatteryPage: React.FC = () => {
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [selectedDeleteId, setSelectedDeleteId] = useState<string | null>(null);
+    const [logsOpen, setLogsOpen] = useState(false);
+    const [logsLoading, setLogsLoading] = useState(false);
+    const [logsBattery, setLogsBattery] = useState<ApiBattery | null>(null);
+    const [logsData, setLogsData] = useState<{ battery: any; history: any[] } | null>(null);
+    const [logsUserNameMap, setLogsUserNameMap] = useState<Record<string, string>>({});
 
     // Load stations data
     const loadStations = async () => {
@@ -455,18 +470,44 @@ const FaultyBatteryPage: React.FC = () => {
         setEditingBattery(battery);
         setIsEditModalOpen(true);
     };
-    const handleEditSuccess = (updated?: ApiBattery) => {
+    const handleEditSuccess = () => {
         setIsEditModalOpen(false);
         setEditingBattery(null);
-        if (updated) {
-            setFilteredBatteries(prev => prev.map(b=>b._id === updated._id ? {...b, ...updated} : b));
-            setBatteries(prev => prev.map(b=>b._id === updated._id ? {...b, ...updated} : b));
-        }
+        loadFaultyBatteries();
     };
     const handleDeleteBattery = (battery: ApiBattery) => {
         setSelectedDeleteId(battery._id);
         setIsConfirmModalOpen(true);
         setSubmitError(null);
+    };
+    const handleOpenLogs = async (battery: ApiBattery) => {
+        try {
+            setLogsBattery(battery);
+            setLogsOpen(true);
+            setLogsLoading(true);
+            const data = await BatteryService.getBatteryLogs(battery._id);
+            setLogsData(data);
+            // Resolve user names for any referenced IDs
+            const ids = new Set<string>();
+            (data.history || []).forEach((raw: any) => {
+                let item = raw;
+                if (typeof raw === 'string') { try { item = JSON.parse(raw); } catch { item = {}; } }
+                const uid = item.user?._id || item.driver?._id || item.user_id || item.driver_id;
+                if (uid && typeof uid === 'string') ids.add(uid);
+            });
+            if (ids.size > 0) {
+                const entries = await Promise.all(Array.from(ids).map(async (id) => {
+                    try { const res = await UserService.getUserById(id); return [id, res.data.fullName] as const; } catch { return [id, 'Unknown']; }
+                }));
+                const map: Record<string, string> = {};
+                entries.forEach(([id, name]) => { map[id] = name; });
+                setLogsUserNameMap(map);
+            }
+        } catch (e) {
+            console.error('Failed to load battery logs', e);
+        } finally {
+            setLogsLoading(false);
+        }
     };
     const handleConfirmDelete = async () => {
         if (!selectedDeleteId) return;
@@ -744,6 +785,7 @@ const FaultyBatteryPage: React.FC = () => {
                                     onClick={() => handleBatteryClick(battery)}
                                     onEdit={handleEditBattery}
                                     onDelete={handleDeleteBattery}
+                                    onLogs={handleOpenLogs}
                                     deletingId={deletingId}
                                 />
                             ))}
@@ -872,124 +914,124 @@ const FaultyBatteryPage: React.FC = () => {
 
             {/* Pagination - copied logic/markup from StaffListPage */}
             {filteredBatteries.length > 0 && (
-              <div className="flex flex-col items-center py-4 gap-3">
-                <nav className="flex items-center -space-x-px" aria-label="Pagination">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1 || totalPages === 1}
-                    className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-s-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    aria-label="Previous"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    <span className="hidden sm:block">Previous</span>
-                  </button>
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNum = i === 4 ? totalPages : i + 1;
-                      if (i === 3) {
-                        return (
-                          <React.Fragment key={`fragment-${i}`}>
-                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
-                            <button
-                              key={totalPages}
-                              type="button"
-                              onClick={() => setCurrentPage(totalPages)}
-                              className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === totalPages
-                                ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                                : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"}`}
-                            >
-                              {totalPages}
-                            </button>
-                          </React.Fragment>
-                        );
-                      }
-                    } else if (currentPage >= totalPages - 2) {
-                      if (i === 0) {
-                        return (
-                          <React.Fragment key={`fragment-start-${i}`}>
-                            <button
-                              key={1}
-                              type="button"
-                              onClick={() => setCurrentPage(1)}
-                              className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === 1
-                                ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                                : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"}`}
-                            >
-                              1
-                            </button>
-                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
-                          </React.Fragment>
-                        );
-                      }
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      if (i === 0) {
-                        return (
-                          <React.Fragment key={`fragment-mid-start`}>
-                            <button
-                              key={1}
-                              type="button"
-                              onClick={() => setCurrentPage(1)}
-                              className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
-                            >
-                              1
-                            </button>
-                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
-                          </React.Fragment>
-                        );
-                      } else if (i === 4) {
-                        return (
-                          <React.Fragment key={`fragment-mid-end`}>
-                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
-                            <button
-                              key={totalPages}
-                              type="button"
-                              onClick={() => setCurrentPage(totalPages)}
-                              className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
-                            >
-                              {totalPages}
-                            </button>
-                          </React.Fragment>
-                        );
-                      }
-                      pageNum = currentPage + i - 2;
-                    }
-                    return (
-                      <button
-                        key={pageNum}
-                        type="button"
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === pageNum
-                          ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                          : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"}`}
-                        aria-current={currentPage === pageNum ? "page" : undefined}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages || totalPages === 1}
-                    className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-e-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    aria-label="Next"
-                  >
-                    <span className="hidden sm:block">Next</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </nav>
-                {/* Items info */}
-                <div className="text-sm text-gray-800">
-                  Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * limitNum + 1}</span> to {" "}
-                  <span className="font-semibold text-slate-900">{Math.min(currentPage * limitNum, filteredBatteries.length)}</span> of {" "}
-                  <span className="font-semibold text-slate-900">{filteredBatteries.length}</span> results
+                <div className="flex flex-col items-center py-4 gap-3">
+                    <nav className="flex items-center -space-x-px" aria-label="Pagination">
+                        <button
+                            type="button"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1 || totalPages === 1}
+                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-s-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Previous"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            <span className="hidden sm:block">Previous</span>
+                        </button>
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                                pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                                pageNum = i === 4 ? totalPages : i + 1;
+                                if (i === 3) {
+                                    return (
+                                        <React.Fragment key={`fragment-${i}`}>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                            <button
+                                                key={totalPages}
+                                                type="button"
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === totalPages
+                                                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"}`}
+                                            >
+                                                {totalPages}
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                }
+                            } else if (currentPage >= totalPages - 2) {
+                                if (i === 0) {
+                                    return (
+                                        <React.Fragment key={`fragment-start-${i}`}>
+                                            <button
+                                                key={1}
+                                                type="button"
+                                                onClick={() => setCurrentPage(1)}
+                                                className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === 1
+                                                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"}`}
+                                            >
+                                                1
+                                            </button>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                        </React.Fragment>
+                                    );
+                                }
+                                pageNum = totalPages - 4 + i;
+                            } else {
+                                if (i === 0) {
+                                    return (
+                                        <React.Fragment key={`fragment-mid-start`}>
+                                            <button
+                                                key={1}
+                                                type="button"
+                                                onClick={() => setCurrentPage(1)}
+                                                className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                            >
+                                                1
+                                            </button>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                        </React.Fragment>
+                                    );
+                                } else if (i === 4) {
+                                    return (
+                                        <React.Fragment key={`fragment-mid-end`}>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                            <button
+                                                key={totalPages}
+                                                type="button"
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                            >
+                                                {totalPages}
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                }
+                                pageNum = currentPage + i - 2;
+                            }
+                            return (
+                                <button
+                                    key={pageNum}
+                                    type="button"
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === pageNum
+                                        ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                        : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"}`}
+                                    aria-current={currentPage === pageNum ? "page" : undefined}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+                        <button
+                            type="button"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages || totalPages === 1}
+                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-e-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Next"
+                        >
+                            <span className="hidden sm:block">Next</span>
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </nav>
+                    {/* Items info */}
+                    <div className="text-sm text-gray-800">
+                        Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * limitNum + 1}</span> to {" "}
+                        <span className="font-semibold text-slate-900">{Math.min(currentPage * limitNum, filteredBatteries.length)}</span> of {" "}
+                        <span className="font-semibold text-slate-900">{filteredBatteries.length}</span> results
+                    </div>
                 </div>
-              </div>
             )}
 
             {/* Detail Modal */}
@@ -1001,8 +1043,26 @@ const FaultyBatteryPage: React.FC = () => {
             <EditBatteryModal
                 isOpen={isEditModalOpen}
                 onClose={() => { setIsEditModalOpen(false); setEditingBattery(null); }}
-                onSuccess={updated => handleEditSuccess(updated)}
-                battery={editingBattery}
+                onSuccess={handleEditSuccess}
+                battery={editingBattery ? {
+                    id: editingBattery._id,
+                    batteryId: editingBattery.serial,
+                    stationId: editingBattery.station?._id || '',
+                    stationName: editingBattery.station?.stationName || 'Unknown Station',
+                    status: editingBattery.status as any,
+                    soh: editingBattery.soh,
+                    voltage: editingBattery.voltage || 0,
+                    current: 0,
+                    temperature: 0,
+                    cycleCount: 0,
+                    lastMaintenance: new Date(editingBattery.updatedAt),
+                    createdAt: new Date(editingBattery.createdAt),
+                    updatedAt: new Date(editingBattery.updatedAt),
+                    model: editingBattery.model,
+                    manufacturer: editingBattery.manufacturer,
+                    capacity_kWh: editingBattery.capacity_kWh,
+                    price: (editingBattery as any).price || 0,
+                } : null}
             />
             <ConfirmationModal
                 isOpen={isConfirmModalOpen}
@@ -1014,6 +1074,95 @@ const FaultyBatteryPage: React.FC = () => {
                 variant="delete"
                 isLoading={!!deletingId}
             />
+
+            {/* Battery Logs Modal */}
+            {logsOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setLogsOpen(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center space-x-3">
+                                    <div className="p-3 bg-amber-100 rounded-xl">
+                                        <BookOpen className="h-8 w-8 text-amber-600" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-slate-800">Battery Logs</h2>
+                                        <p className="text-slate-500">Battery #{logsBattery?.serial}</p>
+                                    </div>
+                                </div>
+                                <Button variant="ghost" size="icon" onClick={() => setLogsOpen(false)} className="h-10 w-10 rounded-full hover:bg-slate-100">×</Button>
+                            </div>
+
+                            {logsLoading ? (
+                                <div className="py-10 flex justify-center"><Spinner /></div>
+                            ) : logsData ? (
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                            <div className="text-slate-500 text-sm">Status</div>
+                                            <div className="font-semibold text-slate-900 capitalize">{logsData.battery.status}</div>
+                                        </div>
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                            <div className="text-slate-500 text-sm">SOH</div>
+                                            <div className="font-semibold text-slate-900">{logsData.battery.soh}%</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-xl border border-slate-200 p-4">
+                                        <div className="text-slate-700 font-semibold mb-3">History</div>
+                                        {logsData.history && logsData.history.length > 0 ? (
+                                            <ul className="space-y-3">
+                                                {logsData.history.map((raw, idx) => {
+                                                    let item: any = raw;
+                                                    if (typeof raw === 'string') {
+                                                        try { item = JSON.parse(raw); } catch { item = { details: raw }; }
+                                                    }
+                                                    const at = item.at || item.createdAt || item.updatedAt;
+                                                    const time = at ? new Date(at) : null;
+                                                    const idGuess = item.user?._id || item.driver?._id || item.user_id || item.driver_id;
+                                                    const driverName = item.driver?.name || item.user?.fullName || item.user?.name || (idGuess ? logsUserNameMap[idGuess] : undefined);
+                                                    // Only show vehicle if we have a friendly plate/name
+                                                    const vehicle = item.vehicle?.plate || item.vehiclePlate || item.vehicleName || undefined;
+                                                    const soh = item.soh ?? item.SOH ?? undefined;
+                                                    const action = (item.action || item.status || 'update') as string;
+                                                    const stationName = item.station?.stationName || item.station?.name || undefined;
+                                                    const details = item.details || '';
+                                                    const actionColor =
+                                                        action === 'swap' ? 'bg-blue-100 border-blue-200 text-blue-700'
+                                                            : action === 'return' ? 'bg-green-100 border-green-200 text-green-700'
+                                                                : action === 'check-out' || action === 'checkout' ? 'bg-amber-100 border-amber-200 text-amber-700'
+                                                                    : 'bg-slate-100 border-slate-200 text-slate-700';
+                                                    return (
+                                                        <li key={idx} className="border rounded-lg p-3 bg-white">
+                                                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                                                                <span className={`px-2 py-0.5 text-xs rounded-full border capitalize ${actionColor}`}>{action}</span>
+                                                                {time && <span className="text-xs text-slate-500">{new Intl.DateTimeFormat('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(time)}</span>}
+                                                                {typeof soh === 'number' && <span className="text-xs text-slate-600">SOH: <span className="font-semibold">{soh}%</span></span>}
+                                                            </div>
+                                                            <div className="text-sm text-slate-800">
+                                                                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                                                    {driverName && <span><span className="text-slate-500">User:</span> {driverName}</span>}
+                                                                    {vehicle && <span><span className="text-slate-500">Vehicle:</span> {vehicle}</span>}
+                                                                    {stationName && <span><span className="text-slate-500">Station:</span> {stationName}</span>}
+                                                                </div>
+                                                                {details && <div className="mt-1 text-slate-700">{details}</div>}
+                                                            </div>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        ) : (
+                                            <div className="text-slate-600 text-sm">No history entries.</div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-slate-600">No data.</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

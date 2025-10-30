@@ -9,7 +9,9 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, Grid, List, Users, Activity, Car, Star, Calendar, User, AlertCircle, ChevronLeft, ChevronRight, UserX } from 'lucide-react';
+import { Grid, List, Users, Activity, User, AlertCircle, ChevronLeft, ChevronRight, UserX, Mail, Phone, MapPin, Shield } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+//
 import { toast } from 'sonner';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
@@ -88,7 +90,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
     const [suspendingDriverId, setSuspendingDriverId] = useState<string | null>(null);
     const [activatingDriverId, setActivatingDriverId] = useState<string | null>(null);
     const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
-    const [actionType, setActionType] = useState<'suspend' | 'activate' | null>(null);
+    const [actionType, setActionType] = useState<'suspend' | 'activate' | 'delete' | null>(null);
     const [targetDriver, setTargetDriver] = useState<Driver | null>(null);
     const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -459,7 +461,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                             </div>
                                         </div>
 
-                                        <div className="flex space-x-2 mt-4">
+                                        <div className="grid grid-cols-2 gap-2 mt-4">
                                             <Button
                                                 variant="outline"
                                                 size="sm"
@@ -467,9 +469,20 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                                     e.stopPropagation();
                                                     handleDriverSelect(driver);
                                                 }}
-                                                className="flex-1 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 border-slate-200 hover:shadow-sm"
+                                                className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 border-slate-200 hover:shadow-sm"
                                             >
                                                 View Details
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDriverSelect(driver);
+                                                }}
+                                                className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 border-slate-200 hover:shadow-sm"
+                                            >
+                                                Edit
                                             </Button>
                                             {driver.status === 'ACTIVE' ? (
                                                 <Button
@@ -506,6 +519,19 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                                                     )}
                                                 </Button>
                                             )}
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setTargetDriver(driver);
+                                                    setActionType('delete');
+                                                    setIsConfirmationModalOpen(true);
+                                                }}
+                                                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 hover:shadow-sm"
+                                            >
+                                                Delete
+                                            </Button>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -747,158 +773,98 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
 
                     {selectedDriver && (
                         <div className="py-4 space-y-6">
-                            {/* Personal Information */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                                    <User className="h-5 w-5" />
-                                    Personal Information
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="flex items-center space-x-3">
-                                        {selectedDriver.avatar ? (
-                                            <img
-                                                src={selectedDriver.avatar}
-                                                alt={selectedDriver.name}
-                                                className="w-16 h-16 rounded-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                                                {selectedDriver.name.charAt(0)}
+                            {/* Header Info (Card) */}
+                            <Card className="shadow-sm border-slate-200">
+                                <CardContent className="p-6">
+                                    <div className="flex items-start space-x-6">
+                                        <div className="relative">
+                                            {selectedDriver.avatar ? (
+                                                <img src={selectedDriver.avatar} alt={selectedDriver.name} className="h-20 w-20 rounded-full object-cover ring-4 ring-white shadow-lg" />
+                                            ) : (
+                                                <div className="h-20 w-20 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-xl ring-4 ring-white shadow-lg">
+                                                    {selectedDriver.name.charAt(0)}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h2 className="text-2xl font-bold text-slate-800 mb-2">{selectedDriver.name}</h2>
+                                            <p className="text-lg text-slate-600 mb-3">{selectedDriver.email}</p>
+                                            <div className="flex items-center space-x-3">
+                                                <Badge variant="outline">Driver</Badge>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedDriver.status)}`}>{getStatusText(selectedDriver.status)}</span>
                                             </div>
-                                        )}
-                                        <div>
-                                            <h4 className="font-semibold text-slate-800 text-lg">{selectedDriver.name}</h4>
-                                            <p className="text-slate-500">{selectedDriver.email}</p>
-                                            <p className="text-slate-500">{selectedDriver.phone}</p>
                                         </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">ID:</span>
-                                            <span className="font-mono text-sm">{selectedDriver.id}</span>
+                                </CardContent>
+                            </Card>
+
+                            {/* Personal Information */}
+                            <Card className="shadow-sm border-slate-200">
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
+                                        <User className="h-5 w-5 mr-2 text-blue-600" />
+                                        Personal Information
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
+                                            <Mail className="h-5 w-5 text-blue-500" />
+                                            <div>
+                                                <p className="text-sm text-slate-600">Email</p>
+                                                <p className="font-medium text-slate-800">{selectedDriver.email}</p>
+                                            </div>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">Status:</span>
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedDriver.status)}`}>
-                                                {getStatusText(selectedDriver.status)}
-                                            </span>
+                                        <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
+                                            <Phone className="h-5 w-5 text-green-500" />
+                                            <div>
+                                                <p className="text-sm text-slate-600">Phone Number</p>
+                                                <p className="font-medium text-slate-800">{selectedDriver.phone}</p>
+                                            </div>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">Role:</span>
-                                            <span className="text-sm font-medium text-blue-600">Driver</span>
+                                        <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
+                                            <MapPin className="h-5 w-5 text-orange-500" />
+                                            <div>
+                                                <p className="text-sm text-slate-600">Subscription</p>
+                                                <p className="font-medium text-slate-800">{selectedDriver.subscriptionPlan.name}</p>
+                                            </div>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">Verification:</span>
-                                            <span className="text-sm font-medium text-yellow-600">
-                                                Not verified
-                                            </span>
+                                        <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
+                                            <Shield className="h-5 w-5 text-purple-500" />
+                                            <div>
+                                                <p className="text-sm text-slate-600">Role</p>
+                                                <p className="font-medium text-slate-800">Driver</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
+                                </CardContent>
+                            </Card>
 
                             {/* Account Information */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                                    <Calendar className="h-5 w-5" />
-                                    Account Information
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">Join date:</span>
-                                            <span className="font-medium">{selectedDriver.joinDate.toLocaleDateString('vi-VN')}</span>
+                            <Card className="shadow-sm border-slate-200">
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
+                                        <Shield className="h-5 w-5 mr-2 text-green-600" />
+                                        Account Information
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between"><span className="text-slate-600">Join date:</span><span className="font-medium">{selectedDriver.joinDate.toLocaleDateString('vi-VN')}</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-600">Last active:</span><span className="font-medium">{selectedDriver.lastActive.toLocaleDateString('vi-VN')}</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-600">Created date:</span><span className="font-medium">{selectedDriver.createdAt.toLocaleDateString('vi-VN')}</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-600">Last updated:</span><span className="font-medium">{selectedDriver.updatedAt.toLocaleDateString('vi-VN')}</span></div>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">Last active:</span>
-                                            <span className="font-medium">{selectedDriver.lastActive.toLocaleDateString('vi-VN')}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">Created date:</span>
-                                            <span className="font-medium">{selectedDriver.createdAt.toLocaleDateString('vi-VN')}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">Last updated:</span>
-                                            <span className="font-medium">{selectedDriver.updatedAt.toLocaleDateString('vi-VN')}</span>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between"><span className="text-slate-600">Subscription:</span><span className="font-medium">{selectedDriver.subscriptionPlan.name}</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-600">Plan type:</span><span className="font-medium">{selectedDriver.subscriptionPlan.type}</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-600">Price:</span><span className="font-medium">{selectedDriver.subscriptionPlan.price.toLocaleString('vi-VN')} VND</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-600">Duration:</span><span className="font-medium">{selectedDriver.subscriptionPlan.duration} days</span></div>
                                         </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">Subscription:</span>
-                                            <span className="font-medium">{selectedDriver.subscriptionPlan.name}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">Plan type:</span>
-                                            <span className="font-medium">{selectedDriver.subscriptionPlan.type}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">Price:</span>
-                                            <span className="font-medium">{selectedDriver.subscriptionPlan.price.toLocaleString('vi-VN')} VND</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">Duration:</span>
-                                            <span className="font-medium">{selectedDriver.subscriptionPlan.duration} days</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Additional Information */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                                    <Car className="h-5 w-5" />
-                                    Additional Information
-                                </h3>
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                    <div className="flex items-center space-x-2">
-                                        <AlertCircle className="h-5 w-5 text-yellow-600" />
-                                        <span className="text-sm text-yellow-800">
-                                            Detailed information about driver's license, address, vehicle and activity will be updated when the driver completes their profile.
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">License:</span>
-                                            <span className="font-medium text-slate-400">Not updated</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">License type:</span>
-                                            <span className="font-medium text-slate-400">Not updated</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">Address:</span>
-                                            <span className="font-medium text-slate-400">Not updated</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">City:</span>
-                                            <span className="font-medium text-slate-400">Not updated</span>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">Vehicle:</span>
-                                            <span className="font-medium text-slate-400">Not updated</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">Plate number:</span>
-                                            <span className="font-medium text-slate-400">Not updated</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">Total swaps:</span>
-                                            <span className="font-medium text-slate-400">0</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-600">Rating:</span>
-                                            <div className="flex items-center space-x-1">
-                                                <Star className="h-4 w-4 text-gray-400" />
-                                                <span className="font-medium text-slate-400">None</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                </CardContent>
+                            </Card>
                         </div>
                     )}
 
@@ -934,10 +900,14 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                 isOpen={isConfirmationModalOpen}
                 onClose={handleCancelAction}
                 onConfirm={handleConfirmAction}
-                title={`Confirm ${actionType === 'suspend' ? 'lock' : 'activate'} driver`}
+                title={actionType === 'delete' ? 'Confirm delete driver' : `Confirm ${actionType === 'suspend' ? 'lock' : 'activate'} driver`}
                 message={
                     <div>
-                        Are you sure you want to {actionType === 'suspend' ? 'lock' : 'activate'} driver <span className="font-bold text-slate-800">{targetDriver?.name}</span>?
+                        {actionType === 'delete' ? (
+                            <>Are you sure you want to delete driver <span className="font-bold text-slate-800">{targetDriver?.name}</span>? This action cannot be undone.</>
+                        ) : (
+                            <>Are you sure you want to {actionType === 'suspend' ? 'lock' : 'activate'} driver <span className="font-bold text-slate-800">{targetDriver?.name}</span>?</>
+                        )}
                         {submitError && (
                             <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mt-3 mb-1 rounded-lg">
                                 <AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" />
@@ -946,7 +916,7 @@ export const DriverListPage: React.FC<DriverListPageProps> = ({ onDriverSelect }
                         )}
                     </div>
                 }
-                confirmText={actionType === 'suspend' ? 'Lock' : 'Activate'}
+                confirmText={actionType === 'delete' ? 'Delete' : actionType === 'suspend' ? 'Lock' : 'Activate'}
                 type="delete"
                 isLoading={suspendingDriverId === targetDriver?.id || activatingDriverId === targetDriver?.id}
             />

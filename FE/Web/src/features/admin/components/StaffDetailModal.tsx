@@ -201,17 +201,7 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
                                         <p className="font-medium text-slate-800">{formatDate(staff.updatedAt)}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
-                                    <Shield className="h-5 w-5 text-purple-500" />
-                                    <div>
-                                        <p className="text-sm text-slate-600">Status</p>
-                                        <p className="font-medium text-slate-800">
-                                            {staff.status === 'ONLINE' ? 'Online' :
-                                                staff.status === 'OFFLINE' ? 'Offline' :
-                                                    staff.status === 'SHIFT_ACTIVE' ? 'On Shift' : 'Suspended'}
-                                        </p>
-                                    </div>
-                                </div>
+                                {/* Status removed per request */}
                             </div>
                         </CardContent>
                     </Card>
