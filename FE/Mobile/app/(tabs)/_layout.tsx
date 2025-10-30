@@ -1,12 +1,11 @@
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
-import { Redirect, Tabs, useRouter } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 
 export default function TabLayout() {
   const { user, loading } = useAuth();
-  const router = useRouter();
 
   // Show loading while checking auth
   if (loading) {
