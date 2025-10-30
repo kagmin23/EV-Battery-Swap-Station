@@ -86,7 +86,7 @@ export default function Pagination({
           aria-label="Previous"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span className="hidden sm:block">Trước</span>
+          <span className="hidden sm:block">Previous</span>
         </button>
 
         {getPageNumbers().map((page, index) => {
@@ -125,7 +125,7 @@ export default function Pagination({
           className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-e-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none transition-colors"
           aria-label="Next"
         >
-          <span className="hidden sm:block">Tiếp theo</span>
+          <span className="hidden sm:block">Next</span>
           <ChevronRight className="w-4 h-4" />
         </button>
       </nav>
@@ -133,9 +133,9 @@ export default function Pagination({
       {/* Items info */}
       {totalItems && (
         <div className="text-sm text-gray-800">
-          Hiển thị <span className="font-semibold text-text-primary">{startItem}</span> đến{" "}
-          <span className="font-semibold text-text-primary">{endItem}</span> trên{" "}
-          <span className="font-semibold text-text-primary">{totalItems}</span> kết quả
+          Showing <span className="font-semibold text-text-primary">{startItem}</span> to{" "}
+          <span className="font-semibold text-text-primary">{endItem}</span> of{" "}
+          <span className="font-semibold text-text-primary">{totalItems}</span> results
         </div>
       )}
     </div>

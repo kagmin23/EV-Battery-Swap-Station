@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Battery, User, CheckCircle, ArrowRight, Clock, Zap, RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Battery, RefreshCw, Eye, CheckCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { getSwapRequests, confirmSwapRequest } from '../apis/SwapApi';
 import type { SwapRequest } from '../apis/SwapApi';
 import { Spinner } from '@/components/ui/spinner';
 
 export default function ConfirmExchange() {
+  const navigate = useNavigate();
   const [swapRequests, setSwapRequests] = useState<SwapRequest[]>([]);
-  const [selectedRequest, setSelectedRequest] = useState<SwapRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isConfirming, setIsConfirming] = useState(false);
+  const [isConfirming, setIsConfirming] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -22,11 +23,6 @@ export default function ConfirmExchange() {
       setError(null);
       const data = await getSwapRequests();
       setSwapRequests(data);
-      // Auto-select first pending request
-      const pendingRequest = data.find(req => req.status === 'pending');
-      if (pendingRequest) {
-        setSelectedRequest(pendingRequest);
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch swap requests');
       console.error('Error fetching swap requests:', err);
@@ -35,20 +31,42 @@ export default function ConfirmExchange() {
     }
   };
 
-  const handleConfirmExchange = async () => {
-    if (!selectedRequest) return;
+  const handleViewDetails = (requestId: string) => {
+    navigate(`/staff/swap-request/${requestId}`);
+  };
 
+  const handleConfirmExchange = async (request: SwapRequest) => {
     try {
-      setIsConfirming(true);
-      await confirmSwapRequest(selectedRequest._id);
+      setIsConfirming(request.booking_id || request._id || '');
+      const requestId = request.booking_id || request._id;
+      if (!requestId) {
+        throw new Error('Request ID not found');
+      }
+      await confirmSwapRequest(requestId);
       toast.success('Battery swap confirmed successfully!');
       // Refresh the list
       await fetchSwapRequests();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Unable to confirm battery swap');
     } finally {
-      setIsConfirming(false);
+      setIsConfirming(null);
     }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending' },
+      confirmed: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Confirmed' },
+      completed: { bg: 'bg-green-100', text: 'text-green-800', label: 'Completed' },
+      cancelled: { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelled' }
+    };
+    
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+    return (
+      <span className={`px-2 py-1 text-xs rounded-full ${config.bg} ${config.text}`}>
+        {config.label}
+      </span>
+    );
   };
 
   if (isLoading) {
@@ -103,7 +121,7 @@ export default function ConfirmExchange() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold text-text-primary mb-2">Confirm Battery Swap</h1>
-            <p className="text-text-secondary">Review and confirm battery swap transaction</p>
+            <p className="text-text-secondary">Review and confirm battery swap transactions</p>
           </div>
           <button
             onClick={fetchSwapRequests}
@@ -114,210 +132,99 @@ export default function ConfirmExchange() {
           </button>
         </div>
 
-        {/* Swap Requests List */}
-        {swapRequests.length > 1 && (
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-3">Request List ({swapRequests.length})</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {swapRequests.map((request) => (
-                <div
-                  key={request._id}
-                  onClick={() => setSelectedRequest(request)}
-                  className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${
-                    selectedRequest?._id === request._id
-                      ? 'border-blue-600 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-gray-900">{request.driver.fullName}</span>
-                    {selectedRequest?._id === request._id && (
-                      <CheckCircle className="w-5 h-5 text-blue-600" />
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-600">{request.driver.phoneNumber}</p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      request.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                      request.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {request.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+        {/* Swap Requests Table */}
+        <div className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Driver
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Phone
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Battery Serial
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Station
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Scheduled Time
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {swapRequests.map((request) => {
+                  const requestId = request.booking_id || request._id || '';
+                  const isConfirmingThis = isConfirming === requestId;
+                  
+                  return (
+                    <tr key={requestId} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {request.user.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {request.user.phone}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {request.battery_info.serial}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {request.station_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(request.scheduled_time).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(request.status)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => handleViewDetails(requestId)}
+                            className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="View Details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          {request.status === 'pending' && (
+                            <button
+                              onClick={() => handleConfirmExchange(request)}
+                              disabled={isConfirmingThis}
+                              className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Confirm Swap"
+                            >
+                              {isConfirmingThis ? (
+                                <Clock className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <CheckCircle className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        )}
+        </div>
 
-        {selectedRequest && (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Driver Information Card */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-blue-600 rounded-lg">
-                  <User className="w-6 h-6 text-white" />
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900">Driver Information</h2>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Name</span>
-                  <span className="text-gray-900 font-medium">{selectedRequest.driver.fullName}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Phone</span>
-                  <span className="text-gray-900 font-medium">{selectedRequest.driver.phoneNumber}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Email</span>
-                  <span className="text-gray-900 font-medium">{selectedRequest.driver.email}</span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-600">Status</span>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    selectedRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    selectedRequest.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                    selectedRequest.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {selectedRequest.status}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Old Battery Card */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-red-600 rounded-lg">
-                  <Battery className="w-6 h-6 text-white" />
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900">Battery to Remove</h2>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Serial Number</span>
-                  <span className="text-gray-900 font-medium">{selectedRequest.oldBattery.serial}</span>
-                </div>
-                {selectedRequest.oldBattery.model && (
-                  <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                    <span className="text-gray-600">Model</span>
-                    <span className="text-gray-900 font-medium">{selectedRequest.oldBattery.model}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Status</span>
-                  <span className="text-gray-900 font-medium">{selectedRequest.oldBattery.status}</span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-600">Health (SOH)</span>
-                  <span className={`font-bold text-lg ${
-                    selectedRequest.oldBattery.soh >= 90 ? 'text-green-600' :
-                    selectedRequest.oldBattery.soh >= 70 ? 'text-yellow-600' :
-                    'text-red-600'
-                  }`}>
-                    {selectedRequest.oldBattery.soh}%
-                  </span>
-                </div>
-              </div>
-            </div>
+        {/* Summary */}
+        <div className="mt-6 text-sm text-gray-600">
+          <div>
+            Total requests: <span className="font-semibold text-gray-900">{swapRequests.length}</span>
           </div>
-
-          {/* New Battery Card (if assigned) */}
-          {selectedRequest.newBattery && (
-            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg mb-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-green-600 rounded-lg">
-                  <Zap className="w-6 h-6 text-white" />
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900">Replacement Battery</h2>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Serial Number</span>
-                  <span className="text-gray-900 font-medium">{selectedRequest.newBattery.serial}</span>
-                </div>
-                {selectedRequest.newBattery.model && (
-                  <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                    <span className="text-gray-600">Model</span>
-                    <span className="text-gray-900 font-medium">{selectedRequest.newBattery.model}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Status</span>
-                  <span className="text-gray-900 font-medium">{selectedRequest.newBattery.status}</span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-600">Health (SOH)</span>
-                  <span className={`font-bold text-lg ${
-                    selectedRequest.newBattery.soh >= 90 ? 'text-green-600' :
-                    selectedRequest.newBattery.soh >= 70 ? 'text-yellow-600' :
-                    'text-red-600'
-                  }`}>
-                    {selectedRequest.newBattery.soh}%
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Exchange Summary */}
-          {selectedRequest.newBattery && (
-            <div className="bg-blue-50 border border-blue-300 rounded-xl p-6 shadow-lg mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <ArrowRight className="w-6 h-6 text-blue-600" />
-                Battery Swap Summary
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                <div className="text-center">
-                  <p className="text-gray-600 text-sm mb-1">Remove</p>
-                  <p className="text-gray-900 font-bold text-lg">{selectedRequest.oldBattery.serial}</p>
-                  <p className="text-red-600 text-sm">SOH: {selectedRequest.oldBattery.soh}%</p>
-                </div>
-                <div className="flex justify-center">
-                  <ArrowRight className="w-8 h-8 text-blue-600" />
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-600 text-sm mb-1">Install</p>
-                  <p className="text-gray-900 font-bold text-lg">{selectedRequest.newBattery.serial}</p>
-                  <p className="text-green-600 text-sm">SOH: {selectedRequest.newBattery.soh}%</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-4 justify-end">
-              <button
-                onClick={() => window.history.back()}
-                className="px-6 py-3 rounded-lg border-2 border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Go Back
-              </button>
-              <button
-                onClick={handleConfirmExchange}
-                disabled={selectedRequest.status !== 'pending' || isConfirming}
-                className="px-8 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-semibold flex items-center gap-2"
-              >
-                {isConfirming ? (
-                  <>
-                    <Clock className="w-5 h-5 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-5 h-5" />
-                    Confirm Battery Swap
-                  </>
-                )}
-              </button>
-            </div>
-          </>
-        )}
+        </div>
       </div>
     </div>
   );

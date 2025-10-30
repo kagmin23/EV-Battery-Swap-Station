@@ -155,6 +155,7 @@ export const BatteryInventoryPage: React.FC = () => {
                         faulty: 0,
                         inUse: 0,
                         idle: 0,
+                        isBooking: 0,
                         averageSoh: 0
                     }
                 });
@@ -170,6 +171,7 @@ export const BatteryInventoryPage: React.FC = () => {
             const faulty = group.batteries.filter(b => b.status === 'faulty').length;
             const inUse = group.batteries.filter(b => b.status === 'in-use').length;
             const idle = group.batteries.filter(b => b.status === 'idle').length;
+            const isBooking = group.batteries.filter(b => b.status === 'is-booking').length;
             const averageSoh = total > 0 ? group.batteries.reduce((sum, b) => sum + b.soh, 0) / total : 0;
 
             group.stats = {
@@ -179,6 +181,7 @@ export const BatteryInventoryPage: React.FC = () => {
                 faulty,
                 inUse,
                 idle,
+                isBooking,
                 averageSoh: Math.round(averageSoh * 100) / 100
             };
         });
@@ -214,6 +217,8 @@ export const BatteryInventoryPage: React.FC = () => {
                 return <Badge variant="default">Đang sử dụng</Badge>;
             case 'idle':
                 return <Badge variant="secondary">Nhàn rỗi</Badge>;
+            case 'is-booking':
+                return <Badge variant="secondary">Is Booking</Badge>;
             default:
                 return <Badge variant="secondary">Không xác định</Badge>;
         }
@@ -356,6 +361,15 @@ export const BatteryInventoryPage: React.FC = () => {
                     iconBg="bg-green-500"
                 />
                 <StatsCard
+                    title="Đặt trước"
+                    value={batteries.filter(b => b.status === 'is-booking').length}
+                    icon={BatteryIcon}
+                    gradientFrom="from-indigo-50"
+                    gradientTo="to-indigo-100/50"
+                    textColor="text-indigo-900"
+                    iconBg="bg-indigo-500"
+                />
+                <StatsCard
                     title="SOH trung bình"
                     value={`${batteries.length > 0 ? Math.round(batteries.reduce((sum, b) => sum + b.soh, 0) / batteries.length) : 0}%`}
                     icon={TrendingUp}
@@ -454,6 +468,12 @@ export const BatteryInventoryPage: React.FC = () => {
                                         className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
                                     >
                                         Nhàn rỗi
+                                    </SelectItem>
+                                    <SelectItem
+                                        value="is-booking"
+                                        className="rounded-lg hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 transition-colors duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700"
+                                    >
+                                        Đặt trước
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
@@ -581,6 +601,10 @@ export const BatteryInventoryPage: React.FC = () => {
                                     <span className="flex items-center">
                                         <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
                                         Lỗi: {group.stats.faulty}
+                                    </span>
+                                    <span className="flex items-center">
+                                        <div className="w-2 h-2 bg-indigo-500 rounded-full mr-2"></div>
+                                        Đặt trước: {group.stats.isBooking}
                                     </span>
                                     <span className="text-slate-500">
                                         SOH TB: {group.stats.averageSoh}%
