@@ -1,5 +1,6 @@
 import { config } from '@/config/env';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { getSubscriptionPlansApi, useSubscriptionPlans } from '@/store/subcription';
 import { getAllVehicle, useVehicles } from '@/store/vehicle';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,6 +10,7 @@ import {
     Animated,
     Dimensions,
     Image,
+    Modal,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -30,6 +32,9 @@ const ProfileScreen: React.FC = () => {
     const sheetY = useRef(new Animated.Value(height)).current;
     const vehicles = useVehicles();
     const { user } = useAuth();
+    const subscriptions = useSubscriptionPlans();
+    const [subModalVisible, setSubModalVisible] = useState(false);
+    const [selectedSub, setSelectedSub] = useState<any>(null);
 
     const resolveAvatarUrl = (avatar?: string) => {
         if (!avatar) return '';
@@ -43,6 +48,8 @@ const ProfileScreen: React.FC = () => {
     useFocusEffect(
         useCallback(() => {
             getAllVehicle();
+            // refresh subscription plans so we can show current plan(s)
+            getSubscriptionPlansApi().catch(() => {});
         }, [])
     )
     const openSheet = () => {
@@ -228,22 +235,81 @@ const ProfileScreen: React.FC = () => {
                     <Text style={styles.sectionTitle}>Current Subscription Plan</Text>
                 </View>
 
-                <TouchableOpacity style={styles.subscriptionCard}>
-                    <View style={styles.subscriptionIcon}>
-                        <Ionicons name="battery-charging" size={24} color="#00d4aa" />
-                    </View>
-                    <View style={styles.subscriptionContent}>
-                        <Text style={styles.subscriptionTitle}>Premium Battery Plan</Text>
-                        <Text style={styles.subscriptionSubtitle}>Unlimited swaps • Priority access</Text>
-                        <Text style={styles.subscriptionPrice}>₫299,000/tháng</Text>
-                        <View style={styles.subscriptionStatus}>
-                            <View style={styles.activeIndicator} />
-                            <Text style={styles.statusText}>Active</Text>
-                        </View>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="white" />
-                </TouchableOpacity>
+                {/* Subscription detail modal */}
+                {selectedSub && (
+                    <Modal visible={subModalVisible} transparent animationType="slide" onRequestClose={() => { setSubModalVisible(false); setSelectedSub(null); }}>
+                        <Pressable style={styles.modalOverlay} onPress={() => { setSubModalVisible(false); setSelectedSub(null); }} />
+                        <View style={styles.modalContainer}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>{selectedSub.subscriptionName}</Text>
+                                <TouchableOpacity onPress={() => { setSubModalVisible(false); setSelectedSub(null); }} style={styles.modalClose}>
+                                    <Ionicons name="close" size={20} color="white" />
+                                </TouchableOpacity>
+                            </View>
 
+                            <View style={styles.modalBody}>
+                                <Text style={styles.modalDesc}>{selectedSub.description}</Text>
+                                <Text style={styles.modalLabel}>Price: ₫{(selectedSub.price ?? 0).toLocaleString()}</Text>
+                                <Text style={styles.modalLabel}>Duration: {selectedSub.durations} days</Text>
+                                <Text style={styles.modalMeta}>Swaps: {selectedSub.countSwap ?? 0} • Slots: {selectedSub.quantitySlot ?? 0}</Text>
+                                <Text style={styles.modalDate}>Created: {new Date(selectedSub.createdAt).toLocaleString()}</Text>
+                            </View>
+
+                            <View style={styles.modalFooter}>
+                                {((selectedSub.userSubscription?.status || '').toString().toLowerCase() === 'in-use') ? (
+                                    <View style={[styles.button, styles.buttonSecondary]}>
+                                        <Text style={styles.buttonSecondaryText}>In use</Text>
+                                    </View>
+                                ) : (
+                                    <TouchableOpacity style={[styles.button, styles.buttonPrimary]} onPress={() => { setSubModalVisible(false); setSelectedSub(null); router.push('/driver/ListSubscriptions'); }}>
+                                        <Text style={styles.buttonPrimaryText}>Manage / Purchase</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </View>
+                    </Modal>
+                )}
+                <View style={{ flexDirection: 'column', gap: 10 }}>
+                    <TouchableOpacity onPress={() => router.push(('/driver/ListSubscriptions' as any))} style={{ alignSelf: 'flex-end' }}>
+                        <Text style={{ color: 'white', fontSize: 15 }}>View All</Text>
+                    </TouchableOpacity>
+
+                    {(() => {
+                        const inUse = (subscriptions || []).filter((s: any) => (s.userSubscription?.status || '').toString().toLowerCase() === 'in-use');
+                        if (inUse.length === 0) {
+                            return (
+                                <TouchableOpacity style={styles.subscriptionCard} onPress={() => router.push('/driver/ListSubscriptions')}>
+                                    <View style={styles.subscriptionIcon}>
+                                        <Ionicons name="battery-charging" size={24} color="#6d4aff" />
+                                    </View>
+                                    <View style={styles.subscriptionContent}>
+                                        <Text style={styles.subscriptionTitle}>No active subscription</Text>
+                                        <Text style={styles.subscriptionSubtitle}>You have no subscription currently in use</Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={20} color="white" />
+                                </TouchableOpacity>
+                            );
+                        }
+
+                        return inUse.map((p: any, idx: number) => (
+                            <TouchableOpacity key={`${p._id ?? p.id ?? idx}`} style={styles.subscriptionCard} onPress={() => { setSelectedSub(p); setSubModalVisible(true); }}>
+                                <View style={styles.subscriptionIcon}>
+                                    <Ionicons name="battery-charging" size={24} color="#00d4aa" />
+                                </View>
+                                <View style={styles.subscriptionContent}>
+                                    <Text style={styles.subscriptionTitle}>{p.subscriptionName}</Text>
+                                    <Text style={styles.subscriptionSubtitle}>{p.description}</Text>
+                                    <Text style={styles.subscriptionPrice}>₫{(p.price ?? 0).toLocaleString()}</Text>
+                                    <View style={styles.subscriptionStatus}>
+                                        <View style={styles.activeIndicator} />
+                                        <Text style={styles.statusText}>{(p.userSubscription?.status || 'In use')}</Text>
+                                    </View>
+                                </View>
+                                <Ionicons name="chevron-forward" size={20} color="white" />
+                            </TouchableOpacity>
+                        ));
+                    })()}
+                </View>
                 <TouchableOpacity style={styles.subscriptionCard}>
                     <View style={styles.subscriptionIcon}>
                         <Ionicons name="time" size={24} color="#6d4aff" />
@@ -494,7 +560,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     sectionTitle: {
-        fontSize: 20,
+        fontSize: 16,
         fontWeight: 'bold',
         color: '#a0a0a0',
 
@@ -710,7 +776,7 @@ const styles = StyleSheet.create({
         borderColor: '#2a1f4e',
     },
     buttonSecondaryText: {
-        color: '#bfa8ff',
+        color: '#00d4aa',
         fontWeight: '700',
     },
     buttonPrimary: {
@@ -720,6 +786,32 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: '700',
     },
+    modalOverlay: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalContainer: {
+        position: 'absolute',
+        left: 20,
+        right: 20,
+        top: '25%',
+        backgroundColor: '#120935',
+        borderRadius: 16,
+        padding: 16,
+    },
+    modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    modalClose: { padding: 6 },
+    modalTitle: { color: 'white', fontSize: 18, fontWeight: '700' },
+    modalBody: { marginTop: 12 },
+    modalLabel: { color: '#bfa8ff', fontWeight: '700', marginBottom: 6 },
+    modalDesc: { color: '#a0a0a0', marginBottom: 20 },
+    modalMeta: { color: '#bfa8ff' },
+    modalFooter: { marginTop: 14, flexDirection: 'row', justifyContent: 'flex-end' },
+    modalDate: { color: '#8b7bb8', marginTop: 8, fontSize: 13 },
 });
 
 export default ProfileScreen;

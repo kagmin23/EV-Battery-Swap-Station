@@ -1,5 +1,6 @@
 import { useCreateBooking } from '@/features/driver/apis/booking';
 import { useVnPay } from '@/store/payment';
+import { useSubscriptionPlans } from '@/store/subcription';
 import { toCamelCase } from '@/utils/caseConverter';
 import { showErrorToast, showSuccessToast } from '@/utils/toast';
 import { useRouter } from 'expo-router';
@@ -34,6 +35,15 @@ export default function PaymentModal({
     const createBooking = createBookingMutation.mutateAsync;
     const bookingLoading = createBookingMutation.status === 'pending';
     const { createPayment, loading: vnpayLoading } = useVnPay();
+    const subscriptions = useSubscriptionPlans();
+
+    const hasInUseSubscription = React.useMemo(() => {
+        try {
+            return (subscriptions || []).some((s: any) => (s.userSubscription?.status || '').toString().toLowerCase() === 'in-use');
+        } catch {
+            return false;
+        }
+    }, [subscriptions]);
 
     const scheduled = useMemo(() => new Date(
         date.getFullYear(),
@@ -92,15 +102,25 @@ export default function PaymentModal({
                 batteryId,
             });
 
-            const data = toCamelCase(bookingRes)
+            const data = toCamelCase(bookingRes);
             const bookingId = data.data.bookingId;
 
             if (!data.success || !bookingId) {
                 return showErrorToast(data.message || 'Booking failed');
             }
 
+            // If backend immediately confirmed the booking (e.g. user has an active subscription),
+            // skip VNPay payment and treat booking as successful.
+            const bookingStatus = (data.data.status || '').toString().toLowerCase();
+            if (bookingStatus === 'confirmed') {
+                showSuccessToast(data.message || 'Booking confirmed');
+                onClose();
+                router.push('/(tabs)/my_booking');
+                return;
+            }
+
             // 2. create payment VNPAY
-            // ✅ Dùng deep link của Expo
+            // Dùng deep link của Expo
             const returnUrl = "exp://192.168.1.38:8081/--/payment-success";
 
             const paymentRes = await createPayment({
@@ -108,7 +128,6 @@ export default function PaymentModal({
                 bookingId: bookingId,
                 returnUrl,
             });
-
 
             if (!paymentRes) {
                 return showErrorToast('Payment failed - no response');
@@ -134,7 +153,7 @@ export default function PaymentModal({
         }
     }, [
         vehicles, selectedVehicleId, station, scheduled,
-        getSelectedBatteryId, createBooking, createPayment, onClose
+        getSelectedBatteryId, createBooking, createPayment, onClose, router
     ]);
 
     return (
@@ -153,15 +172,21 @@ export default function PaymentModal({
                         </Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={[styles.actionBtn, { backgroundColor: '#3b82f6' }]}
-                        onPress={handlePayWithVnPay}
-                        disabled={vnpayLoading}
-                    >
-                        <Text style={[styles.actionText, { color: '#fff' }]}>
-                            {vnpayLoading ? 'Processing...' : 'Pay with VNPAY'}
-                        </Text>
-                    </TouchableOpacity>
+                    {!hasInUseSubscription ? (
+                        <TouchableOpacity
+                            style={[styles.actionBtn, { backgroundColor: '#3b82f6' }]}
+                            onPress={handlePayWithVnPay}
+                            disabled={vnpayLoading}
+                        >
+                            <Text style={[styles.actionText, { color: '#fff' }]}>\
+                                {vnpayLoading ? 'Processing...' : 'Pay with VNPAY'}
+                            </Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <View style={[styles.actionBtn, { backgroundColor: 'transparent' }]}> 
+                            <Text style={[styles.actionText, { color: '#bfa8ff', textAlign: 'center' }]}>You have an active subscription</Text>
+                        </View>
+                    )}
 
                     <TouchableOpacity
                         style={[styles.actionBtn, { backgroundColor: '#120935' }]}
