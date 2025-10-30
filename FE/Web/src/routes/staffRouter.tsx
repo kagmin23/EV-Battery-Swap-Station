@@ -6,6 +6,8 @@ import SwapRequestDetail from '../features/staff/page/SwapRequestDetail';
 import BatteryLog from '../features/staff/page/BatteryLog';
 import PaymentHistory from '../features/staff/page/PaymentHistory';
 import { StaffManagementMainPage } from '../features/admin/pages/StaffManagementMainPage';
+import IdleBatteries from '../features/staff/page/IdleBatteries';
+import SupportRequests from '../features/staff/page/SupportRequests';
 
 export default function StaffRouter() {
   return (
@@ -17,6 +19,8 @@ export default function StaffRouter() {
         <Route path="swap-request/:requestId" element={<SwapRequestDetail />} />
         <Route path="battery/:batteryId" element={<BatteryLog />} />
         <Route path="payment-history" element={<PaymentHistory />} />
+        <Route path="idle-batteries" element={<IdleBatteries />} />
+        <Route path="support-requests" element={<SupportRequests />} />
         <Route path="management/*" element={<StaffManagementMainPage />} />
       </Routes>
     </StaffLayout>

@@ -7,9 +7,10 @@ interface SearchBarProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   setFilters: (filters: FilterValues) => void;
+  models: string[];
 }
 
-export default function SearchBar({ searchQuery, setSearchQuery, setFilters }: SearchBarProps) {
+export default function SearchBar({ searchQuery, setSearchQuery, setFilters, models }: SearchBarProps) {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   const handleApplyFilters = (newFilters: FilterValues) => {
@@ -27,6 +28,7 @@ export default function SearchBar({ searchQuery, setSearchQuery, setFilters }: S
       onClose={() => setIsFilterModalOpen(false)}
       onApply={handleApplyFilters}
       onReset={handleResetFilters}
+      models={models}
     />
     <div className="flex gap-3 items-center flex-1">
       <div className="relative w-full max-w-lg">

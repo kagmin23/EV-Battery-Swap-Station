@@ -5,7 +5,9 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
-  ClipboardCheck
+  ClipboardCheck,
+  Battery,
+  Headphones
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -36,6 +38,20 @@ const menuItems = [
     icon: ClipboardCheck,
     description: 'Transaction history',
     path: '/staff/payment-history'
+  },
+  {
+    id: 'idle-batteries',
+    label: 'Idle Batteries',
+    icon: Battery,
+    description: 'Only idle batteries',
+    path: '/staff/idle-batteries'
+  },
+  {
+    id: 'support-requests',
+    label: 'Support Requests',
+    icon: Headphones,
+    description: 'Station support requests',
+    path: '/staff/support-requests'
   }
 ];
 

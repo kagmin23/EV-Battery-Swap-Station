@@ -6,8 +6,7 @@ import ActionMenu from "../components/ActionMenu";
 import EditBatteryModal from "../components/EditBatteryModal";
 import Pagination from "../components/Pagination";
 import { getStationBatteries, updateBattery } from "../apis/DashboardApi";
-import type { Battery as OrigBattery } from "../apis/DashboardApi";
-import type { UpdateBatteryRequest } from "../apis/DashboardApi";
+import type { Battery as OrigBattery, UpdateBatteryRequest } from "../apis/DashboardApi";
 import { Spinner } from "@/components/ui/spinner";
 import type { FilterValues } from "../components/FilterModal";
 
@@ -47,8 +46,8 @@ export default function Dashboard() {
         }
         
         const data = await getStationBatteries(stationId);
-        setBatteries(data);
-        setFilteredBatteries(data);
+        setBatteries(data as Battery[]);
+        setFilteredBatteries(data as Battery[]);
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Failed to fetch batteries';
         setError(errorMsg);
@@ -61,6 +60,15 @@ export default function Dashboard() {
 
     fetchBatteries();
   }, []);
+
+  // Derive available models from batteries
+  const availableModels: string[] = Array.from(
+    new Set(
+      batteries
+        .map(b => (b.model || '').trim())
+        .filter((m): m is string => m !== '')
+    )
+  );
 
   // Filter and search batteries
   useEffect(() => {
@@ -148,7 +156,7 @@ export default function Dashboard() {
         const stationId = user.station;
         if (stationId) {
           const updatedData = await getStationBatteries(stationId);
-          setBatteries(updatedData);
+          setBatteries(updatedData as Battery[]);
         }
       }
     } catch (error) {
@@ -195,7 +203,7 @@ export default function Dashboard() {
     <div className="flex flex-col items-center py-8 min-h-screen">
       <div className="w-full max-w-7xl px-4">
         <div className="flex justify-between items-center mb-6">
-          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} setFilters={setFilters} />
+          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} setFilters={setFilters} models={availableModels} />
         </div>
         <div className="overflow-x-auto">
           <div className="border border-black-500 rounded-lg shadow-xs dark:border-border dark:shadow-gray-900">
@@ -222,7 +230,7 @@ export default function Dashboard() {
                   </th>
                   <th
                     scope="col"
-                      className="px-6 py-3 text-start text-xs font-medium text-text-primary uppercase dark:text-text-primary"
+                    className="px-6 py-3 text-start text-xs font-medium text-text-primary uppercase dark:text-text-primary"
                   >
                     Health
                   </th>
