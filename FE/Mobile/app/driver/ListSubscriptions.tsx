@@ -44,6 +44,12 @@ function ListSubscriptions() {
         return (subscriptions || []).filter((s) => (s.status || '').toLowerCase() === selectedStatus);
     }, [selectedStatus, subscriptions]);
 
+    // If the current driver already has a subscription in-use, they cannot purchase
+    // another plan until that subscription ends. Compute this once for the list.
+    const hasInUseSubscription = useMemo(() => {
+        return (subscriptions || []).some((s) => ((s as any).userSubscription?.status || '').toString().toLowerCase() === 'in-use');
+    }, [subscriptions]);
+
     const capitalize = (value?: string) => {
         if (!value) return '';
         return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
@@ -88,6 +94,15 @@ function ListSubscriptions() {
     };
 
     const onPurchase = async (item: any) => {
+        // Global guard: if driver already has an active/in-use subscription for any plan,
+        // they are not allowed to purchase another plan until end_date. Allow operations
+        // only when the item itself is the one "in-use" (to view/manage it).
+        const curHasInUse = hasInUseSubscription;
+        const itemUsStatus = (item?.userSubscription?.status || '').toString().toLowerCase();
+        if (curHasInUse && itemUsStatus !== 'in-use') {
+            Alert.alert('Subscription', 'You already have an active subscription. You cannot purchase another plan until it ends.');
+            return;
+        }
         const returnUrl = 'exp://192.168.1.38:8081/--/payment-success-sub';
 
         // inner flow to create payment and open VNPay URL
@@ -261,6 +276,22 @@ function ListSubscriptions() {
                             {/* Footer: Purchase / Extend / In use */}
                             {(() => {
                                 const usStatus = ((s as any).userSubscription?.status || '').toString().toLowerCase();
+                                if (hasInUseSubscription) {
+                                    if (usStatus === 'in-use') {
+                                        return (
+                                            <View style={styles.inUseContainer}>
+                                                <Text style={styles.inUseText}>In use</Text>
+                                            </View>
+                                        );
+                                    }
+
+                                    return (
+                                        <View style={styles.disabledContainer}>
+                                            <Text style={styles.disabledText}>You cannot subscribe to this package because another package is in use.</Text>
+                                        </View>
+                                    );
+                                }
+
                                 if (usStatus === 'in-use') {
                                     return (
                                         <View style={styles.inUseContainer}>
@@ -471,6 +502,18 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     inUseText: { color: '#0fc48f', fontWeight: '800' },
+    disabledContainer: {
+        marginTop: 16,
+        paddingVertical: 12,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+        borderColor: '#2a233d',
+    },
+    disabledText: { color: '#bfa8ff', fontWeight: '700', textAlign: 'center' },
 });
 
 export default ListSubscriptions;
