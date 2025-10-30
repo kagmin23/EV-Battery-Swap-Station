@@ -1,16 +1,17 @@
+import { useCreateBooking } from '@/features/driver/apis/booking';
+import { getAllBatteryByStationId, useBatteriesInStation } from '@/store/baterry';
+import { useBookings } from '@/store/booking';
 import { useSelectedStation } from '@/store/station';
 import { getAllVehicle, useVehicles, Vehicle } from '@/store/vehicle';
+import { formatDateVN, formatTimeVN } from '@/utils/dateTime';
+import { showErrorToast } from '@/utils/toast';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { formatDateVN, formatTimeVN } from '@/utils/dateTime';
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useCreateBooking } from '@/features/driver/apis/booking';
-import { showSuccessToast, showErrorToast } from '@/utils/toast';
-import { useBookings } from '@/store/booking';
-import { getAllBatteryByStationId, useBatteriesInStation } from '@/store/baterry';
+import PaymentModal from '../driver/component/PaymentModal';
 
 
 export default function BookingScreen() {
@@ -23,17 +24,16 @@ export default function BookingScreen() {
 
     const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>(undefined);
 
-    // Get available battery models from station
+    // Get available battery models from station (only full and idle batteries)
     const availableBatteryModels = useMemo(() => {
         if (!batteriesInStation || !batteriesInStation.batteries || !Array.isArray(batteriesInStation.batteries) || batteriesInStation.batteries.length === 0) return [];
-        return batteriesInStation.batteries.map((battery: any) => battery.model);
+        // Only include batteries with status 'full' or 'idle'
+        const availableBatteries = batteriesInStation.batteries.filter((battery: any) =>
+            battery.status === 'full' || battery.status === 'idle'
+        );
+        return availableBatteries.map((battery: any) => battery.model);
     }, [batteriesInStation]);
 
-    console.log('batteriesInStation type:', typeof batteriesInStation);
-    console.log('batteriesInStation:', batteriesInStation);
-    console.log('batteriesInStation is array:', Array.isArray(batteriesInStation));
-    console.log('batteriesInStation.batteries:', batteriesInStation?.batteries);
-    console.log('availableBatteryModels:', availableBatteryModels);
 
     // Check if vehicle is compatible with station batteries
     const isVehicleCompatible = useCallback((vehicle: Vehicle) => {
@@ -50,7 +50,7 @@ export default function BookingScreen() {
         // Find the first available battery with matching model
         const matchingBattery = batteriesInStation.batteries.find((battery: any) =>
             battery.model === selectedVehicle.batteryModel &&
-            (battery.status === 'full' || battery.status === 'idle') // Only get fully and  charged batteries
+            (battery.status === 'full' || battery.status === 'idle') // Only get fully and  idle batteries
         );
 
         return matchingBattery?.id || null;
@@ -58,10 +58,14 @@ export default function BookingScreen() {
 
     // Get selected battery info for display
     const getSelectedBatteryInfo = useCallback(() => {
-        if (!selectedVehicleId || !batteriesInStation?.batteries) return null;
+        if (!selectedVehicleId || !batteriesInStation?.batteries) {
+            return null;
+        }
 
         const selectedVehicle = vehicles.find(v => v.vehicleId === selectedVehicleId);
-        if (!selectedVehicle) return null;
+        if (!selectedVehicle) {
+            return null;
+        }
 
         // Find the first available battery with matching model
         const matchingBattery = batteriesInStation.batteries.find((battery: any) =>
@@ -102,6 +106,7 @@ export default function BookingScreen() {
         const now = new Date();
         return new Date(now.getTime() + 15 * 60 * 1000);
     });
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
 
     const today = new Date();
     const maxDate = new Date();
@@ -125,80 +130,7 @@ export default function BookingScreen() {
         });
     };
 
-    const onConfirm = async () => {
-        const vehicle = vehicles.find(x => x.vehicleId === selectedVehicleId);
-        if (!vehicle) {
-            showErrorToast('Please select a vehicle.', 'Validation error');
-            return;
-        }
-        if (!date) {
-            showErrorToast('Please select a date.', 'Validation error');
-            return;
-        }
-        if (!time) {
-            showErrorToast('Please select a time.', 'Validation error');
-            return;
-        }
-        if (!station) {
-            showErrorToast('Missing station information.', 'Validation error');
-            return;
-        }
 
-        console.log('station object:', station);
-        console.log('vehicle object:', vehicle);
-
-        const scheduled = new Date(
-            date.getFullYear(),
-            date.getMonth(),
-            date.getDate(),
-            time.getHours(),
-            time.getMinutes(),
-            0,
-            0
-        );
-
-        // Check for duplicate booking
-        const stationId = station.id;
-        console.log('stationId:', stationId);
-        console.log('scheduled time:', scheduled.toISOString());
-
-        if (!stationId) {
-            showErrorToast('Invalid station ID.', 'Validation error');
-            return;
-        }
-
-        if (checkDuplicateBooking(vehicle.vehicleId!, stationId, scheduled)) {
-            showErrorToast('This vehicle already has a booking at this station within 20 minutes.', 'Duplicate booking');
-            return;
-        }
-
-        // Get the actual battery ID for the selected vehicle
-        const selectedBatteryId = getSelectedBatteryId();
-        if (!selectedBatteryId) {
-            showErrorToast('No available battery found for this vehicle model.', 'Battery not available');
-            return;
-        }
-
-        console.log('Selected battery ID:', selectedBatteryId);
-        console.log('Vehicle battery model:', vehicle.batteryModel);
-
-        createBookingMutation.mutate({
-            stationId: stationId,
-            vehicleId: vehicle.vehicleId!,
-            scheduledTime: scheduled.toISOString(),
-            batteryId: selectedBatteryId,
-        }, {
-            onSuccess: (response) => {
-                showSuccessToast(response.message || 'Booking successful!');
-                setTimeout(() => {
-                    router.push('/(tabs)');
-                }, 1500);
-            },
-            onError: (error) => {
-                showErrorToast(error.message || 'Booking failed, please try again.');
-            }
-        });
-    };
 
     return (
         <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
@@ -243,13 +175,17 @@ export default function BookingScreen() {
                 {/* Vehicle card */}
                 <View style={styles.card}>
                     <View style={styles.cardHeaderRow}>
-                        <Ionicons name="car" size={18} color="#6C63FF" />
-                        <Text style={styles.cardHeader}>Vehicle</Text>
-                        {availableBatteryModels.length > 0 && (
-                            <Text style={styles.compatibilityInfo}>
-                                Compatible models: {availableBatteryModels.join(', ')}
-                            </Text>
-                        )}
+                        <View style={{}}>
+                            <View style={{ flexDirection: 'row', gap: 4, marginBottom: 5 }}>
+                                <Ionicons name="car" size={18} color="#6C63FF" />
+                                <Text style={styles.cardHeader}>Vehicle</Text>
+                            </View>
+                            {availableBatteryModels.length > 0 && (
+                                <Text style={styles.compatibilityInfo}>
+                                    <Text style={{ color: '#fff' }}>Compatible Models:</Text> {availableBatteryModels.join(', ')}
+                                </Text>
+                            )}
+                        </View>
                     </View>
                     <View style={{ gap: 10 }}>
                         {vehicles.map(v => {
@@ -297,14 +233,22 @@ export default function BookingScreen() {
                                             {v.licensePlate}
                                         </Text>
                                         {selectedVehicleId === v.vehicleId && !isDisabled && (
-                                            <Text style={styles.batteryInfo}>
-                                                Battery: {getSelectedBatteryInfo()?.model || 'N/A'}
-                                            </Text>
+                                            (() => {
+                                                const battery = getSelectedBatteryInfo();
+                                                const hasBattery = !!battery;
+                                                return (
+                                                    <Text style={[styles.batteryInfo, !hasBattery && { color: '#ff6b6b' }]}>
+                                                        Battery: {battery?.model || 'No battery available'}
+                                                        {battery?.price ? ` - ${battery?.price} VND` : ''}
+                                                    </Text>
+                                                );
+                                            })()
                                         )}
                                     </View>
                                 </TouchableOpacity>
                             );
                         })}
+
                     </View>
                 </View>
 
@@ -364,7 +308,7 @@ export default function BookingScreen() {
                 {/* Confirm */}
                 <TouchableOpacity
                     style={[styles.confirmBtn, createBookingMutation.isPending && styles.confirmBtnDisabled]}
-                    onPress={onConfirm}
+                    onPress={() => setShowPaymentModal(true)}
                     disabled={createBookingMutation.isPending}
                 >
                     <Ionicons name="checkmark-circle" size={20} color="#fff" />
@@ -372,6 +316,18 @@ export default function BookingScreen() {
                         {createBookingMutation.isPending ? 'Creating...' : 'Confirm Booking'}
                     </Text>
                 </TouchableOpacity>
+
+                <PaymentModal
+                    visible={showPaymentModal}
+                    onClose={() => setShowPaymentModal(false)}
+                    selectedVehicleId={selectedVehicleId!}
+                    station={station}
+                    date={date}
+                    time={time}
+                    vehicles={vehicles}
+                    getSelectedBatteryId={getSelectedBatteryId}
+                    checkDuplicateBooking={checkDuplicateBooking}
+                />
 
                 <Modal visible={showDatePicker} transparent animationType="fade" onRequestClose={() => setShowDatePicker(false)}>
                     <View style={styles.modalBackdrop}>
@@ -467,10 +423,10 @@ const styles = StyleSheet.create({
     compatibilityInfo: { color: '#4ade80', fontSize: 12, fontStyle: 'italic', marginLeft: 'auto' },
     stationTitle: { color: 'white', fontSize: 18, fontWeight: '800' },
     stationSub: { color: '#bfb6ff', marginTop: 4 },
-    statRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 12 },
-    statItem: { flex: 1, backgroundColor: '#120935', borderRadius: 12, alignItems: 'center', paddingVertical: 12, gap: 4 },
+    statRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 12, marginBottom: 'auto' },
+    statItem: { flex: 1, backgroundColor: '#120935', borderRadius: 12, alignItems: 'center', paddingVertical: 12, gap: 4, marginBottom: 'auto' },
     statValue: { color: 'white', fontWeight: '800' },
-    statLabel: { color: '#bfb6ff', fontSize: 12 },
+    statLabel: { color: '#bfb6ff', fontSize: 12, margin: 'auto' },
     statusDot: { width: 10, height: 10, borderRadius: 5 },
     vehicleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#120935', borderRadius: 12, padding: 12 },
     vehicleRowActive: { backgroundColor: '#2d1c82', borderWidth: 1, borderColor: '#6C63FF' },
@@ -484,7 +440,7 @@ const styles = StyleSheet.create({
     plateActive: { color: '#bfb6ff' },
     plateDisabled: { color: '#666' },
     incompatibleText: { color: '#ff6b6b', fontSize: 12, fontStyle: 'italic' },
-    batteryInfo: { color: '#4ade80', fontSize: 11, fontStyle: 'italic', marginTop: 2 },
+    batteryInfo: { color: '#4ade80', fontSize: 12, fontStyle: 'italic', marginTop: 10 },
     inputRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#120935', borderRadius: 12, padding: 12 },
     inputLeft: { gap: 2 },
     inputLabel: { color: '#bfb6ff', fontSize: 12 },

@@ -1,4 +1,6 @@
 
+import type { Feedback } from '@/store/feedback';
+import { getFeedbacksByStationApi } from '@/store/feedback';
 import { getAllStationInMap, initFavorites, sSelectedStation, Station, toggleFavorite, useFavorites, useSelectedStation } from '@/store/station';
 import { toCamelCase } from '@/utils/caseConverter';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,14 +9,16 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   Dimensions,
+  Image,
   Linking,
   PanResponder,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapComponent, { MapComponentHandle } from '../driver/component/MapComponent';
@@ -61,6 +65,79 @@ const FloatingActionButtons: React.FC<{
           <Ionicons name={btn.name as keyof typeof Ionicons.glyphMap} color="white" size={24} />
         </TouchableOpacity>
       ))}
+    </View>
+  );
+};
+
+// Component: StationFeedbackList
+const StationFeedbackList: React.FC<{ stationId?: string }> = ({ stationId }) => {
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      if (!stationId) {
+        setFeedbacks([]);
+        return;
+      }
+      setLoading(true);
+      try {
+        const res = await getFeedbacksByStationApi(stationId);
+        if (mounted && res && Array.isArray(res.data)) {
+          setFeedbacks(res.data as Feedback[]);
+        } else if (mounted) {
+          setFeedbacks([]);
+        }
+      } catch {
+        if (mounted) setFeedbacks([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, [stationId]);
+
+  // Constrain the feedback list to a scrollable area so it doesn't cover the whole sheet
+  const maxListHeight = Math.min(200, Math.floor(height * 0.45));
+
+  return (
+    <View>
+      {loading ? (
+        <Text style={styles.loadingText}>Loading feedback...</Text>
+      ) : feedbacks.length === 0 ? (
+        <Text style={styles.noDataText}>No feedback yet</Text>
+      ) : (
+        <ScrollView nestedScrollEnabled style={{ maxHeight: maxListHeight }} contentContainerStyle={{ paddingVertical: 6 }}>
+          {feedbacks.map((fb, idx) => {
+            const images = (fb.images ?? []).filter(Boolean);
+            // ensure a stable unique key: prefer server _id, fallback to createdAt + index
+            const key = fb._id ?? `${fb.createdAt ?? 'fb'}-${idx}`;
+            return (
+              <View key={key} style={styles.stationFeedbackCard}>
+                <View style={styles.stationFeedbackHeader}>
+                  <Text style={styles.stationFeedbackUser}>{fb.user?.fullName || fb.user?.email || 'User'}</Text>
+                  <View style={styles.stationFeedbackStars}>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Text key={i} style={{ color: i < fb.rating ? '#FFD700' : '#9EA0A5', fontSize: 14 }}>{'★'}</Text>
+                    ))}
+                  </View>
+                </View>
+                {fb.comment ? <Text style={styles.stationFeedbackComment}>{fb.comment}</Text> : null}
+                {images.length > 0 && (
+                  <View style={styles.stationFeedbackImages}>
+                    {images.map((uri, idx) => (
+                      <Image key={idx} source={{ uri }} style={styles.stationFeedbackImage} />
+                    ))}
+                  </View>
+                )}
+                <Text style={styles.stationFeedbackMeta}>{new Date(fb.createdAt).toLocaleString()}</Text>
+              </View>
+            );
+          })}
+        </ScrollView>
+      )}
     </View>
   );
 };
@@ -316,6 +393,17 @@ const LocationSation: React.FC = () => {
                 <TouchableOpacity style={styles.roundIconButton} onPress={() => handleNavigatePress(selectedStation)}>
                   <Ionicons name="return-up-forward-sharp" size={18} color="white" />
                 </TouchableOpacity>
+              </View>
+
+              {/* Station feedback list */}
+              <View style={{ marginTop: 12 }}>
+                <View style={[styles.card, { paddingVertical: 12 }]}>
+                  <View style={styles.cardHeader}>
+                    <Ionicons name="chatbubble-ellipses-outline" size={20} color="#6C63FF" />
+                    <Text style={styles.cardTitle}>Feedback</Text>
+                  </View>
+                  <StationFeedbackList stationId={selectedStation?.id} />
+                </View>
               </View>
             </Animated.View>
           </>
@@ -623,6 +711,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /* Card & feedback styles */
+  card: {
+    backgroundColor: '#1E103E',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
+  cardTitle: { color: '#FFF', fontWeight: '700', fontSize: 16 },
+  loadingText: { color: '#bfa8ff', fontSize: 14 },
+  noDataText: { color: '#9EA0A5', fontSize: 13, fontStyle: 'italic' },
+  stationFeedbackCard: { backgroundColor: '#251036', borderRadius: 10, padding: 10, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(108,99,255,0.08)' },
+  stationFeedbackHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  stationFeedbackUser: { color: '#FFF', fontWeight: '700' },
+  stationFeedbackStars: { flexDirection: 'row', alignItems: 'center' },
+  stationFeedbackComment: { color: '#DDD', marginTop: 6 },
+  stationFeedbackImages: { flexDirection: 'row', marginTop: 8, flexWrap: 'wrap' },
+  stationFeedbackImage: { width: 72, height: 72, borderRadius: 8, marginRight: 8 },
+  stationFeedbackMeta: { color: '#9EA0A5', marginTop: 8, fontSize: 12, alignSelf: 'flex-end', textAlign: 'right' },
 });
 
 export default LocationSation;

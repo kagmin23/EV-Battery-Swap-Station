@@ -3,12 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   Users,
-  Settings,
-  UserPlus,
   Home,
   ChevronLeft,
   ChevronRight,
-  Car,
   CreditCard,
   FileText,
   UserCheck,
@@ -17,12 +14,10 @@ import {
   AlertTriangle,
   LayoutDashboard,
   RefreshCw,
-  Brain,
   FolderOpen,
   DollarSign,
-  BarChart3,
-  Activity,
   MessageSquareText
+  , LifeBuoy
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -56,13 +51,6 @@ const menuItems = [
     route: '/admin/battery-changes'
   },
   {
-    id: 'ai-forecast',
-    label: 'AI Forecast',
-    icon: Brain,
-    description: 'AI Forecast & Predictions',
-    route: '/admin/ai-forecast'
-  },
-  {
     id: 'report-management',
     label: 'Report Management',
     icon: FolderOpen,
@@ -82,20 +70,6 @@ const menuItems = [
     icon: Users,
     description: 'Manage staff',
     route: '/staff/list'
-  },
-  {
-    id: 'staff-distribution',
-    label: 'Staff Distribution',
-    icon: BarChart3,
-    description: 'Distribution analysis',
-    route: '/staff/distribution'
-  },
-  {
-    id: 'staff-activities',
-    label: 'Staff Activities',
-    icon: Activity,
-    description: 'Track activities',
-    route: '/staff/activities'
   },
   {
     id: 'driver-list',
@@ -126,13 +100,6 @@ const menuItems = [
     route: '/faulty-batteries'
   },
   {
-    id: 'vehicles',
-    label: 'Vehicles',
-    icon: Car,
-    description: 'Manage electric vehicles',
-    route: '/vehicles'
-  },
-  {
     id: 'subscriptions',
     label: 'Subscriptions',
     icon: CreditCard,
@@ -148,32 +115,18 @@ const menuItems = [
   },
 
   {
-    id: 'complaints',
-    label: 'Complaints',
+    id: 'support-requests',
+    label: 'Support Requests',
+    icon: LifeBuoy,
+    description: 'User support tickets',
+    route: '/admin/support-requests'
+  },
+  {
+    id: 'feedbacks',
+    label: 'Feedbacks',
     icon: MessageSquareText,
-    description: 'Manage complaints',
-    route: '/complaints'
-  },
-  {
-    id: 'usage-report',
-    label: 'Usage Report',
-    icon: BarChart3,
-    description: 'Usage analysis',
-    route: '/usage-report'
-  },
-  {
-    id: 'ai-predictions',
-    label: 'AI Predictions',
-    icon: Brain,
-    description: 'AI predictions',
-    route: '/ai-predictions'
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    icon: Settings,
-    description: 'System settings',
-    route: '/settings'
+    description: 'Manage feedbacks',
+    route: '/feedbacks'
   }
 ];
 
@@ -253,26 +206,6 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
           );
         })}
       </nav>
-
-      {/* Quick Actions */}
-      {!isCollapsed && (
-        <div className="flex-shrink-0 px-4 py-6 border-t border-gray-200">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-700 mb-3">Quick Actions</h3>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-base py-6 px-6"
-            >
-              <UserPlus
-                className="h-6 w-6 mr-2 flex-shrink-0"
-                style={{ width: '24px', height: '24px' }}
-              />
-              Add User
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

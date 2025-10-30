@@ -58,7 +58,7 @@ const convertApiToUI = (apiPlan: SubscriptionPlan): Subscription => {
   return {
     id: apiPlan._id,
     name: apiPlan.subcriptionName,
-    description: `Gói ${apiPlan.period === 'yearly' ? 'năm' : 'tháng'}`,
+    description: `${apiPlan.period === 'yearly' ? 'Yearly' : 'Monthly'} Plan`,
     price: apiPlan.price,
     duration: apiPlan.period === 'yearly' ? 365 : 30,
     swapLimit: -1, // Default to unlimited, can be enhanced later
@@ -106,6 +106,8 @@ export const SubscriptionPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [deletingSubscription, setDeletingSubscription] = useState<Subscription | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [editSubmitError, setEditSubmitError] = useState<string | null>(null);
 
   const filteredSubscriptions = subscriptions;
 
@@ -123,7 +125,7 @@ export const SubscriptionPage: React.FC = () => {
         const convertedPlans = plans.map(convertApiToUI);
         setSubscriptions(convertedPlans);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Không thể tải danh sách gói thuê';
+        const errorMessage = err instanceof Error ? err.message : 'Unable to load subscription plans list';
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
@@ -141,6 +143,13 @@ export const SubscriptionPage: React.FC = () => {
     }).format(amount);
   };
 
+  // Validation helper
+  const validateForm = (fd: Partial<Subscription>) => {
+    if (!fd.duration || fd.duration <= 0) return 'Duration must be greater than 0';
+    if (typeof fd.swapLimit === 'undefined' || fd.swapLimit <= 0) return 'Swap limit must be greater than 0';
+    return '';
+  };
+
   const handleOpenAddModal = () => {
     setFormData({
       name: '',
@@ -152,6 +161,7 @@ export const SubscriptionPage: React.FC = () => {
       status: 'active'
     });
     setNewFeature('');
+    setSubmitError(null);
     setIsAddModalOpen(true);
   };
 
@@ -167,6 +177,7 @@ export const SubscriptionPage: React.FC = () => {
       status: subscription.status
     });
     setNewFeature('');
+    setEditSubmitError(null);
     setIsEditModalOpen(true);
   };
 
@@ -187,6 +198,12 @@ export const SubscriptionPage: React.FC = () => {
   };
 
   const handleSaveAdd = async () => {
+    const clientError = validateForm(formData);
+    if (clientError) {
+      setSubmitError(clientError);
+      return;
+    }
+    setSubmitError(null);
     try {
       setActionLoading(true);
       const apiData = convertUIToApi(formData) as CreateSubscriptionPlanRequest;
@@ -194,16 +211,22 @@ export const SubscriptionPage: React.FC = () => {
       const convertedPlan = convertApiToUI(newPlan);
       setSubscriptions([...subscriptions, convertedPlan]);
       setIsAddModalOpen(false);
-      toast.success('Tạo gói thuê thành công');
+      toast.success('Successfully created subscription plan');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Không thể tạo gói thuê';
-      toast.error(errorMessage);
+      const errorMessage = err instanceof Error ? err.message : 'Unable to create subscription plan';
+      setSubmitError(errorMessage);
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleSaveEdit = async () => {
+    const clientError = validateForm(formData);
+    if (clientError) {
+      setEditSubmitError(clientError);
+      return;
+    }
+    setEditSubmitError(null);
     if (editingSubscription) {
       try {
         setActionLoading(true);
@@ -216,10 +239,10 @@ export const SubscriptionPage: React.FC = () => {
         setSubscriptions(updatedSubscriptions);
         setIsEditModalOpen(false);
         setEditingSubscription(null);
-        toast.success('Cập nhật gói thuê thành công');
+        toast.success('Successfully updated subscription plan');
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Không thể cập nhật gói thuê';
-        toast.error(errorMessage);
+        const errorMessage = err instanceof Error ? err.message : 'Unable to update subscription plan';
+        setEditSubmitError(errorMessage);
       } finally {
         setActionLoading(false);
       }
@@ -228,30 +251,31 @@ export const SubscriptionPage: React.FC = () => {
 
   const handleDelete = (subscription: Subscription) => {
     setDeletingSubscription(subscription);
+    setSubmitError(null);
     setIsConfirmationModalOpen(true);
   };
 
   const handleConfirmDelete = async () => {
     if (!deletingSubscription) return;
-
+    setSubmitError(null);
     try {
       setActionLoading(true);
       await SubscriptionService.deletePlan(deletingSubscription.id);
       setSubscriptions(subscriptions.filter(sub => sub.id !== deletingSubscription.id));
-      toast.success('Xóa gói thuê thành công');
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Không thể xóa gói thuê';
-      toast.error(errorMessage);
-    } finally {
-      setActionLoading(false);
       setIsConfirmationModalOpen(false);
       setDeletingSubscription(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unable to delete subscription plan';
+      setSubmitError(errorMessage);
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleCancelDelete = () => {
     setIsConfirmationModalOpen(false);
     setDeletingSubscription(null);
+    setSubmitError(null);
   };
 
   // Loading state
@@ -261,7 +285,7 @@ export const SubscriptionPage: React.FC = () => {
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="flex flex-col items-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-            <p className="text-slate-600">Đang tải danh sách gói thuê...</p>
+            <p className="text-slate-600">Loading subscription plans list...</p>
           </div>
         </div>
       </div>
@@ -294,8 +318,8 @@ export const SubscriptionPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800">Quản lý gói thuê</h1>
-          <p className="text-slate-600 mt-1">Quản lý các gói thuê pin và đăng ký</p>
+          <h1 className="text-3xl font-bold text-slate-800">Subscription Management</h1>
+          <p className="text-slate-600 mt-1">Manage battery rental plans and subscriptions</p>
         </div>
         <Button
           onClick={handleOpenAddModal}
@@ -307,14 +331,14 @@ export const SubscriptionPage: React.FC = () => {
           ) : (
             <Plus className="h-5 w-5 mr-2" />
           )}
-          Thêm gói mới
+          Add New Plan
         </Button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatsCard
-          title="Tổng doanh thu"
+          title="Total Revenue"
           value={formatCurrency(totalRevenue)}
           icon={DollarSign}
           gradientFrom="from-blue-50"
@@ -323,7 +347,7 @@ export const SubscriptionPage: React.FC = () => {
           iconBg="bg-blue-500"
         />
         <StatsCard
-          title="Người đăng ký"
+          title="Subscribers"
           value={totalSubscribers.toLocaleString()}
           icon={Users}
           gradientFrom="from-green-50"
@@ -332,7 +356,7 @@ export const SubscriptionPage: React.FC = () => {
           iconBg="bg-green-500"
         />
         <StatsCard
-          title="Gói đang hoạt động"
+          title="Active Plans"
           value={activePackages}
           icon={Zap}
           gradientFrom="from-purple-50"
@@ -341,7 +365,7 @@ export const SubscriptionPage: React.FC = () => {
           iconBg="bg-purple-500"
         />
         <StatsCard
-          title="TB doanh thu/gói"
+          title="Avg Revenue/Plan"
           value={formatCurrency(totalRevenue / subscriptions.length)}
           icon={TrendingUp}
           gradientFrom="from-orange-50"
@@ -365,7 +389,7 @@ export const SubscriptionPage: React.FC = () => {
                 variant={subscription.status === 'active' ? 'default' : 'secondary'}
                 className={subscription.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}
               >
-                {subscription.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
+                {subscription.status === 'active' ? 'Active' : 'Suspended'}
               </Badge>
             </div>
 
@@ -392,8 +416,8 @@ export const SubscriptionPage: React.FC = () => {
                 <Zap className="h-4 w-4 mr-2 text-yellow-500" />
                 <span className="font-medium">
                   {subscription.swapLimit === -1
-                    ? 'Không giới hạn'
-                    : `${subscription.swapLimit} lần đổi pin`}
+                    ? 'Unlimited'
+                    : `${subscription.swapLimit} battery swaps`}
                 </span>
               </div>
               {subscription.features.map((feature, index) => (
@@ -408,12 +432,12 @@ export const SubscriptionPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-4 mb-4 pt-4 border-t border-gray-200">
               <div className="text-center">
                 <Users className="h-4 w-4 mx-auto mb-1 text-slate-500" />
-                <p className="text-xs text-slate-500">Người dùng</p>
+                <p className="text-xs text-slate-500">Users</p>
                 <p className="font-bold text-slate-800">{subscription.subscriberCount}</p>
               </div>
               <div className="text-center">
                 <DollarSign className="h-4 w-4 mx-auto mb-1 text-slate-500" />
-                <p className="text-xs text-slate-500">Doanh thu</p>
+                <p className="text-xs text-slate-500">Revenue</p>
                 <p className="font-bold text-slate-800">{(subscription.revenue / 1000000).toFixed(1)}M</p>
               </div>
             </div>
@@ -428,7 +452,7 @@ export const SubscriptionPage: React.FC = () => {
                 className="flex-1 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300"
               >
                 <Edit className="h-4 w-4 mr-1" />
-                Sửa
+                Edit
               </Button>
               <Button
                 variant="outline"
@@ -442,7 +466,7 @@ export const SubscriptionPage: React.FC = () => {
                 ) : (
                   <Trash2 className="h-4 w-4 mr-1" />
                 )}
-                Xóa
+                Delete
               </Button>
             </div>
           </Card>
@@ -455,26 +479,29 @@ export const SubscriptionPage: React.FC = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
             <Calendar className="h-8 w-8 text-slate-400" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-800 mb-2">Không tìm thấy gói nào</h3>
-          <p className="text-slate-600">Thử tìm kiếm với từ khóa khác hoặc thêm gói mới</p>
+          <h3 className="text-lg font-semibold text-slate-800 mb-2">No plans found</h3>
+          <p className="text-slate-600">Try searching with different keywords or add a new plan</p>
         </div>
       )}
 
       {/* Add Modal */}
-      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+      <Dialog open={isAddModalOpen} onOpenChange={(open) => {
+        setIsAddModalOpen(open);
+        if (!open) setSubmitError(null);
+      }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-slate-800">Thêm gói mới</DialogTitle>
-            <DialogDescription>Điền thông tin để tạo gói thuê pin mới</DialogDescription>
+            <DialogTitle className="text-2xl font-bold text-slate-800">Add New Plan</DialogTitle>
+            <DialogDescription>Fill in information to create a new battery rental plan</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Tên gói *</Label>
+                <Label htmlFor="name">Plan Name *</Label>
                 <Input
                   id="name"
-                  placeholder="VD: Gói Premium"
+                  placeholder="e.g., Premium Plan"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="bg-white"
@@ -482,7 +509,7 @@ export const SubscriptionPage: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="status">Trạng thái</Label>
+                <Label htmlFor="status">Status</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value: 'active' | 'inactive') => setFormData({ ...formData, status: value })}
@@ -491,18 +518,18 @@ export const SubscriptionPage: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Hoạt động</SelectItem>
-                    <SelectItem value="inactive">Tạm dừng</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Mô tả</Label>
+              <Label htmlFor="description">Description</Label>
               <Input
                 id="description"
-                placeholder="Mô tả ngắn về gói"
+                placeholder="Brief description of the plan"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="bg-white"
@@ -511,7 +538,7 @@ export const SubscriptionPage: React.FC = () => {
 
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price">Giá (VNĐ) *</Label>
+                <Label htmlFor="price">Price (VND) *</Label>
                 <Input
                   id="price"
                   type="number"
@@ -575,6 +602,12 @@ export const SubscriptionPage: React.FC = () => {
                 ))}
               </div>
             </div>
+            {submitError && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-2 rounded-lg">
+                <AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" />
+                <span className="font-medium">{submitError}</span>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -583,7 +616,7 @@ export const SubscriptionPage: React.FC = () => {
               onClick={() => setIsAddModalOpen(false)}
               disabled={actionLoading}
             >
-              Hủy
+              Cancel
             </Button>
             <Button
               onClick={handleSaveAdd}
@@ -593,10 +626,10 @@ export const SubscriptionPage: React.FC = () => {
               {actionLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Đang tạo...
+                  Creating...
                 </>
               ) : (
-                'Thêm gói'
+                'Add Plan'
               )}
             </Button>
           </DialogFooter>
@@ -604,20 +637,23 @@ export const SubscriptionPage: React.FC = () => {
       </Dialog>
 
       {/* Edit Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+      <Dialog open={isEditModalOpen} onOpenChange={(open) => {
+        setIsEditModalOpen(open);
+        if (!open) setEditSubmitError(null);
+      }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-slate-800">Chỉnh sửa gói</DialogTitle>
-            <DialogDescription>Cập nhật thông tin gói thuê pin</DialogDescription>
+            <DialogTitle className="text-2xl font-bold text-slate-800">Edit Plan</DialogTitle>
+            <DialogDescription>Update battery rental plan information</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-name">Tên gói *</Label>
+                <Label htmlFor="edit-name">Plan Name *</Label>
                 <Input
                   id="edit-name"
-                  placeholder="VD: Gói Premium"
+                  placeholder="e.g., Premium Plan"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="bg-white"
@@ -625,7 +661,7 @@ export const SubscriptionPage: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-status">Trạng thái</Label>
+                <Label htmlFor="edit-status">Status</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value: 'active' | 'inactive') => setFormData({ ...formData, status: value })}
@@ -634,18 +670,18 @@ export const SubscriptionPage: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Hoạt động</SelectItem>
-                    <SelectItem value="inactive">Tạm dừng</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-description">Mô tả</Label>
+              <Label htmlFor="edit-description">Description</Label>
               <Input
                 id="edit-description"
-                placeholder="Mô tả ngắn về gói"
+                placeholder="Brief description of the plan"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="bg-white"
@@ -654,7 +690,7 @@ export const SubscriptionPage: React.FC = () => {
 
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-price">Giá (VNĐ) *</Label>
+                <Label htmlFor="edit-price">Price (VND) *</Label>
                 <Input
                   id="edit-price"
                   type="number"
@@ -666,7 +702,7 @@ export const SubscriptionPage: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-duration">Thời hạn (ngày) *</Label>
+                <Label htmlFor="edit-duration">Duration (days) *</Label>
                 <Input
                   id="edit-duration"
                   type="number"
@@ -678,11 +714,11 @@ export const SubscriptionPage: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-swapLimit">Số lần đổi *</Label>
+                <Label htmlFor="edit-swapLimit">Swap Limit *</Label>
                 <Input
                   id="edit-swapLimit"
                   type="number"
-                  placeholder="10 (-1 = không giới hạn)"
+                  placeholder="10 (-1 = unlimited)"
                   value={formData.swapLimit}
                   onChange={(e) => setFormData({ ...formData, swapLimit: parseInt(e.target.value) || 0 })}
                   className="bg-white"
@@ -718,6 +754,12 @@ export const SubscriptionPage: React.FC = () => {
                 ))}
               </div>
             </div>
+            {editSubmitError && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-2 rounded-lg">
+                <AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" />
+                <span className="font-medium">{editSubmitError}</span>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -726,7 +768,7 @@ export const SubscriptionPage: React.FC = () => {
               onClick={() => setIsEditModalOpen(false)}
               disabled={actionLoading}
             >
-              Hủy
+              Cancel
             </Button>
             <Button
               onClick={handleSaveEdit}
@@ -736,29 +778,35 @@ export const SubscriptionPage: React.FC = () => {
               {actionLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Đang lưu...
+                  Saving...
                 </>
               ) : (
-                'Lưu thay đổi'
+                'Save Changes'
               )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Confirmation Modal */}
+      {/* Confirmation Modal: show submitError if any, above the buttons */}
       <ConfirmationModal
         isOpen={isConfirmationModalOpen}
         onClose={handleCancelDelete}
         onConfirm={handleConfirmDelete}
-        title={`Xác nhận xóa gói ${deletingSubscription?.name}`}
+        title={`Confirm delete plan ${deletingSubscription?.name}`}
         message={
           <div>
-            Bạn có chắc chắn muốn xóa gói <span className="font-bold text-slate-800">{deletingSubscription?.name}</span>?<br />
-            <span className="text-red-600 font-medium">Hành động này không thể hoàn tác.</span>
+            Are you sure you want to delete plan <span className="font-bold text-slate-800">{deletingSubscription?.name}</span>?<br />
+            <span className="text-red-600 font-medium">This action cannot be undone.</span>
+            {submitError && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mt-4 mb-1 rounded-lg">
+                <AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" />
+                <span className="font-medium">{submitError}</span>
+              </div>
+            )}
           </div>
         }
-        confirmText="Xóa"
+        confirmText="Delete"
         type="delete"
         isLoading={actionLoading}
       />

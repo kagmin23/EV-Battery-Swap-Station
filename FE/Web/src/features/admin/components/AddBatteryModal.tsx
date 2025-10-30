@@ -25,6 +25,7 @@ interface BatteryFormData {
     manufacturer: string;
     capacity_kWh: number;
     voltage: number;
+    price?: number;
 }
 
 export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
@@ -40,11 +41,14 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
         stationId: '',
         manufacturer: '',
         capacity_kWh: 0,
-        voltage: 0
+        voltage: 0,
+        price: 0
     });
     const [stations, setStations] = useState<Array<{ id: string; name: string }>>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [sohTouched, setSohTouched] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     // Load stations when modal opens
     useEffect(() => {
@@ -63,7 +67,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
             setStations(stationList);
         } catch (err) {
             console.error('Error loading stations:', err);
-            toast.error('Không thể tải danh sách trạm');
+            toast.error('Unable to load stations. Please try again.');
         }
     };
 
@@ -71,31 +75,41 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
         const newErrors: Record<string, string> = {};
 
         if (!formData.serial.trim()) {
-            newErrors.serial = 'Số serial pin là bắt buộc';
+            newErrors.serial = 'Battery serial number is required';
         }
 
         if (!formData.model.trim()) {
-            newErrors.model = 'Model pin là bắt buộc';
+            newErrors.model = 'Battery model is required';
         }
 
-        if (formData.soh < 0 || formData.soh > 100) {
-            newErrors.soh = 'SOH phải từ 0 đến 100';
+        if (!sohTouched || formData.soh === undefined || formData.soh === null || isNaN(formData.soh)) {
+            newErrors.soh = 'SOH is required';
+        } else if (formData.soh < 0 || formData.soh > 100) {
+            newErrors.soh = 'SOH must be between 0 and 100';
+        }
+
+        if (!formData.status) {
+            newErrors.status = 'Status is required';
         }
 
         if (!formData.stationId) {
-            newErrors.stationId = 'Vui lòng chọn trạm';
+            newErrors.stationId = 'Please select a station';
         }
 
         if (!formData.manufacturer.trim()) {
-            newErrors.manufacturer = 'Nhà sản xuất là bắt buộc';
+            newErrors.manufacturer = 'Manufacturer is required';
         }
 
         if (formData.capacity_kWh <= 0) {
-            newErrors.capacity_kWh = 'Dung lượng phải lớn hơn 0';
+            newErrors.capacity_kWh = 'Capacity must be greater than 0';
         }
 
         if (formData.voltage <= 0) {
-            newErrors.voltage = 'Điện áp phải lớn hơn 0';
+            newErrors.voltage = 'Voltage must be greater than 0';
+        }
+
+        if (formData.price === undefined || formData.price === null || formData.price < 0) {
+            newErrors.price = 'Price is required and must be greater than or equal to 0';
         }
 
         setErrors(newErrors);
@@ -104,6 +118,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSubmitError(null);
 
         if (!validateForm()) {
             return;
@@ -112,7 +127,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
         try {
             setIsLoading(true);
 
-            const batteryData = {
+            const batteryData: CreateBatteryRequest = {
                 serial: formData.serial.trim(),
                 model: formData.model.trim(),
                 soh: formData.soh,
@@ -120,18 +135,17 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                 stationId: formData.stationId,
                 manufacturer: formData.manufacturer.trim(),
                 capacity_kWh: formData.capacity_kWh,
-                voltage: formData.voltage
+                voltage: formData.voltage,
+                price: formData.price
             };
 
             await BatteryService.createBattery(batteryData);
 
-            toast.success('Thêm pin mới thành công');
+            toast.success('Battery added successfully');
             onSuccess();
             handleClose();
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi thêm pin';
-            toast.error(errorMessage);
-            console.error('Error creating battery:', err);
+        } catch (err: any) {
+            setSubmitError(err?.message || 'Unable to add battery. Please check your inputs and try again.');
         } finally {
             setIsLoading(false);
         }
@@ -146,9 +160,12 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
             stationId: '',
             manufacturer: '',
             capacity_kWh: 0,
-            voltage: 0
+            voltage: 0,
+            price: 0
         });
         setErrors({});
+        setSohTouched(false);
+        setSubmitError(null);
         onClose();
     };
 
@@ -167,90 +184,89 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                         <div className="p-2 bg-green-100 rounded-xl mr-3">
                             <BatteryIcon className="h-6 w-6 text-green-600" />
                         </div>
-                        Thêm pin mới
+                        Add New Battery
                     </DialogTitle>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {submitError && (
+                        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-2 rounded-lg">
+                            <AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" />
+                            <span className="font-medium">{submitError}</span>
+                        </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Serial Number */}
                         <div className="space-y-2">
-                            <Label htmlFor="serial" className="text-sm font-medium text-slate-700">
-                                Số serial pin <span className="text-red-500">*</span>
+                            <Label htmlFor="serial" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                Battery Serial Number
                             </Label>
                             <Input
                                 id="serial"
                                 type="text"
                                 value={formData.serial}
                                 onChange={(e) => handleInputChange('serial', e.target.value)}
-                                placeholder="Nhập số serial pin"
+                                placeholder="Enter battery serial number"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.serial ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
                             {errors.serial && (
-                                <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{errors.serial}</span>
-                                </div>
+                                <p className="text-sm text-red-500">{errors.serial}</p>
                             )}
                         </div>
 
                         {/* Model */}
                         <div className="space-y-2">
-                            <Label htmlFor="model" className="text-sm font-medium text-slate-700">
-                                Model pin <span className="text-red-500">*</span>
+                            <Label htmlFor="model" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                Battery Model
                             </Label>
                             <Input
                                 id="model"
                                 type="text"
                                 value={formData.model}
                                 onChange={(e) => handleInputChange('model', e.target.value)}
-                                placeholder="Nhập model pin"
+                                placeholder="Enter battery model"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.model ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
                             {errors.model && (
-                                <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{errors.model}</span>
-                                </div>
+                                <p className="text-sm text-red-500">{errors.model}</p>
                             )}
                         </div>
 
                         {/* SOH */}
                         <div className="space-y-2">
-                            <Label htmlFor="soh" className="text-sm font-medium text-slate-700">
-                                SOH (%) <span className="text-red-500">*</span>
+                            <Label htmlFor="soh" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                SOH (%)
                             </Label>
                             <Input
                                 id="soh"
                                 type="text"
-                                value={formData.soh === 100 ? '' : formData.soh}
+                                value={formData.soh === 100 && !sohTouched ? '' : formData.soh.toString()}
                                 onChange={(e) => {
                                     const value = e.target.value;
+                                    setSohTouched(true);
                                     if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                                        const numValue = value === '' ? 100 : parseFloat(value) || 0;
+                                        const numValue = value === '' ? 0 : parseFloat(value) || 0;
                                         if (numValue >= 0 && numValue <= 100) {
                                             handleInputChange('soh', numValue);
                                         }
                                     }
                                 }}
-                                placeholder="Nhập SOH (0-100)"
+                                onBlur={() => setSohTouched(true)}
+                                placeholder="Enter SOH (0-100)"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.soh ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
                             {errors.soh && (
-                                <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{errors.soh}</span>
-                                </div>
+                                <p className="text-sm text-red-500">{errors.soh}</p>
                             )}
                         </div>
 
                         {/* Status */}
                         <div className="space-y-2">
-                            <Label htmlFor="status" className="text-sm font-medium text-slate-700">
-                                Trạng thái <span className="text-red-500">*</span>
+                            <Label htmlFor="status" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                Status
                             </Label>
                             <Select
                                 value={formData.status}
@@ -258,38 +274,35 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                             >
                                 <SelectTrigger className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.status ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}>
-                                    <SelectValue placeholder="Chọn trạng thái" />
+                                    <SelectValue placeholder="Select status" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-[9999]">
                                     <SelectItem value="idle" className="rounded-lg hover:bg-green-50 hover:text-green-700 focus:bg-green-50 focus:text-green-700 transition-colors duration-200 cursor-pointer">
-                                        Nhàn rỗi
+                                        Idle
                                     </SelectItem>
                                     <SelectItem value="charging" className="rounded-lg hover:bg-green-50 hover:text-green-700 focus:bg-green-50 focus:text-green-700 transition-colors duration-200 cursor-pointer">
-                                        Đang sạc
+                                        Charging
                                     </SelectItem>
                                     <SelectItem value="full" className="rounded-lg hover:bg-green-50 hover:text-green-700 focus:bg-green-50 focus:text-green-700 transition-colors duration-200 cursor-pointer">
-                                        Đầy
+                                        Full
                                     </SelectItem>
                                     <SelectItem value="in-use" className="rounded-lg hover:bg-green-50 hover:text-green-700 focus:bg-green-50 focus:text-green-700 transition-colors duration-200 cursor-pointer">
-                                        Đang sử dụng
+                                        In Use
                                     </SelectItem>
                                     <SelectItem value="faulty" className="rounded-lg hover:bg-green-50 hover:text-green-700 focus:bg-green-50 focus:text-green-700 transition-colors duration-200 cursor-pointer">
-                                        Lỗi
+                                        Faulty
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
                             {errors.status && (
-                                <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{errors.status}</span>
-                                </div>
+                                <p className="text-sm text-red-500">{errors.status}</p>
                             )}
                         </div>
 
                         {/* Station */}
                         <div className="space-y-2">
-                            <Label htmlFor="stationId" className="text-sm font-medium text-slate-700">
-                                Trạm <span className="text-red-500">*</span>
+                            <Label htmlFor="stationId" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                Station
                             </Label>
                             <Select
                                 value={formData.stationId}
@@ -297,7 +310,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                             >
                                 <SelectTrigger className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.stationId ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}>
-                                    <SelectValue placeholder="Chọn trạm" />
+                                    <SelectValue placeholder="Select station" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-[9999] max-h-[300px] overflow-y-auto">
                                     {stations.map(station => (
@@ -312,39 +325,33 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                                 </SelectContent>
                             </Select>
                             {errors.stationId && (
-                                <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{errors.stationId}</span>
-                                </div>
+                                <p className="text-sm text-red-500">{errors.stationId}</p>
                             )}
                         </div>
 
                         {/* Manufacturer */}
                         <div className="space-y-2">
-                            <Label htmlFor="manufacturer" className="text-sm font-medium text-slate-700">
-                                Nhà sản xuất <span className="text-red-500">*</span>
+                            <Label htmlFor="manufacturer" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                Manufacturer
                             </Label>
                             <Input
                                 id="manufacturer"
                                 type="text"
                                 value={formData.manufacturer}
                                 onChange={(e) => handleInputChange('manufacturer', e.target.value)}
-                                placeholder="Nhập nhà sản xuất"
+                                placeholder="Enter manufacturer"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.manufacturer ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
                             {errors.manufacturer && (
-                                <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{errors.manufacturer}</span>
-                                </div>
+                                <p className="text-sm text-red-500">{errors.manufacturer}</p>
                             )}
                         </div>
 
                         {/* Capacity */}
                         <div className="space-y-2">
-                            <Label htmlFor="capacity_kWh" className="text-sm font-medium text-slate-700">
-                                Dung lượng (kWh) <span className="text-red-500">*</span>
+                            <Label htmlFor="capacity_kWh" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                Capacity (kWh)
                             </Label>
                             <Input
                                 id="capacity_kWh"
@@ -356,22 +363,19 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                                         handleInputChange('capacity_kWh', value === '' ? 0 : parseFloat(value) || 0);
                                     }
                                 }}
-                                placeholder="Nhập dung lượng (VD: 50.5)"
+                                placeholder="Enter capacity (e.g., 50.5)"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.capacity_kWh ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
                             {errors.capacity_kWh && (
-                                <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{errors.capacity_kWh}</span>
-                                </div>
+                                <p className="text-sm text-red-500">{errors.capacity_kWh}</p>
                             )}
                         </div>
 
                         {/* Voltage */}
                         <div className="space-y-2">
-                            <Label htmlFor="voltage" className="text-sm font-medium text-slate-700">
-                                Điện áp (V) <span className="text-red-500">*</span>
+                            <Label htmlFor="voltage" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                Voltage (V)
                             </Label>
                             <Input
                                 id="voltage"
@@ -383,15 +387,12 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                                         handleInputChange('voltage', value === '' ? 0 : parseFloat(value) || 0);
                                     }
                                 }}
-                                placeholder="Nhập điện áp (VD: 400.5)"
+                                placeholder="Enter voltage (e.g., 400.5)"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.voltage ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
                             {errors.voltage && (
-                                <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{errors.voltage}</span>
-                                </div>
+                                <p className="text-sm text-red-500">{errors.voltage}</p>
                             )}
                         </div>
                     </div>
@@ -403,7 +404,7 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                             onClick={handleClose}
                             className="px-6 py-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-lg transition-all duration-200"
                         >
-                            Hủy
+                            Cancel
                         </Button>
                         <Button
                             type="submit"
@@ -411,9 +412,9 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                             className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed border border-green-600 hover:border-green-700"
                         >
                             {isLoading ? (
-                                <ButtonLoadingSpinner size="sm" variant="white" text="Đang thêm..." />
+                                <ButtonLoadingSpinner size="sm" variant="white" text="Adding..." />
                             ) : (
-                                'Thêm pin'
+                                'Add Battery'
                             )}
                         </Button>
                     </DialogFooter>

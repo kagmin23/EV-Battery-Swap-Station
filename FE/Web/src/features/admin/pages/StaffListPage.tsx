@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Grid, List, Users, Clock, Activity, AlertCircle } from 'lucide-react';
+import { Plus, Grid, List, Users, Clock, Activity, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { StaffSearchBar } from '../components/StaffSearchBar';
 import { StaffCard } from '../components/StaffCard';
@@ -33,15 +33,24 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
         stationId: 'ALL',
         role: 'ALL',
         status: 'ALL',
+        limit: '20',
     });
     const [isLoading, setIsLoading] = useState(true);
+    const [isResetting, setIsResetting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState<number>(1);
     const [suspendingStaffId, setSuspendingStaffId] = useState<string | null>(null);
+    const [deletingStaffId, setDeletingStaffId] = useState<string | null>(null);
     const [savingStaffId, setSavingStaffId] = useState<string | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
     const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+    const [suspendAction, setSuspendAction] = useState<'lock' | 'activate'>('lock');
+    const [suspendTargetName, setSuspendTargetName] = useState<string>('');
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [suspendingStaff, setSuspendingStaff] = useState<Staff | null>(null);
+    const [deletingStaff, setDeletingStaff] = useState<Staff | null>(null);
+    const [deleteTargetName, setDeleteTargetName] = useState<string>('');
 
     // Load stations data from API
     const loadStations = async () => {
@@ -123,17 +132,15 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     stationName: stationInfo.name,
                     status: apiStaffMember.status === 'active' ? 'ONLINE' : 'OFFLINE',
                     permissions: [],
-                    lastActive: new Date(apiStaffMember.updatedAt),
                     createdAt: new Date(apiStaffMember.createdAt),
                     updatedAt: new Date(apiStaffMember.updatedAt),
                 };
             });
 
             setStaff(convertedStaff);
-            toast.success('Tải danh sách nhân viên thành công');
+            // Success message removed to avoid notification spam
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tải danh sách nhân viên';
-            setError(errorMessage);
+            setError('Unable to load staff list. Please try again later.');
             console.error('Error loading staff:', err);
         } finally {
             setIsLoading(false);
@@ -168,6 +175,19 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
         return matchesSearch && matchesStation && matchesRole && matchesStatus;
     });
 
+    // Calculate pagination
+    const limitNum = Number(filters.limit) || 20;
+    const totalPages = Math.ceil(filteredStaff.length / limitNum);
+    const paginatedStaff = filteredStaff.slice(
+        (currentPage - 1) * limitNum,
+        currentPage * limitNum
+    );
+
+    // Reset to first page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filters.search, filters.stationId, filters.role, filters.status, filters.limit]);
+
     const handleStaffEdit = (staffMember: Staff) => {
         setEditingStaff(staffMember);
         setIsModalOpen(true);
@@ -175,7 +195,16 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
 
     const handleStaffSuspend = (staffMember: Staff) => {
         setSuspendingStaff(staffMember);
+        const isCurrentlyActive = staffMember.status === 'ONLINE' || staffMember.status === 'SHIFT_ACTIVE' || staffMember.status === 'active';
+        setSuspendAction(isCurrentlyActive ? 'lock' : 'activate');
+        setSuspendTargetName(staffMember.name || '');
         setIsConfirmationModalOpen(true);
+    };
+
+    const handleStaffDelete = (staffMember: Staff) => {
+        setDeletingStaff(staffMember);
+        setDeleteTargetName(staffMember.name || '');
+        setIsDeleteModalOpen(true);
     };
 
     const handleConfirmSuspend = async () => {
@@ -203,12 +232,11 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
 
             toast.success(
                 newStatus === 'active'
-                    ? `Đã kích hoạt nhân viên ${suspendingStaff.name}`
-                    : `Đã tạm khóa nhân viên ${suspendingStaff.name}`
+                    ? `Staff member "${suspendingStaff.name}" activated successfully`
+                    : `Staff member "${suspendingStaff.name}" locked successfully`
             );
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi thay đổi trạng thái nhân viên';
-            setError(errorMessage);
+            toast.error('Unable to change staff status. Please try again.');
             console.error('Error changing staff status:', err);
         } finally {
             setSuspendingStaffId(null);
@@ -218,8 +246,13 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
     };
 
     const handleCancelSuspend = () => {
+        // Close modal only; keep suspendingStaff until fully closed to avoid flicker/opposite state during fade-out
         setIsConfirmationModalOpen(false);
-        setSuspendingStaff(null);
+    };
+
+    const handleCancelDelete = () => {
+        // Close modal only; keep deletingStaff to prevent content flicker during closing animation
+        setIsDeleteModalOpen(false);
     };
 
     const handleAddStaff = () => {
@@ -232,19 +265,24 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
         setIsDetailModalOpen(true);
     };
 
-    const handleResetFilters = () => {
+    const handleResetFilters = async () => {
+        setIsResetting(true);
         setFilters({
             search: '',
             stationId: 'ALL',
             role: 'ALL',
             status: 'ALL',
+            limit: '20',
         });
+        setCurrentPage(1);
+        await new Promise(resolve => setTimeout(resolve, 300));
+        setIsResetting(false);
     };
 
     const handleSaveStaff = async (data: AddStaffRequest | UpdateStaffRequest): Promise<void> => {
         try {
             setSavingStaffId('id' in data ? data.id as string : 'new');
-            setError(null);
+            // setError(null); // Remove global error
 
             if ('id' in data) {
                 // Update existing staff
@@ -269,13 +307,12 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     stationName: stations.find(s => s.id === (data as UpdateStaffRequest).stationId)?.name || '',
                     status: updatedStaff.status === 'active' ? 'ONLINE' : 'OFFLINE',
                     permissions: [],
-                    lastActive: new Date(updatedStaff.updatedAt),
                     createdAt: new Date(updatedStaff.createdAt),
                     updatedAt: new Date(updatedStaff.updatedAt),
                 };
 
                 setStaff(prev => prev.map(s => s.id === data.id ? convertedStaff : s));
-                toast.success(`Đã cập nhật thông tin nhân viên ${convertedStaff.name}`);
+                toast.success(`Staff member "${convertedStaff.name}" updated successfully`);
             } else {
                 // Add new staff
                 const createData: CreateStaffRequest = {
@@ -299,21 +336,22 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     stationName: stations.find(s => s.id === (data as AddStaffRequest).stationId)?.name || '',
                     status: newStaff.status === 'active' ? 'ONLINE' : 'OFFLINE',
                     permissions: [],
-                    lastActive: new Date(newStaff.createdAt),
                     createdAt: new Date(newStaff.createdAt),
                     updatedAt: new Date(newStaff.updatedAt),
                 };
 
                 setStaff(prev => [...prev, convertedStaff]);
-                toast.success(`Đã thêm nhân viên ${convertedStaff.name} thành công`);
+                toast.success(`Staff member "${convertedStaff.name}" added successfully`);
             }
 
             setIsModalOpen(false);
             setEditingStaff(null);
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi lưu thông tin nhân viên';
-            setError(errorMessage);
-            console.error('Error saving staff:', err);
+            // Global error removed: let modal/ui handle
+            // const errorMessage = err instanceof Error ? err.message : 'Error saving staff information';
+            // setError(errorMessage);
+            // console.error('Error saving staff:', err);
+            throw err;
         } finally {
             setSavingStaffId(null);
         }
@@ -323,8 +361,8 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
         <div className="p-6 space-y-8">
             {/* Header */}
             <PageHeader
-                title="Danh sách nhân viên"
-                description="Quản lý thông tin nhân viên trạm đổi pin"
+                title="Staff List"
+                description="Manage staff information"
             />
 
             {/* Error Alert */}
@@ -340,7 +378,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                         onClick={() => setError(null)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 hover:shadow-sm"
                     >
-                        Đóng
+                        Close
                     </Button>
                 </div>
             )}
@@ -348,7 +386,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
             {/* Quick Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatsCard
-                    title="Tổng nhân viên"
+                    title="Total Staff"
                     value={staff.length}
                     icon={Users}
                     gradientFrom="from-blue-50"
@@ -357,7 +395,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     iconBg="bg-blue-500"
                 />
                 <StatsCard
-                    title="Hoạt động"
+                    title="Active"
                     value={staff.filter(s => s.status === 'active' || s.status === 'ONLINE').length}
                     icon={Activity}
                     gradientFrom="from-green-50"
@@ -366,7 +404,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     iconBg="bg-green-500"
                 />
                 <StatsCard
-                    title="Tạm khóa"
+                    title="Locked"
                     value={staff.filter(s => s.status === 'locked' || s.status === 'SUSPENDED').length}
                     icon={Clock}
                     gradientFrom="from-orange-50"
@@ -382,6 +420,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     filters={filters}
                     onFiltersChange={setFilters}
                     stations={stations}
+                    isResetting={isResetting}
                     onResetFilters={handleResetFilters}
                 />
             </div>
@@ -394,7 +433,7 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                             <div className="p-2 bg-blue-100 rounded-xl mr-3">
                                 <Users className="h-6 w-6 text-blue-600" />
                             </div>
-                            Danh sách nhân viên
+                            Staff List
                             <span className="ml-3 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
                                 {filteredStaff.length}
                             </span>
@@ -428,11 +467,11 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed border border-blue-600 hover:border-blue-700"
                             >
                                 {savingStaffId === 'new' ? (
-                                    <ButtonLoadingSpinner size="sm" variant="white" text="Đang thêm..." />
+                                    <ButtonLoadingSpinner size="sm" variant="white" text="Adding..." />
                                 ) : (
                                     <>
                                         <Plus className="h-4 w-4 mr-2" />
-                                        Thêm nhân viên
+                                        Add Staff
                                     </>
                                 )}
                             </Button>
@@ -441,15 +480,15 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                 </CardHeader>
                 <CardContent className="m-0 p-6 max-h-[600px] overflow-y-auto custom-scrollbar">
                     {isLoading ? (
-                        <PageLoadingSpinner text="Đang tải danh sách nhân viên..." />
+                        <PageLoadingSpinner text="Loading staff list..." />
                     ) : filteredStaff.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12">
                             <Users className="h-12 w-12 text-slate-400 mb-4" />
-                            <h3 className="text-lg font-medium text-slate-900 mb-2">Không có nhân viên nào</h3>
+                            <h3 className="text-lg font-medium text-slate-900 mb-2">No staff found</h3>
                             <p className="text-slate-600 text-center mb-6">
                                 {filters.search || filters.stationId !== 'ALL' || filters.role !== 'ALL' || filters.status !== 'ALL'
-                                    ? 'Không tìm thấy nhân viên phù hợp với bộ lọc hiện tại.'
-                                    : 'Chưa có nhân viên nào được thêm vào hệ thống.'}
+                                    ? 'No staff found matching the current filters.'
+                                    : 'No staff has been added to the system yet.'}
                             </p>
                             {(!filters.search && filters.stationId === 'ALL' && filters.role === 'ALL' && filters.status === 'ALL') && (
                                 <Button
@@ -457,19 +496,20 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                                     className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border border-blue-600 hover:border-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:shadow-lg"
                                 >
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Thêm nhân viên đầu tiên
+                                    Add First Staff
                                 </Button>
                             )}
                         </div>
                     ) : viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredStaff.map((staffMember) => (
+                            {paginatedStaff.map((staffMember) => (
                                 <StaffCard
                                     key={staffMember.id}
                                     staff={staffMember}
                                     onSelect={onStaffSelect || (() => { })}
                                     onEdit={handleStaffEdit}
                                     onSuspend={handleStaffSuspend}
+                                    onDelete={handleStaffDelete}
                                     onViewDetails={handleViewStaffDetails}
                                     isSuspending={suspendingStaffId === staffMember.id}
                                     isSaving={savingStaffId === staffMember.id}
@@ -479,10 +519,11 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     ) : (
                         <div className="overflow-hidden rounded-xl border border-slate-200">
                             <StaffTable
-                                staff={filteredStaff}
+                                staff={paginatedStaff}
                                 onSelect={onStaffSelect || (() => { })}
                                 onEdit={handleStaffEdit}
                                 onSuspend={handleStaffSuspend}
+                                onDelete={handleStaffDelete}
                                 onViewDetails={handleViewStaffDetails}
                                 suspendingStaffId={suspendingStaffId}
                                 savingStaffId={savingStaffId}
@@ -491,6 +532,135 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                     )}
                 </CardContent>
             </Card>
+
+            {/* Pagination */}
+            {!isLoading && filteredStaff.length > 0 && (
+                <div className="flex flex-col items-center py-4 gap-3">
+                    <nav className="flex items-center -space-x-px" aria-label="Pagination">
+                        <button
+                            type="button"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1 || totalPages === 1}
+                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-s-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Previous"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            <span className="hidden sm:block">Previous</span>
+                        </button>
+
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum: number;
+                            if (totalPages <= 5) {
+                                pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                                pageNum = i === 4 ? totalPages : i + 1;
+                                if (i === 3 && totalPages > 5) {
+                                    return (
+                                        <React.Fragment key={`fragment-${i}`}>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                            <button
+                                                key={totalPages}
+                                                type="button"
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === totalPages
+                                                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                                    }`}
+                                            >
+                                                {totalPages}
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                }
+                            } else if (currentPage >= totalPages - 2) {
+                                if (i === 0) {
+                                    return (
+                                        <React.Fragment key={`fragment-start-${i}`}>
+                                            <button
+                                                key={1}
+                                                type="button"
+                                                onClick={() => setCurrentPage(1)}
+                                                className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === 1
+                                                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                                    : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                                    }`}
+                                            >
+                                                1
+                                            </button>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                        </React.Fragment>
+                                    );
+                                }
+                                pageNum = totalPages - 4 + i;
+                            } else {
+                                if (i === 0) {
+                                    return (
+                                        <React.Fragment key={`fragment-mid-start`}>
+                                            <button
+                                                key={1}
+                                                type="button"
+                                                onClick={() => setCurrentPage(1)}
+                                                className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                            >
+                                                1
+                                            </button>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                        </React.Fragment>
+                                    );
+                                } else if (i === 4) {
+                                    return (
+                                        <React.Fragment key={`fragment-mid-end`}>
+                                            <div className="min-h-[38px] min-w-[38px] flex justify-center items-center border border-gray-300 bg-white text-gray-500 py-2 px-3 text-sm">...</div>
+                                            <button
+                                                key={totalPages}
+                                                type="button"
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                className="min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                            >
+                                                {totalPages}
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                }
+                                pageNum = currentPage + i - 2;
+                            }
+
+                            return (
+                                <button
+                                    key={pageNum}
+                                    type="button"
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`min-h-[38px] min-w-[38px] flex justify-center items-center border py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${currentPage === pageNum
+                                        ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                                        : "bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                        }`}
+                                    aria-current={currentPage === pageNum ? "page" : undefined}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+
+                        <button
+                            type="button"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages || totalPages === 1}
+                            className="min-h-[38px] min-w-[38px] py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-e-lg border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Next"
+                        >
+                            <span className="hidden sm:block">Next</span>
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </nav>
+
+                    {/* Items info */}
+                    <div className="text-sm text-gray-800">
+                        Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * limitNum + 1}</span> to{" "}
+                        <span className="font-semibold text-slate-900">{Math.min(currentPage * limitNum, filteredStaff.length)}</span> of{" "}
+                        <span className="font-semibold text-slate-900">{filteredStaff.length}</span> results
+                    </div>
+                </div>
+            )}
 
             {/* Staff Modal */}
             <StaffModal
@@ -520,15 +690,38 @@ export const StaffListPage: React.FC<StaffListPageProps> = ({ onStaffSelect }) =
                 isOpen={isConfirmationModalOpen}
                 onClose={handleCancelSuspend}
                 onConfirm={handleConfirmSuspend}
-                title={`Xác nhận ${suspendingStaff?.status === 'ONLINE' ? 'tạm khóa' : 'kích hoạt'} nhân viên`}
-                message={
-                    <div>
-                        Bạn có chắc chắn muốn {suspendingStaff?.status === 'ONLINE' ? 'tạm khóa' : 'kích hoạt'} nhân viên <span className="font-bold text-slate-800">{suspendingStaff?.name}</span>?
-                    </div>
-                }
-                confirmText={suspendingStaff?.status === 'ONLINE' ? 'Tạm khóa' : 'Kích hoạt'}
+                title={`Confirm ${suspendAction} staff`}
+                message={<div>Are you sure you want to {suspendAction} staff <span className="font-bold text-slate-800">{suspendTargetName}</span>?</div>}
+                confirmText={suspendAction === 'lock' ? 'Lock' : 'Activate'}
                 type="delete"
                 isLoading={suspendingStaffId === suspendingStaff?.id}
+            />
+
+            {/* Delete Staff Modal */}
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={handleCancelDelete}
+                onConfirm={async () => {
+                    if (!deletingStaff) return;
+                    try {
+                        setDeletingStaffId(deletingStaff.id);
+                        await StaffService.deleteStaff(deletingStaff.id);
+                        setStaff(prev => prev.filter(s => s.id !== deletingStaff.id));
+                        toast.success(`Staff "${deletingStaff.name}" deleted`);
+                    } catch (err) {
+                        toast.error('Unable to delete staff. Please try again.');
+                        console.error('Error deleting staff:', err);
+                    } finally {
+                        setDeletingStaffId(null);
+                        setIsDeleteModalOpen(false);
+                        setDeletingStaff(null);
+                    }
+                }}
+                title="Confirm delete staff"
+                message={<div>Are you sure you want to delete staff <span className="font-bold text-slate-800">{deleteTargetName}</span>? This action cannot be undone.</div>}
+                confirmText="Delete"
+                type="delete"
+                isLoading={deletingStaffId === deletingStaff?.id}
             />
         </div>
     );

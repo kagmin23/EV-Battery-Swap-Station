@@ -16,6 +16,7 @@ export interface Battery {
     model?: string;
     manufacturer?: string;
     capacity_kWh?: number;
+    price?: number;
 }
 
 export type BatteryStatus = 'charging' | 'full' | 'faulty' | 'in-use' | 'idle' | 'is-booking';

@@ -10,9 +10,12 @@ import {
     Battery,
     Activity,
     X,
-    ExternalLink
+    ExternalLink,
+    CheckCircle,
+    Zap,
+    AlertTriangle
 } from 'lucide-react';
-import type { Station, StationStatus } from '../types/station';
+import type { Station } from '../types/station';
 
 interface StationDetailModalProps {
     isOpen: boolean;
@@ -27,34 +30,8 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = ({
 }) => {
     if (!station) return null;
 
-    const getStatusBadge = (status: StationStatus) => {
-        switch (status) {
-            case 'ACTIVE':
-                return <Badge variant="success">Hoạt động</Badge>;
-            case 'MAINTENANCE':
-                return <Badge variant="warning">Bảo trì</Badge>;
-            case 'INACTIVE':
-                return <Badge variant="destructive">Ngừng hoạt động</Badge>;
-            default:
-                return <Badge variant="secondary">Không xác định</Badge>;
-        }
-    };
-
-    const getStatusColor = (status: StationStatus) => {
-        switch (status) {
-            case 'ACTIVE':
-                return 'bg-green-500';
-            case 'MAINTENANCE':
-                return 'bg-orange-500';
-            case 'INACTIVE':
-                return 'bg-red-500';
-            default:
-                return 'bg-gray-400';
-        }
-    };
-
     const formatDate = (date: Date) => {
-        return date.toLocaleDateString('vi-VN', {
+        return date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
@@ -64,7 +41,7 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = ({
     };
 
     const formatCapacity = (capacity: number) => {
-        return capacity.toLocaleString('vi-VN');
+        return capacity.toLocaleString('en-US');
     };
 
     const formatSoh = (soh: number) => {
@@ -73,7 +50,8 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = ({
 
     const getUtilizationRate = () => {
         if (station.capacity === 0) return 0;
-        return Math.round((station.availableBatteries / station.capacity) * 100);
+        const totalBatteries = station.batteryCounts?.total ?? station.availableBatteries ?? 0;
+        return Math.round((totalBatteries / station.capacity) * 100);
     };
 
     return (
@@ -85,7 +63,7 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = ({
                             <div className="p-2 bg-blue-100 rounded-xl mr-3">
                                 <MapPin className="h-6 w-6 text-blue-600" />
                             </div>
-                            Chi tiết trạm đổi pin
+                            Station Details
                         </DialogTitle>
                         <Button
                             variant="ghost"
@@ -107,7 +85,6 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = ({
                                     <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-lg">
                                         <MapPin className="h-10 w-10" />
                                     </div>
-                                    <div className={`absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-4 border-white ${getStatusColor(station.status)}`} />
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex items-start justify-between">
@@ -115,55 +92,17 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = ({
                                             <h2 className="text-2xl font-bold text-slate-800 mb-2">{station.name}</h2>
                                             <p className="text-lg text-slate-600 mb-3">{station.address}</p>
                                             <p className="text-sm text-slate-500 mb-3">{station.city}, {station.district}</p>
-                                            <div className="flex items-center space-x-3">
-                                                {getStatusBadge(station.status)}
                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Station Information */}
-                    <Card className="shadow-sm border-slate-200">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
-                                <MapPin className="h-5 w-5 mr-2 text-blue-600" />
-                                Thông tin trạm
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
-                                    <MapPin className="h-5 w-5 text-blue-500" />
-                                    <div>
-                                        <p className="text-sm text-slate-600">Địa chỉ</p>
-                                        <p className="font-medium text-slate-800">{station.address}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
-                                    <MapPin className="h-5 w-5 text-green-500" />
-                                    <div>
-                                        <p className="text-sm text-slate-600">Thành phố</p>
-                                        <p className="font-medium text-slate-800">{station.city}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
-                                    <MapPin className="h-5 w-5 text-orange-500" />
-                                    <div>
-                                        <p className="text-sm text-slate-600">Quận/Huyện</p>
-                                        <p className="font-medium text-slate-800">{station.district}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
-                                    <Activity className="h-5 w-5 text-purple-500" />
-                                    <div>
-                                        <p className="text-sm text-slate-600">Trạng thái</p>
-                                        <p className="font-medium text-slate-800">
-                                            {station.status === 'ACTIVE' ? 'Hoạt động' :
-                                                station.status === 'MAINTENANCE' ? 'Bảo trì' : 'Ngừng hoạt động'}
-                                        </p>
+                                        {station.mapUrl && (
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => window.open(station.mapUrl, '_blank')}
+                                                className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 border-slate-200 hover:shadow-sm"
+                                            >
+                                                <ExternalLink className="h-4 w-4 mr-2" />
+                                                View on Google Maps
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -175,7 +114,7 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = ({
                         <CardHeader className="pb-3">
                             <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
                                 <Battery className="h-5 w-5 mr-2 text-green-600" />
-                                Thông tin pin
+                                Battery Information
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -183,21 +122,21 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = ({
                                 <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
                                     <Battery className="h-5 w-5 text-blue-500" />
                                     <div>
-                                        <p className="text-sm text-slate-600">Sức chứa</p>
-                                        <p className="font-medium text-slate-800">{formatCapacity(station.capacity)} pin</p>
+                                        <p className="text-sm text-slate-600">Capacity</p>
+                                        <p className="font-medium text-slate-800">{formatCapacity(station.capacity)} batteries</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
                                     <Battery className="h-5 w-5 text-green-500" />
                                     <div>
-                                        <p className="text-sm text-slate-600">Pin có sẵn</p>
-                                        <p className="font-medium text-slate-800">{station.availableBatteries} pin</p>
+                                        <p className="text-sm text-slate-600">Total Batteries</p>
+                                        <p className="font-medium text-slate-800">{station.batteryCounts?.total ?? station.availableBatteries ?? 0} batteries</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
                                     <Activity className="h-5 w-5 text-orange-500" />
                                     <div>
-                                        <p className="text-sm text-slate-600">SOH trung bình</p>
+                                        <p className="text-sm text-slate-600">Average SOH</p>
                                         <p className="font-medium text-slate-800">{formatSoh(station.sohAvg)}</p>
                                     </div>
                                 </div>
@@ -206,7 +145,7 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = ({
                             {/* Utilization Rate */}
                             <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm font-medium text-slate-700">Tỷ lệ sử dụng</span>
+                                    <span className="text-sm font-medium text-slate-700">Usage Rate</span>
                                     <span className="text-lg font-bold text-blue-600">{getUtilizationRate()}%</span>
                                 </div>
                                 <div className="w-full bg-slate-200 rounded-full h-2">
@@ -216,45 +155,53 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = ({
                                     />
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
 
-                    {/* Location Information */}
-                    <Card className="shadow-sm border-slate-200">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
-                                <MapPin className="h-5 w-5 mr-2 text-purple-600" />
-                                Thông tin vị trí
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
-                                    <MapPin className="h-5 w-5 text-blue-500" />
-                                    <div>
-                                        <p className="text-sm text-slate-600">Vĩ độ</p>
-                                        <p className="font-medium text-slate-800">{station.coordinates.lat}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
-                                    <MapPin className="h-5 w-5 text-green-500" />
-                                    <div>
-                                        <p className="text-sm text-slate-600">Kinh độ</p>
-                                        <p className="font-medium text-slate-800">{station.coordinates.lng}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {station.mapUrl && (
+                            {/* Battery Status Breakdown */}
+                            {station.batteryCounts && (
                                 <div className="mt-4">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => window.open(station.mapUrl, '_blank')}
-                                        className="w-full hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 border-slate-200 hover:shadow-sm"
-                                    >
-                                        <ExternalLink className="h-4 w-4 mr-2" />
-                                        Xem trên Google Maps
-                                    </Button>
+                                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Battery Status Breakdown</h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                                <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300">
+                                                    Available
+                                                </Badge>
+                                            </div>
+                                            <p className="text-2xl font-bold text-green-700">{station.batteryCounts.available}</p>
+                                            <p className="text-xs text-slate-500 mt-1">Idle + Full</p>
+                                        </div>
+                                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <Zap className="h-4 w-4 text-yellow-600" />
+                                                <Badge variant="outline" className="bg-yellow-100 text-yellow-700 border-yellow-300">
+                                                    Charging
+                                                </Badge>
+                                            </div>
+                                            <p className="text-2xl font-bold text-yellow-700">{station.batteryCounts.charging}</p>
+                                            <p className="text-xs text-slate-500 mt-1">In charging</p>
+                                        </div>
+                                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <Activity className="h-4 w-4 text-blue-600" />
+                                                <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300">
+                                                    In Use
+                                                </Badge>
+                                            </div>
+                                            <p className="text-2xl font-bold text-blue-700">{station.batteryCounts.inUse}</p>
+                                            <p className="text-xs text-slate-500 mt-1">Currently in use</p>
+                                    </div>
+                                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <AlertTriangle className="h-4 w-4 text-red-600" />
+                                                <Badge variant="outline" className="bg-red-100 text-red-700 border-red-300">
+                                                    Faulty
+                                                </Badge>
+                                </div>
+                                            <p className="text-2xl font-bold text-red-700">{station.batteryCounts.faulty}</p>
+                                            <p className="text-xs text-slate-500 mt-1">Needs repair</p>
+                                    </div>
+                                </div>
                                 </div>
                             )}
                         </CardContent>
@@ -265,7 +212,7 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = ({
                         <CardHeader className="pb-3">
                             <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
                                 <Clock className="h-5 w-5 mr-2 text-orange-600" />
-                                Thông tin thời gian
+                                Time Information
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -273,14 +220,14 @@ export const StationDetailModal: React.FC<StationDetailModalProps> = ({
                                 <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
                                     <Calendar className="h-5 w-5 text-blue-500" />
                                     <div>
-                                        <p className="text-sm text-slate-600">Ngày tạo</p>
+                                        <p className="text-sm text-slate-600">Created Date</p>
                                         <p className="font-medium text-slate-800">{formatDate(station.createdAt)}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
                                     <Clock className="h-5 w-5 text-orange-500" />
                                     <div>
-                                        <p className="text-sm text-slate-600">Cập nhật lần cuối</p>
+                                        <p className="text-sm text-slate-600">Last Updated</p>
                                         <p className="font-medium text-slate-800">{formatDate(station.updatedAt)}</p>
                                     </div>
                                 </div>

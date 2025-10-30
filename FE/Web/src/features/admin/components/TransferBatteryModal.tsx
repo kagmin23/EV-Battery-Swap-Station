@@ -29,6 +29,7 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
     const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     // Load stations when modal opens
     useEffect(() => {
@@ -47,7 +48,7 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
             setStations(stationList);
         } catch (err) {
             console.error('Error loading stations:', err);
-            toast.error('Không thể tải danh sách trạm');
+            toast.error('Unable to load stations. Please try again.');
         }
     };
 
@@ -75,6 +76,7 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSubmitError(null);
 
         if (!validateForm()) {
             return;
@@ -90,13 +92,11 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
             const selectedBattery = batteries.find(b => b.id === selectedBatteryId);
             const targetStation = stations.find(s => s.id === selectedStationId);
 
-            toast.success(`Đã chuyển pin ${selectedBattery?.batteryId} đến trạm ${targetStation?.name}`);
+            toast.success(`Battery ${selectedBattery?.batteryId} transferred to "${targetStation?.name}" successfully`);
             onSuccess();
             handleClose();
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Có lỗi xảy ra khi chuyển pin';
-            toast.error(errorMessage);
-            console.error('Error transferring battery:', err);
+        } catch (err: any) {
+            setSubmitError(err?.message || 'Unable to transfer battery. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -107,6 +107,7 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
         setSelectedStationId('');
         setSearchTerm('');
         setErrors({});
+        setSubmitError(null);
         onClose();
     };
 
@@ -149,8 +150,8 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
 
                     {/* Select Battery */}
                     <div className="space-y-2">
-                        <Label htmlFor="batteryId" className="text-sm font-medium text-slate-700">
-                            Chọn pin cần chuyển <span className="text-red-500">*</span>
+                        <Label htmlFor="batteryId" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                            Chọn pin cần chuyển
                         </Label>
                         <Select
                             value={selectedBatteryId}
@@ -181,10 +182,7 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
                             </SelectContent>
                         </Select>
                         {errors.batteryId && (
-                            <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                <AlertCircle className="h-4 w-4" />
-                                <span>{errors.batteryId}</span>
-                            </div>
+                            <p className="text-sm text-red-500">{errors.batteryId}</p>
                         )}
                     </div>
 
@@ -221,8 +219,8 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
 
                     {/* Select Target Station */}
                     <div className="space-y-2">
-                        <Label htmlFor="stationId" className="text-sm font-medium text-slate-700">
-                            Chọn trạm đích <span className="text-red-500">*</span>
+                        <Label htmlFor="stationId" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                            Chọn trạm đích
                         </Label>
                         <Select
                             value={selectedStationId}
@@ -250,12 +248,16 @@ export const TransferBatteryModal: React.FC<TransferBatteryModalProps> = ({
                             </SelectContent>
                         </Select>
                         {errors.stationId && (
-                            <div className="flex items-center space-x-2 text-red-600 text-sm">
-                                <AlertCircle className="h-4 w-4" />
-                                <span>{errors.stationId}</span>
-                            </div>
+                            <p className="text-sm text-red-500">{errors.stationId}</p>
                         )}
                     </div>
+
+                    {submitError && (
+                        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-2 rounded-lg">
+                            <AlertCircle className="h-5 w-5 mr-1 text-red-600 flex-shrink-0" />
+                            <span className="font-medium">{submitError}</span>
+                        </div>
+                    )}
 
                     <DialogFooter className="flex justify-end space-x-3 pt-6">
                         <Button

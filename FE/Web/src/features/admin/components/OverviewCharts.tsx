@@ -39,7 +39,7 @@ export const OverviewCharts: React.FC<OverviewChartsProps> = ({
                 labels: stationsData.labels,
                 datasets: [
                     {
-                        label: 'Hoạt động',
+                        label: 'Active',
                         data: stationsData.active,
                         backgroundColor: 'rgba(34, 197, 94, 0.8)',
                         borderColor: 'rgb(34, 197, 94)',

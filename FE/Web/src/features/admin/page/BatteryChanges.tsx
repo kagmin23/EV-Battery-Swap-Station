@@ -45,7 +45,7 @@ export default function BatteryChanges() {
         setIsLoading(true);
         setError(null);
         const apiTransactions = await TransactionApi.getAllTransactions();
-        
+
         // Map API response to BatterySwapTransaction format
         const mappedTransactions: BatterySwapTransaction[] = apiTransactions
           .filter(t => (t.batteryIdGiven || t.battery_given) && (t.batteryIdReturned || t.battery_returned)) // Only include battery swap transactions
@@ -212,7 +212,7 @@ export default function BatteryChanges() {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const completedTransactions = transactions.filter(t => t.status === 'completed');
-    
+
     const todaySwaps = completedTransactions.filter(t => new Date(t.timestamp) >= todayStart);
     const weekSwaps = completedTransactions.filter(t => new Date(t.timestamp) >= weekStart);
     const monthSwaps = completedTransactions.filter(t => new Date(t.timestamp) >= monthStart);
@@ -254,7 +254,7 @@ export default function BatteryChanges() {
     setSelectedBatteryId(null);
   };
 
-  
+
 
   const handleExportData = () => {
     // Convert filtered transactions to CSV

@@ -63,7 +63,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
                                 {transaction.transactionId}
                             </h3>
                             <p className="text-sm text-slate-500 truncate">
-                                {transaction.userName || 'Người dùng không xác định'}
+                                {transaction.userName || 'Unknown User'}
                             </p>
                             <div className="flex items-center space-x-2 mt-2">
                                 <Badge variant={transactionType.variant}>
@@ -135,7 +135,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
                         className="flex-1 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 border-slate-200 hover:shadow-sm"
                     >
                         <Eye className="h-4 w-4 mr-1" />
-                        Xem chi tiết
+                        View Details
                     </Button>
                 </div>
             </CardContent>

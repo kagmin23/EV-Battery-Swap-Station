@@ -91,6 +91,7 @@ export interface DriverFilters {
     subscriptionPlan: string | 'ALL';
     licenseType: DriverLicenseType | 'ALL';
     city: string | 'ALL';
+    limit: string;
 }
 
 export interface DriverStats {
