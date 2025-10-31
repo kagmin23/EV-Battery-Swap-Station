@@ -35,31 +35,31 @@ const RegisterPage: React.FC = () => {
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      setError('Email không hợp lệ');
+      setError('Invalid email address');
       return false;
     }
 
     if (formData.fullName.trim().length < 2) {
-      setError('Họ và tên phải có ít nhất 2 ký tự');
+      setError('Full name must be at least 2 characters');
       return false;
     }
 
 
     const phoneRegex = /^(0)[0-9]{9}$/;
     if (!phoneRegex.test(formData.phoneNumber)) {
-      setError('Số điện thoại không hợp lệ (phải có 10 số và bắt đầu bằng 0)');
+      setError('Invalid phone number (must have 10 digits and start with 0)');
       return false;
     }
 
 
     if (formData.password.length < 6) {
-      setError('Mật khẩu phải có ít nhất 6 ký tự');
+      setError('Password must be at least 6 characters');
       return false;
     }
 
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp');
+      setError('Password confirmation does not match');
       return false;
     }
 
@@ -101,10 +101,10 @@ const RegisterPage: React.FC = () => {
           } 
         });
       } else {
-        setError(data.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+        setError(data.message || 'Registration failed. Please try again.');
       }
     } catch (err) {
-      setError('Có lỗi xảy ra. Vui lòng thử lại.');
+      setError('An error occurred. Please try again.');
       console.error('Register error:', err);
     } finally {
       setIsLoading(false);
@@ -121,10 +121,10 @@ const RegisterPage: React.FC = () => {
             </svg>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Đăng ký tài khoản
+            Create Account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Tạo tài khoản mới để truy cập hệ thống
+            Create a new account to access the system
           </p>
         </div>
 
@@ -133,7 +133,7 @@ const RegisterPage: React.FC = () => {
 
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-                Họ và tên
+                Full Name
               </label>
               <input
                 id="fullName"
@@ -143,7 +143,7 @@ const RegisterPage: React.FC = () => {
                 value={formData.fullName}
                 onChange={handleChange}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Nhập họ và tên"
+                placeholder="Enter your full name"
               />
             </div>
 
@@ -161,13 +161,13 @@ const RegisterPage: React.FC = () => {
                 value={formData.email}
                 onChange={handleChange}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Nhập email"
+                placeholder="Enter your email"
               />
             </div>
 
             <div>
               <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                Số điện thoại
+                Phone Number
               </label>
               <input
                 id="phoneNumber"
@@ -177,13 +177,13 @@ const RegisterPage: React.FC = () => {
                 value={formData.phoneNumber}
                 onChange={handleChange}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Nhập số điện thoại (VD: 0912345678)"
+                placeholder="Enter phone number (e.g., 0912345678)"
               />
             </div>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Mật khẩu
+                Password
               </label>
               <input
                 id="password"
@@ -194,13 +194,13 @@ const RegisterPage: React.FC = () => {
                 value={formData.password}
                 onChange={handleChange}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                placeholder="Enter password (minimum 6 characters)"
               />
             </div>
 
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Xác nhận mật khẩu
+                Confirm Password
               </label>
               <input
                 id="confirmPassword"
@@ -211,7 +211,7 @@ const RegisterPage: React.FC = () => {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Nhập lại mật khẩu"
+                placeholder="Re-enter password"
               />
             </div>
           </div>
@@ -231,23 +231,23 @@ const RegisterPage: React.FC = () => {
               {isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Đang xử lý...
+                  Processing...
                 </>
               ) : (
-                'Đăng ký'
+                'Sign Up'
               )}
             </button>
           </div>
 
           <div className="text-center">
             <span className="text-sm text-gray-600">
-              Đã có tài khoản?{' '}
+              Already have an account?{' '}
               <button
                 type="button"
                 onClick={() => navigate('/login')}
                 className="font-medium text-blue-600 hover:text-blue-500"
               >
-                Đăng nhập
+                Sign In
               </button>
             </span>
           </div>

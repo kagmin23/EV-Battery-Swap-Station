@@ -90,7 +90,7 @@ const VerifyOTPPage: React.FC = () => {
     const otpString = otp.join('');
     
     if (otpString.length !== 6) {
-      setError('Vui lòng nhập đầy đủ mã OTP (6 số)');
+      setError('Please enter the complete OTP code (6 digits)');
       return;
     }
 
@@ -112,17 +112,17 @@ const VerifyOTPPage: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
-        setSuccess('Xác thực thành công! Đang chuyển đến trang đăng nhập...');
+        setSuccess('Verification successful! Redirecting to login page...');
         setTimeout(() => {
           // Clear resend count on success
           localStorage.removeItem(`resend_count_${email}`);
-          navigate('/login', { state: { message: 'Đăng ký thành công! Vui lòng đăng nhập.' } });
+          navigate('/login', { state: { message: 'Registration successful! Please sign in.' } });
         }, 2000);
       } else {
-        setError(data.message || 'Mã OTP không chính xác. Vui lòng thử lại.');
+        setError(data.message || 'Incorrect OTP code. Please try again.');
       }
     } catch (err) {
-      setError('Có lỗi xảy ra. Vui lòng thử lại.');
+      setError('An error occurred. Please try again.');
       console.error('Verify OTP error:', err);
     } finally {
       setIsLoading(false);
@@ -131,7 +131,7 @@ const VerifyOTPPage: React.FC = () => {
 
   const handleResendOTP = async () => {
     if (resendCount >= 5) {
-      setError('Bạn đã vượt quá số lần gửi lại OTP (tối đa 5 lần trong 24 giờ)');
+      setError('You have exceeded the maximum number of OTP resend attempts (maximum 5 times in 24 hours)');
       return;
     }
 
@@ -162,15 +162,15 @@ const VerifyOTPPage: React.FC = () => {
           timestamp: Date.now()
         }));
 
-        setSuccess('Đã gửi lại mã OTP. Vui lòng kiểm tra email của bạn.');
+        setSuccess('OTP code has been resent. Please check your email.');
         setCountdown(60);
         setCanResend(false);
         setOtp(['', '', '', '', '', '']);
       } else {
-        setError(data.message || 'Gửi lại OTP thất bại. Vui lòng thử lại.');
+        setError(data.message || 'Failed to resend OTP. Please try again.');
       }
     } catch (err) {
-      setError('Có lỗi xảy ra. Vui lòng thử lại.');
+      setError('An error occurred. Please try again.');
       console.error('Resend OTP error:', err);
     } finally {
       setIsLoading(false);
@@ -187,10 +187,10 @@ const VerifyOTPPage: React.FC = () => {
             </svg>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Xác thực Email
+            Email Verification
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            {message || 'Chúng tôi đã gửi mã OTP đến email của bạn'}
+            {message || 'We have sent an OTP code to your email'}
           </p>
           <p className="mt-1 text-center text-sm font-medium text-blue-600">
             {email}
@@ -201,7 +201,7 @@ const VerifyOTPPage: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
-              Nhập mã OTP (6 số)
+              Enter OTP Code (6 digits)
             </label>
             <div className="flex justify-center gap-2">
               {otp.map((digit, index) => (
@@ -244,10 +244,10 @@ const VerifyOTPPage: React.FC = () => {
               {isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Đang xác thực...
+                  Verifying...
                 </>
               ) : (
-                'Xác thực'
+                'Verify'
               )}
             </button>
           </div>
@@ -258,17 +258,17 @@ const VerifyOTPPage: React.FC = () => {
               {canResend ? (
                 resendCount >= 5 ? (
                   <span className="text-red-600">
-                    Bạn đã vượt quá số lần gửi lại OTP (5/5)
+                    You have exceeded the OTP resend limit (5/5)
                   </span>
                 ) : (
                   <span>
-                    Không nhận được mã?{' '}
+                    Didn't receive the code?{' '}
                     <button
                       onClick={handleResendOTP}
                       disabled={isLoading}
                       className="font-medium text-blue-600 hover:text-blue-500"
                     >
-                      Gửi lại
+                      Resend
                     </button>
                     {' '}
                     <span className="text-gray-500">({resendCount}/5)</span>
@@ -276,7 +276,7 @@ const VerifyOTPPage: React.FC = () => {
                 )
               ) : (
                 <span>
-                  Gửi lại mã sau <span className="font-medium text-blue-600">{countdown}s</span>
+                  Resend code in <span className="font-medium text-blue-600">{countdown}s</span>
                   {' '}
                   <span className="text-gray-500">({resendCount}/5)</span>
                 </span>
@@ -290,7 +290,7 @@ const VerifyOTPPage: React.FC = () => {
               onClick={() => navigate('/login')}
               className="text-sm font-medium text-gray-600 hover:text-gray-900"
             >
-              ← Quay lại đăng nhập
+              ← Back to Sign In
             </button>
           </div>
         </div>
