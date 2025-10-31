@@ -17,7 +17,7 @@ interface PaymentModalProps {
     vehicles: any[];
     getSelectedBatteryId: () => string | null;
     checkDuplicateBooking: (vehicleId: string, stationId: string, scheduledTime: Date) => boolean;
-    batteryPrice: number; // Giá pin được truyền từ booking.tsx
+    batteryPrice: number;
 }
 
 export default function PaymentModal({
