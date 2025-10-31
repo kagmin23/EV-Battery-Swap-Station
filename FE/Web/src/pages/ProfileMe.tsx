@@ -83,11 +83,11 @@ const ProfileMe: React.FC = () => {
       if (result.success && result.data) {
         setProfile(result.data);
       } else {
-        setError('Không thể tải thông tin hồ sơ');
+        setError('Unable to load profile information');
       }
     } catch (err) {
       const error = err as Error;
-      setError(`Lỗi kết nối: ${error.message}`);
+      setError(`Connection error: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -100,11 +100,11 @@ const ProfileMe: React.FC = () => {
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'admin':
-        return 'Quản trị viên';
+        return 'Administrator';
       case 'staff':
-        return 'Nhân viên';
+        return 'Staff';
       case 'driver':
-        return 'Tài xế';
+        return 'Driver';
       default:
         return role;
     }
@@ -128,7 +128,7 @@ const ProfileMe: React.FC = () => {
       return (
         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-300">
           <CheckCircle className="w-4 h-4 mr-1" />
-          Hoạt động
+          Active
         </span>
       );
     }
@@ -141,7 +141,7 @@ const ProfileMe: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -174,17 +174,17 @@ const ProfileMe: React.FC = () => {
 
   const validateEditForm = (): boolean => {
     if (!editForm.fullName.trim()) {
-      setEditError('Họ tên không được để trống');
+      setEditError('Full name is required');
       return false;
     }
     if (!editForm.phoneNumber.trim()) {
-      setEditError('Số điện thoại không được để trống');
+      setEditError('Phone number is required');
       return false;
     }
     // Basic phone validation
     const phoneRegex = /^[0-9]{10,11}$/;
     if (!phoneRegex.test(editForm.phoneNumber)) {
-      setEditError('Số điện thoại không hợp lệ (10-11 chữ số)');
+      setEditError('Invalid phone number (10-11 digits)');
       return false;
     }
     return true;
@@ -222,15 +222,15 @@ const ProfileMe: React.FC = () => {
         setEditForm({ fullName: '', phoneNumber: '' });
         
         // Show success toast
-        toast.success('Cập nhật hồ sơ thành công!', {
-          description: 'Thông tin của bạn đã được cập nhật.',
+        toast.success('Profile updated successfully!', {
+          description: 'Your information has been updated.',
         });
       } else {
-        setEditError(result.message || 'Không thể cập nhật hồ sơ');
+        setEditError(result.message || 'Unable to update profile');
       }
     } catch (err) {
       const error = err as Error;
-      setEditError(`Lỗi kết nối: ${error.message}`);
+      setEditError(`Connection error: ${error.message}`);
     } finally {
       setEditLoading(false);
     }
@@ -246,13 +246,13 @@ const ProfileMe: React.FC = () => {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Vui lòng chọn file ảnh!');
+      toast.error('Please select an image file!');
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Kích thước ảnh không được vượt quá 5MB!');
+      toast.error('Image size must not exceed 5MB!');
       return;
     }
 
@@ -281,17 +281,17 @@ const ProfileMe: React.FC = () => {
           });
         }
         
-        toast.success('Cập nhật avatar thành công!', {
-          description: 'Ảnh đại diện của bạn đã được cập nhật.',
+        toast.success('Avatar updated successfully!', {
+          description: 'Your profile picture has been updated.',
         });
       } else {
-        toast.error('Không thể cập nhật avatar', {
-          description: result.message || 'Vui lòng thử lại sau.',
+        toast.error('Unable to update avatar', {
+          description: result.message || 'Please try again later.',
         });
       }
     } catch (err) {
       const error = err as Error;
-      toast.error('Lỗi kết nối', {
+      toast.error('Connection error', {
         description: error.message,
       });
     } finally {
@@ -344,27 +344,27 @@ const ProfileMe: React.FC = () => {
 
   const validatePasswordForm = (): boolean => {
     if (!passwordForm.oldPassword) {
-      setPasswordError('Vui lòng nhập mật khẩu hiện tại');
+      setPasswordError('Please enter current password');
       return false;
     }
     if (!passwordForm.newPassword) {
-      setPasswordError('Vui lòng nhập mật khẩu mới');
+      setPasswordError('Please enter new password');
       return false;
     }
     if (passwordForm.newPassword.length < 6) {
-      setPasswordError('Mật khẩu mới phải có ít nhất 6 ký tự');
+      setPasswordError('New password must be at least 6 characters');
       return false;
     }
     if (!passwordForm.confirmNewPassword) {
-      setPasswordError('Vui lòng xác nhận mật khẩu mới');
+      setPasswordError('Please confirm new password');
       return false;
     }
     if (passwordForm.newPassword !== passwordForm.confirmNewPassword) {
-      setPasswordError('Mật khẩu mới và xác nhận mật khẩu không khớp');
+      setPasswordError('New password and confirmation do not match');
       return false;
     }
     if (passwordForm.oldPassword === passwordForm.newPassword) {
-      setPasswordError('Mật khẩu mới phải khác với mật khẩu hiện tại');
+      setPasswordError('New password must be different from current password');
       return false;
     }
     return true;
@@ -403,15 +403,15 @@ const ProfileMe: React.FC = () => {
         });
         
         // Show success toast
-        toast.success('Đổi mật khẩu thành công!', {
-          description: 'Mật khẩu của bạn đã được cập nhật.',
+        toast.success('Password changed successfully!', {
+          description: 'Your password has been updated.',
         });
       } else {
-        setPasswordError(result.message || 'Không thể đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu hiện tại.');
+        setPasswordError(result.message || 'Unable to change password. Please check your current password.');
       }
     } catch (err) {
       const error = err as Error;
-      setPasswordError(`Lỗi kết nối: ${error.message}`);
+      setPasswordError(`Connection error: ${error.message}`);
     } finally {
       setPasswordLoading(false);
     }
@@ -424,7 +424,7 @@ const ProfileMe: React.FC = () => {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
           <div className="text-center">
             <Spinner className="w-12 h-12 mx-auto mb-4" />
-            <p className="text-gray-600">Đang tải thông tin hồ sơ...</p>
+            <p className="text-gray-600">Loading profile information...</p>
           </div>
         </div>
       </>
@@ -442,11 +442,11 @@ const ProfileMe: React.FC = () => {
                 <span className="text-3xl">⚠️</span>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Không thể tải hồ sơ
+                Unable to Load Profile
               </h3>
               <p className="text-gray-600 mb-4">{error}</p>
               <Button onClick={fetchProfile} className="bg-purple-600 hover:bg-purple-700">
-                Thử lại
+                Try Again
               </Button>
             </CardContent>
           </Card>
@@ -469,7 +469,7 @@ const ProfileMe: React.FC = () => {
               className="bg-white hover:bg-gray-50 border-gray-300 text-gray-700 shadow-sm"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Quay lại
+              Back
             </Button>
           </div>
           
@@ -479,10 +479,10 @@ const ProfileMe: React.FC = () => {
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center">
                   <KeyRound className="w-6 h-6 mr-2 text-purple-600" />
-                  Đổi mật khẩu
+                  Change Password
                 </DialogTitle>
                 <DialogDescription className="text-gray-600">
-                  Thay đổi mật khẩu để bảo mật tài khoản của bạn.
+                  Change your password to secure your account.
                 </DialogDescription>
               </DialogHeader>
 
@@ -490,7 +490,7 @@ const ProfileMe: React.FC = () => {
                 {/* Old Password */}
                 <div className="space-y-2">
                   <Label htmlFor="oldPassword" className="text-sm font-semibold text-gray-700">
-                    Mật khẩu hiện tại <span className="text-red-500">*</span>
+                    Current Password <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <Input
@@ -498,7 +498,7 @@ const ProfileMe: React.FC = () => {
                       type={showPasswords.oldPassword ? 'text' : 'password'}
                       value={passwordForm.oldPassword}
                       onChange={(e) => handlePasswordFormChange('oldPassword', e.target.value)}
-                      placeholder="Nhập mật khẩu hiện tại"
+                      placeholder="Enter current password"
                       className="border-gray-300 focus:border-purple-500 focus:ring-purple-500 pr-10"
                       disabled={passwordLoading}
                     />
@@ -520,7 +520,7 @@ const ProfileMe: React.FC = () => {
                 {/* New Password */}
                 <div className="space-y-2">
                   <Label htmlFor="newPassword" className="text-sm font-semibold text-gray-700">
-                    Mật khẩu mới <span className="text-red-500">*</span>
+                    New Password <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <Input
@@ -528,7 +528,7 @@ const ProfileMe: React.FC = () => {
                       type={showPasswords.newPassword ? 'text' : 'password'}
                       value={passwordForm.newPassword}
                       onChange={(e) => handlePasswordFormChange('newPassword', e.target.value)}
-                      placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
+                      placeholder="Enter new password (minimum 6 characters)"
                       className="border-gray-300 focus:border-purple-500 focus:ring-purple-500 pr-10"
                       disabled={passwordLoading}
                     />
@@ -550,7 +550,7 @@ const ProfileMe: React.FC = () => {
                 {/* Confirm New Password */}
                 <div className="space-y-2">
                   <Label htmlFor="confirmNewPassword" className="text-sm font-semibold text-gray-700">
-                    Xác nhận mật khẩu mới <span className="text-red-500">*</span>
+                    Confirm New Password <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <Input
@@ -558,7 +558,7 @@ const ProfileMe: React.FC = () => {
                       type={showPasswords.confirmNewPassword ? 'text' : 'password'}
                       value={passwordForm.confirmNewPassword}
                       onChange={(e) => handlePasswordFormChange('confirmNewPassword', e.target.value)}
-                      placeholder="Nhập lại mật khẩu mới"
+                      placeholder="Re-enter new password"
                       className="border-gray-300 focus:border-purple-500 focus:ring-purple-500 pr-10"
                       disabled={passwordLoading}
                     />
@@ -589,11 +589,11 @@ const ProfileMe: React.FC = () => {
 
                 {/* Security Tips */}
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-900 font-semibold mb-2">💡 Mẹo bảo mật:</p>
+                  <p className="text-sm text-blue-900 font-semibold mb-2">💡 Security Tips:</p>
                   <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                    <li>Sử dụng ít nhất 6 ký tự</li>
-                    <li>Kết hợp chữ hoa, chữ thường và số</li>
-                    <li>Không dùng mật khẩu dễ đoán</li>
+                    <li>Use at least 6 characters</li>
+                    <li>Combine uppercase, lowercase and numbers</li>
+                    <li>Avoid easily guessable passwords</li>
                   </ul>
                 </div>
               </div>
@@ -606,7 +606,7 @@ const ProfileMe: React.FC = () => {
                   className="border-gray-300 hover:bg-gray-50"
                 >
                   <X className="w-4 h-4 mr-2" />
-                  Hủy
+                  Cancel
                 </Button>
                 <Button
                   onClick={handleSavePassword}
@@ -616,12 +616,12 @@ const ProfileMe: React.FC = () => {
                   {passwordLoading ? (
                     <>
                       <Spinner className="w-4 h-4 mr-2" />
-                      Đang xử lý...
+                      Processing...
                     </>
                   ) : (
                     <>
                       <Lock className="w-4 h-4 mr-2" />
-                      Đổi mật khẩu
+                      Change Password
                     </>
                   )}
                 </Button>
@@ -635,10 +635,10 @@ const ProfileMe: React.FC = () => {
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center">
                   <Edit className="w-6 h-6 mr-2 text-purple-600" />
-                  Chỉnh sửa hồ sơ
+                  Edit Profile
                 </DialogTitle>
                 <DialogDescription className="text-gray-600">
-                  Cập nhật thông tin cá nhân của bạn. Nhấn lưu khi hoàn tất.
+                  Update your personal information. Click save when done.
                 </DialogDescription>
               </DialogHeader>
 
@@ -646,13 +646,13 @@ const ProfileMe: React.FC = () => {
                 {/* Full Name */}
                 <div className="space-y-2">
                   <Label htmlFor="fullName" className="text-sm font-semibold text-gray-700">
-                    Họ và tên <span className="text-red-500">*</span>
+                    Full Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="fullName"
                     value={editForm.fullName}
                     onChange={(e) => handleEditFormChange('fullName', e.target.value)}
-                    placeholder="Nhập họ và tên"
+                    placeholder="Enter full name"
                     className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                     disabled={editLoading}
                   />
@@ -661,13 +661,13 @@ const ProfileMe: React.FC = () => {
                 {/* Phone Number */}
                 <div className="space-y-2">
                   <Label htmlFor="phoneNumber" className="text-sm font-semibold text-gray-700">
-                    Số điện thoại <span className="text-red-500">*</span>
+                    Phone Number <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="phoneNumber"
                     value={editForm.phoneNumber}
                     onChange={(e) => handleEditFormChange('phoneNumber', e.target.value)}
-                    placeholder="Nhập số điện thoại (10-11 chữ số)"
+                    placeholder="Enter phone number (10-11 digits)"
                     className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                     disabled={editLoading}
                   />
@@ -686,7 +686,7 @@ const ProfileMe: React.FC = () => {
                 {/* Info Note */}
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-800">
-                    <strong>Lưu ý:</strong> Email và vai trò không thể chỉnh sửa.
+                    <strong>Note:</strong> Email and role cannot be edited.
                   </p>
                 </div>
               </div>
@@ -699,7 +699,7 @@ const ProfileMe: React.FC = () => {
                   className="border-gray-300 hover:bg-gray-50"
                 >
                   <X className="w-4 h-4 mr-2" />
-                  Hủy
+                  Cancel
                 </Button>
                 <Button
                   onClick={handleSaveProfile}
@@ -709,12 +709,12 @@ const ProfileMe: React.FC = () => {
                   {editLoading ? (
                     <>
                       <Spinner className="w-4 h-4 mr-2" />
-                      Đang lưu...
+                      Saving...
                     </>
                   ) : (
                     <>
                       <Save className="w-4 h-4 mr-2" />
-                      Lưu thay đổi
+                      Save Changes
                     </>
                   )}
                 </Button>
@@ -745,7 +745,7 @@ const ProfileMe: React.FC = () => {
                     onClick={handleAvatarClick}
                     disabled={avatarUploading}
                     className="absolute bottom-0 right-0 w-10 h-10 bg-purple-600 hover:bg-purple-700 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 border-4 border-white disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Đổi avatar"
+                    title="Change avatar"
                   >
                     {avatarUploading ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -786,7 +786,7 @@ const ProfileMe: React.FC = () => {
                   className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg"
                 >
                   <Edit className="w-4 h-4 mr-2" />
-                  Chỉnh sửa hồ sơ
+                  Edit Profile
                 </Button>
                 <Button
                   onClick={handleChangePassword}
@@ -794,7 +794,7 @@ const ProfileMe: React.FC = () => {
                   className="border-purple-600 text-purple-600 hover:bg-purple-50"
                 >
                   <Lock className="w-4 h-4 mr-2" />
-                  Đổi mật khẩu
+                  Change Password
                 </Button>
               </div>
             </CardContent>
@@ -806,7 +806,7 @@ const ProfileMe: React.FC = () => {
             <Card className="shadow-lg border-0">
               <CardHeader className="bg-gradient-to-r from-purple-50 to-indigo-50">
                 <CardTitle className="text-lg font-semibold text-gray-800">
-                  Thông tin liên hệ
+                  Contact Information
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6 space-y-4">
@@ -825,7 +825,7 @@ const ProfileMe: React.FC = () => {
                     <Phone className="w-5 h-5 text-indigo-600" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm text-gray-500 mb-1">Số điện thoại</p>
+                    <p className="text-sm text-gray-500 mb-1">Phone Number</p>
                     <p className="text-gray-900 font-medium">{profile.phoneNumber}</p>
                   </div>
                 </div>
@@ -836,7 +836,7 @@ const ProfileMe: React.FC = () => {
             <Card className="shadow-lg border-0">
               <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50">
                 <CardTitle className="text-lg font-semibold text-gray-800">
-                  Thông tin tài khoản
+                  Account Information
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6 space-y-4">
@@ -845,7 +845,7 @@ const ProfileMe: React.FC = () => {
                     <User className="w-5 h-5 text-blue-600" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm text-gray-500 mb-1">ID Tài khoản</p>
+                    <p className="text-sm text-gray-500 mb-1">Account ID</p>
                     <p className="text-gray-900 font-mono text-sm break-all">{profile.id}</p>
                   </div>
                 </div>
@@ -855,7 +855,7 @@ const ProfileMe: React.FC = () => {
                     <Calendar className="w-5 h-5 text-green-600" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm text-gray-500 mb-1">Ngày tạo</p>
+                    <p className="text-sm text-gray-500 mb-1">Created Date</p>
                     <p className="text-gray-900 font-medium text-sm">
                       {formatDate(profile.createdAt)}
                     </p>
@@ -867,7 +867,7 @@ const ProfileMe: React.FC = () => {
                     <Calendar className="w-5 h-5 text-orange-600" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm text-gray-500 mb-1">Cập nhật lần cuối</p>
+                    <p className="text-sm text-gray-500 mb-1">Last Updated</p>
                     <p className="text-gray-900 font-medium text-sm">
                       {formatDate(profile.updatedAt)}
                     </p>

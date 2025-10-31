@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,14 +11,7 @@ const LoginPage: React.FC = () => {
   const { login, isAuthenticated, user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-
-  useEffect(() => {
-    if (!authLoading && isAuthenticated && user) {
-      redirectBasedOnRole(user.role);
-    }
-  }, [isAuthenticated, user, authLoading, navigate]);
-
-  const redirectBasedOnRole = (role: string) => {
+  const redirectBasedOnRole = useCallback((role: string) => {
     switch (role) {
       case 'admin':
         navigate('/overview', { replace: true });
@@ -27,12 +20,17 @@ const LoginPage: React.FC = () => {
         navigate('/staff', { replace: true });
         break;
       case 'driver':
-
         break;
       default:
         break;
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && user) {
+      redirectBasedOnRole(user.role);
+    }
+  }, [isAuthenticated, user, authLoading, navigate, redirectBasedOnRole]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,13 +40,12 @@ const LoginPage: React.FC = () => {
     try {
       const success = await login(email, password);
       
-      if (success) {
-
-      } else {
-        setError('Email hoặc mật khẩu không đúng');
+      if (!success) {
+        setError('Incorrect email or password');
       }
-    } catch (err) {
-      setError('Có lỗi xảy ra. Vui lòng thử lại.');
+
+    } catch {
+      setError('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -60,7 +57,7 @@ const LoginPage: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Đang kiểm tra trạng thái đăng nhập...</p>
+          <p className="text-gray-600">Checking authentication status...</p>
         </div>
       </div>
     );
@@ -79,7 +76,7 @@ const LoginPage: React.FC = () => {
             EV Battery Swap Station
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Đăng nhập để truy cập hệ thống
+            Sign in to access the system
           </p>
         </div>
 
@@ -103,7 +100,7 @@ const LoginPage: React.FC = () => {
             </div>
             <div>
               <label htmlFor="password" className="sr-only">
-                Mật khẩu
+                Password
               </label>
               <input
                 id="password"
@@ -114,7 +111,7 @@ const LoginPage: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Mật khẩu"
+                placeholder="Password"
               />
             </div>
           </div>
@@ -134,23 +131,23 @@ const LoginPage: React.FC = () => {
               {isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Đang đăng nhập...
+                  Signing in...
                 </>
               ) : (
-                'Đăng nhập'
+                'Sign In'
               )}
             </button>
           </div>
 
           <div className="text-center">
             <span className="text-sm text-gray-600">
-              Chưa có tài khoản?{' '}
+              Don't have an account?{' '}
               <button
                 type="button"
                 onClick={() => navigate('/register')}
                 className="font-medium text-blue-600 hover:text-blue-500"
               >
-                Đăng ký
+                Sign Up
               </button>
             </span>
           </div>
