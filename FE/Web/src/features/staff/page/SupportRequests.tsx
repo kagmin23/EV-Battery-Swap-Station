@@ -65,7 +65,7 @@ export default function SupportRequests() {
     };
     const classes = map[status] || 'bg-gray-100 text-gray-800';
     const label = status === 'in-progress' ? 'In Progress' : status.charAt(0).toUpperCase() + status.slice(1);
-    return <span className={`px-2 py-1 rounded-full text-xs font-medium ${classes}`}>{label}</span>;
+    return <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap inline-flex ${classes}`}>{label}</span>;
   };
 
   const handleClose = async (id: string) => {
@@ -148,14 +148,13 @@ export default function SupportRequests() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase">Booking Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase">Battery</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase">Created</th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-text-primary uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-table-row divide-y divide-border dark:divide-border">
                 {current.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-text-secondary">No support requests found</td>
+                    <td colSpan={5} className="px-6 py-8 text-center text-text-secondary">No support requests found</td>
                   </tr>
                 ) : (
                   current.map((r) => (
@@ -167,7 +166,6 @@ export default function SupportRequests() {
                         <div className="text-xs text-slate-500">{r.booking.battery.model}</div>
                       </td>
                       <td className="px-6 py-4 text-sm text-text-secondary">{getStatusBadge(r.status)}</td>
-                      <td className="px-6 py-4 text-sm text-text-secondary">{new Date(r.createdAt).toLocaleString()}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         {r.status === 'completed' ? (
                           <button
