@@ -4,7 +4,6 @@ import {
   ArrowLeft, 
   Battery as BatteryIcon, 
   TrendingUp, 
-  Zap, 
   RefreshCw
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -191,22 +190,6 @@ export default function BatteryLog() {
               </div>
             </CardContent>
           </Card>
-
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-100 to-purple-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-purple-800 flex items-center gap-2">
-                <Zap className="h-4 w-4" />
-                Voltage
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold text-purple-900">
-                  {batteryData.voltage || 'N/A'} V
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Battery Details */}
@@ -247,24 +230,6 @@ export default function BatteryLog() {
                   <div className="p-4 bg-slate-50 rounded-lg">
                     <p className="text-sm text-slate-600 mb-1">Station</p>
                     <p className="font-semibold text-lg">{station.stationName}</p>
-                  </div>
-                )}
-                {batteryData.manufacturer && (
-                  <div className="p-4 bg-slate-50 rounded-lg">
-                    <p className="text-sm text-slate-600 mb-1">Manufacturer</p>
-                    <p className="font-semibold text-lg">{batteryData.manufacturer}</p>
-                  </div>
-                )}
-                {batteryData.capacity_kWh && (
-                  <div className="p-4 bg-slate-50 rounded-lg">
-                    <p className="text-sm text-slate-600 mb-1">Capacity</p>
-                    <p className="font-semibold text-lg">{batteryData.capacity_kWh} kWh</p>
-                  </div>
-                )}
-                {batteryData.voltage && (
-                  <div className="p-4 bg-slate-50 rounded-lg">
-                    <p className="text-sm text-slate-600 mb-1">Voltage</p>
-                    <p className="font-semibold text-lg">{batteryData.voltage} V</p>
                   </div>
                 )}
               </div>

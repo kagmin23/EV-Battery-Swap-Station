@@ -53,7 +53,7 @@ export default function ActionMenu({ batteryId, onView, onEdit }: ActionMenuProp
               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
             >
               <Eye className="w-4 h-4" />
-              View Details
+              View Logs
             </button>
             <button
               onClick={(e) => {
@@ -63,7 +63,7 @@ export default function ActionMenu({ batteryId, onView, onEdit }: ActionMenuProp
               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
             >
               <Edit className="w-4 h-4" />
-              Update
+              Update Battery Health
             </button>
           </div>
         </div>
