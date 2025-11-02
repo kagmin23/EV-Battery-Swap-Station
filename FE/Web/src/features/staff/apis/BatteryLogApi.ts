@@ -52,19 +52,17 @@ export interface StationDetailResponse {
 export interface BatteryLogEntry {
     _id: string;
     action: string;
-    actor?: {
-        _id: string;
-        email?: string;
-        fullName?: string;
-    } | string | null;
-    note?: string | null;
+    driverName?: string | null;
+    details?: string | null;
+    station?: string;
+    by?: string;
     createdAt: string;
     updatedAt: string;
 }
 
 export interface BatteryLogsResponseData {
     battery: BatteryDetail;
-    logs: BatteryLogEntry[];
+    history: BatteryLogEntry[];
 }
 
 // Create axios instance with interceptors

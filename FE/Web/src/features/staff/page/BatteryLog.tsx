@@ -34,7 +34,7 @@ export default function BatteryLog() {
         
         const data = await getBatteryLogs(batteryId);
         setBatteryData(data.battery);
-        setLogs(data.logs || []);
+        setLogs(data.history || []);
 
         // Fetch station name if station is provided
         if (data.battery.station) {
@@ -126,6 +126,31 @@ export default function BatteryLog() {
 
   const refreshData = () => {
     window.location.reload();
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  const formatAction = (action: string) => {
+    // Convert action to more readable format
+    return action
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  const getDriverDisplay = (driverName?: string | null) => {
+    if (!driverName) return 'N/A';
+    return driverName;
   };
 
   return (
@@ -249,24 +274,42 @@ export default function BatteryLog() {
                     <tr className="bg-slate-50">
                       <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Time</th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Action</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Actor</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Note</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Driver</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Detail</th>
                     </tr>
                   </thead>
                   <tbody>
                     {logs.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="text-center py-6 text-slate-500">No logs found</td>
+                        <td colSpan={4} className="text-center py-8 text-slate-500">
+                          <div className="flex flex-col items-center gap-2">
+                            <svg className="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <p className="font-medium">No history records found</p>
+                            <p className="text-xs text-slate-400">This battery has no recorded actions yet</p>
+                          </div>
+                        </td>
                       </tr>
                     ) : (
-                      logs.map((log) => (
-                        <tr key={log._id} className="border-b">
-                          <td className="py-3 px-4 text-sm text-slate-700">{new Date(log.createdAt).toLocaleString()}</td>
-                          <td className="py-3 px-4 text-sm text-slate-700">{log.action}</td>
-                          <td className="py-3 px-4 text-sm text-slate-700">
-                            {typeof log.actor === 'string' ? log.actor : (log.actor?.fullName || log.actor?.email || 'N/A')}
+                      logs.map((log, index) => (
+                        <tr key={log._id || index} className="border-b hover:bg-slate-50 transition-colors">
+                          <td className="py-4 px-4 text-sm text-slate-700 font-medium">
+                            {formatDate(log.createdAt)}
                           </td>
-                          <td className="py-3 px-4 text-sm text-slate-700">{log.note || ''}</td>
+                          <td className="py-4 px-4">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                              {formatAction(log.action)}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 text-sm text-slate-700">
+                            <div className="flex items-center gap-2">
+                              <span>{getDriverDisplay(log.driverName)}</span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4 text-sm text-slate-600">
+                            {log.details || <span className="text-slate-400">—</span>}
+                          </td>
                         </tr>
                       ))
                     )}
