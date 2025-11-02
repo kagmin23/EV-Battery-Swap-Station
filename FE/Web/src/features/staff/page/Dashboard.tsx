@@ -214,7 +214,7 @@ export default function Dashboard() {
                     scope="col"
                     className="px-6 py-3 text-start text-xs font-medium text-text-primary uppercase dark:text-text-primary"
                   >
-                    Battery Code
+                    Serial
                   </th>
                   <th
                     scope="col"
