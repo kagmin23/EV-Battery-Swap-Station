@@ -13,7 +13,6 @@ import {
     Calendar,
     Clock,
     Shield,
-    Activity,
     X
 } from 'lucide-react';
 import type { Staff, StaffRole, StaffStatus } from '../types/staff';
@@ -34,28 +33,28 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
     const getStatusBadge = (status: StaffStatus) => {
         switch (status) {
             case 'ONLINE':
-                return <Badge variant="success">Trực tuyến</Badge>;
+                return <Badge variant="success">Online</Badge>;
             case 'OFFLINE':
-                return <Badge variant="secondary">Ngoại tuyến</Badge>;
+                return <Badge variant="secondary">Offline</Badge>;
             case 'SHIFT_ACTIVE':
-                return <Badge variant="default">Đang ca</Badge>;
+                return <Badge variant="default">On Shift</Badge>;
             case 'SUSPENDED':
-                return <Badge variant="destructive">Tạm khóa</Badge>;
+                return <Badge variant="destructive">Suspended</Badge>;
             default:
-                return <Badge variant="secondary">Không xác định</Badge>;
+                return <Badge variant="secondary">Unknown</Badge>;
         }
     };
 
     const getRoleBadge = (role: StaffRole) => {
         switch (role) {
             case 'MANAGER':
-                return <Badge variant="outline">Quản lý</Badge>;
+                return <Badge variant="outline">Manager</Badge>;
             case 'SUPERVISOR':
-                return <Badge variant="outline">Giám sát</Badge>;
+                return <Badge variant="outline">Supervisor</Badge>;
             case 'STAFF':
-                return <Badge variant="outline">Nhân viên</Badge>;
+                return <Badge variant="outline">Staff</Badge>;
             default:
-                return <Badge variant="outline">Nhân viên</Badge>;
+                return <Badge variant="outline">Staff</Badge>;
         }
     };
 
@@ -69,23 +68,13 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
     };
 
     const formatDate = (date: Date) => {
-        return date.toLocaleDateString('vi-VN', {
+        return date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
         });
-    };
-
-    const formatLastActive = (date: Date) => {
-        const now = new Date();
-        const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-
-        if (diffInMinutes < 1) return 'Vừa xong';
-        if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
-        if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} giờ trước`;
-        return `${Math.floor(diffInMinutes / 1440)} ngày trước`;
     };
 
     return (
@@ -97,7 +86,7 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
                             <div className="p-2 bg-blue-100 rounded-xl mr-3">
                                 <User className="h-6 w-6 text-blue-600" />
                             </div>
-                            Chi tiết nhân viên
+                            Staff Details
                         </DialogTitle>
                         <Button
                             variant="ghost"
@@ -148,7 +137,7 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
                         <CardHeader className="pb-3">
                             <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
                                 <User className="h-5 w-5 mr-2 text-blue-600" />
-                                Thông tin cá nhân
+                                Personal Information
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -163,24 +152,24 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
                                 <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
                                     <Phone className="h-5 w-5 text-green-500" />
                                     <div>
-                                        <p className="text-sm text-slate-600">Số điện thoại</p>
+                                        <p className="text-sm text-slate-600">Phone Number</p>
                                         <p className="font-medium text-slate-800">{staff.phone}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
                                     <MapPin className="h-5 w-5 text-orange-500" />
                                     <div>
-                                        <p className="text-sm text-slate-600">Trạm làm việc</p>
+                                        <p className="text-sm text-slate-600">Work Station</p>
                                         <p className="font-medium text-slate-800">{staff.stationName}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
                                     <Shield className="h-5 w-5 text-purple-500" />
                                     <div>
-                                        <p className="text-sm text-slate-600">Vai trò</p>
+                                        <p className="text-sm text-slate-600">Role</p>
                                         <p className="font-medium text-slate-800">
-                                            {staff.role === 'MANAGER' ? 'Quản lý' :
-                                                staff.role === 'SUPERVISOR' ? 'Giám sát' : 'Nhân viên'}
+                                            {staff.role === 'MANAGER' ? 'Manager' :
+                                                staff.role === 'SUPERVISOR' ? 'Supervisor' : 'Staff'}
                                         </p>
                                     </div>
                                 </div>
@@ -192,8 +181,8 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
                     <Card className="shadow-sm border-slate-200">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
-                                <Activity className="h-5 w-5 mr-2 text-green-600" />
-                                Thông tin tài khoản
+                                <Shield className="h-5 w-5 mr-2 text-green-600" />
+                                Account Information
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -201,35 +190,18 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
                                 <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
                                     <Calendar className="h-5 w-5 text-blue-500" />
                                     <div>
-                                        <p className="text-sm text-slate-600">Ngày tạo tài khoản</p>
+                                        <p className="text-sm text-slate-600">Account Created</p>
                                         <p className="font-medium text-slate-800">{formatDate(staff.createdAt)}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
                                     <Clock className="h-5 w-5 text-orange-500" />
                                     <div>
-                                        <p className="text-sm text-slate-600">Cập nhật lần cuối</p>
+                                        <p className="text-sm text-slate-600">Last Updated</p>
                                         <p className="font-medium text-slate-800">{formatDate(staff.updatedAt)}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
-                                    <Activity className="h-5 w-5 text-green-500" />
-                                    <div>
-                                        <p className="text-sm text-slate-600">Hoạt động cuối</p>
-                                        <p className="font-medium text-slate-800">{formatLastActive(staff.lastActive)}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
-                                    <Shield className="h-5 w-5 text-purple-500" />
-                                    <div>
-                                        <p className="text-sm text-slate-600">Trạng thái</p>
-                                        <p className="font-medium text-slate-800">
-                                            {staff.status === 'ONLINE' ? 'Trực tuyến' :
-                                                staff.status === 'OFFLINE' ? 'Ngoại tuyến' :
-                                                    staff.status === 'SHIFT_ACTIVE' ? 'Đang ca' : 'Tạm khóa'}
-                                        </p>
-                                    </div>
-                                </div>
+                                {/* Status removed per request */}
                             </div>
                         </CardContent>
                     </Card>
@@ -240,7 +212,7 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
                                     <Shield className="h-5 w-5 mr-2 text-purple-600" />
-                                    Quyền hạn
+                                    Permissions
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -265,7 +237,7 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
                                     <Clock className="h-5 w-5 mr-2 text-orange-600" />
-                                    Thông tin ca làm việc
+                                    Shift Information
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
@@ -273,14 +245,14 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
                                     <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
                                         <Clock className="h-5 w-5 text-green-500" />
                                         <div>
-                                            <p className="text-sm text-slate-600">Bắt đầu ca</p>
+                                            <p className="text-sm text-slate-600">Shift Start</p>
                                             <p className="font-medium text-slate-800">{formatDate(staff.shiftStart)}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
                                         <Clock className="h-5 w-5 text-red-500" />
                                         <div>
-                                            <p className="text-sm text-slate-600">Kết thúc ca</p>
+                                            <p className="text-sm text-slate-600">Shift End</p>
                                             <p className="font-medium text-slate-800">{formatDate(staff.shiftEnd)}</p>
                                         </div>
                                     </div>

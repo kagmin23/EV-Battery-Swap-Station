@@ -16,9 +16,10 @@ export interface Battery {
     model?: string;
     manufacturer?: string;
     capacity_kWh?: number;
+    price?: number;
 }
 
-export type BatteryStatus = 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';
+export type BatteryStatus = 'charging' | 'full' | 'faulty' | 'in-use' | 'idle' | 'is-booking';
 
 export interface BatteryFilters {
     search: string;
@@ -38,6 +39,7 @@ export interface BatteryStats {
         faulty: number;
         inUse: number;
         idle: number;
+        isBooking: number;
     };
     byStation: Array<{
         stationId: string;

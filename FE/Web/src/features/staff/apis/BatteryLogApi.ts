@@ -19,10 +19,10 @@ export interface Station {
 }
 
 export interface BatteryDetail {
-    _id: string;
+    id: string;
     serial: string;
     model?: string;
-    status: 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';
+    status: 'charging' | 'full' | 'faulty' | 'in-use' | 'idle' | 'is-booking';
     soh: number;
     station?: string | Station; // Can be either a string ID or populated Station object
     manufacturer?: string;
@@ -47,6 +47,24 @@ export interface StationDetailResponse {
         rating: unknown;
     };
     message?: string;
+}
+
+export interface BatteryLogEntry {
+    _id: string;
+    action: string;
+    actor?: {
+        _id: string;
+        email?: string;
+        fullName?: string;
+    } | string | null;
+    note?: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface BatteryLogsResponseData {
+    battery: BatteryDetail;
+    logs: BatteryLogEntry[];
 }
 
 // Create axios instance with interceptors
@@ -98,6 +116,21 @@ export const getBatteryDetail = async (batteryId: string): Promise<BatteryDetail
             throw new Error(error.response?.data?.message || 'Failed to fetch battery detail');
         }
         throw new Error('Failed to fetch battery detail');
+    }
+}
+
+export const getBatteryLogs = async (batteryId: string): Promise<BatteryLogsResponseData> => {
+    try {
+        const response = await apiClient.get<ApiResponse<BatteryLogsResponseData>>(`/staff/batteries/${batteryId}/logs`);
+        if (response.data.success) {
+            return response.data.data;
+        }
+        throw new Error(response.data.message || 'Failed to fetch battery logs');
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            throw new Error(error.response?.data?.message || 'Failed to fetch battery logs');
+        }
+        throw new Error('Failed to fetch battery logs');
     }
 }
 

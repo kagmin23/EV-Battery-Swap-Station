@@ -20,12 +20,14 @@ interface StationListViewProps {
     onClose: () => void;
     listY: Animated.Value;
     showListView: boolean;
+    searchQuery?: string;
 }
 
 // Station List Component
 const StationList: React.FC<{
     onClose: () => void;
-}> = ({ onClose }) => {
+    searchQuery?: string;
+}> = ({ onClose, searchQuery }) => {
     const router = useRouter();
     const [activeTab, setActiveTab] = React.useState<'nearby' | 'favorites'>('nearby');
     const favoriteStations = useFavorites();
@@ -253,6 +255,7 @@ const StationListView: React.FC<StationListViewProps> = ({
     onClose,
     listY,
     showListView,
+    searchQuery,
 }) => {
     if (!showListView) return null;
 
@@ -260,6 +263,7 @@ const StationListView: React.FC<StationListViewProps> = ({
         <Animated.View style={[styles.listViewContainer, { transform: [{ translateY: listY }] }]}>
             <StationList
                 onClose={onClose}
+                searchQuery={searchQuery}
             />
         </Animated.View>
     );

@@ -5,8 +5,9 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
-  BarChart3,
-  ClipboardCheck
+  ClipboardCheck,
+  Battery,
+  Headphones
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -18,8 +19,8 @@ interface StaffSidebarProps {
 
 const menuItems = [
   {
-    id: 'dashboard',
-    label: 'Dashboard',
+    id: 'station',
+    label: 'Station',
     icon: Home,
     description: 'Overview',
     path: '/staff/dashboard'
@@ -39,11 +40,18 @@ const menuItems = [
     path: '/staff/payment-history'
   },
   {
-    id: 'statistics',
-    label: 'Statistics',
-    icon: BarChart3,
-    description: 'Statistical reports',
-    path: '/staff/statistics'
+    id: 'idle-batteries',
+    label: 'Idle Batteries',
+    icon: Battery,
+    description: 'Only idle batteries',
+    path: '/staff/idle-batteries'
+  },
+  {
+    id: 'support-requests',
+    label: 'Support Requests',
+    icon: Headphones,
+    description: 'Station support requests',
+    path: '/staff/support-requests'
   }
 ];
 

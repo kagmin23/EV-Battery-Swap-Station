@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import {
   Users,
   Settings,
-  UserPlus,
   Home,
   ChevronLeft,
   ChevronRight,
@@ -152,26 +151,6 @@ export const ManagementSidebar: React.FC<ManagementSidebarProps> = ({
           );
         })}
       </nav>
-
-      {/* Quick Actions */}
-      {!isCollapsed && (
-        <div className="p-4 border-t border-slate-200/60">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-slate-700 mb-3">Quick Actions</h3>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start text-slate-600 hover:text-slate-900 hover:bg-slate-50 text-base py-5 px-6"
-            >
-              <UserPlus
-                className="h-6 w-6 mr-2 flex-shrink-0"
-                style={{ width: '24px', height: '24px' }}
-              />
-              Add User
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

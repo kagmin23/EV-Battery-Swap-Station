@@ -9,7 +9,7 @@ import { BatteryInventoryPage } from './BatteryInventoryPage';
 import FaultyBatteryPage from './FaultyBatteryPage';
 import { SubscriptionPage } from './SubscriptionPage';
 import { TransactionPage } from './TransactionPage';
-import { ComplaintManagementPage } from './ComplaintManagementPage';
+import { FeedbackManagementPage } from './FeedbackManagementPage';
 import { UsageReportPage } from './UsageReportPage';
 import { AIPredictionPage } from './AIPredictionPage';
 
@@ -29,7 +29,7 @@ export const ManagementMainPage: React.FC = () => {
         if (path.includes('/vehicles')) return 'vehicles';
         if (path.includes('/subscriptions')) return 'subscriptions';
         if (path.includes('/transactions')) return 'transactions';
-        if (path.includes('/complaints')) return 'complaints';
+        if (path.includes('/feedbacks')) return 'feedbacks';
         if (path.includes('/usage-report')) return 'usage-report';
         if (path.includes('/ai-predictions')) return 'ai-predictions';
         if (path.includes('/settings')) return 'settings';
@@ -74,8 +74,8 @@ export const ManagementMainPage: React.FC = () => {
             case 'transactions':
                 navigate('/transactions');
                 break;
-            case 'complaints':
-                navigate('/complaints');
+            case 'feedbacks':
+                navigate('/feedbacks');
                 break;
             case 'usage-report':
                 navigate('/usage-report');
@@ -121,8 +121,8 @@ export const ManagementMainPage: React.FC = () => {
                 return <SubscriptionPage />;
             case 'transactions':
                 return <TransactionPage />;
-            case 'complaints':
-                return <ComplaintManagementPage />;
+            case 'feedbacks':
+                return <FeedbackManagementPage />;
             case 'usage-report':
                 return <UsageReportPage />;
             case 'ai-predictions':

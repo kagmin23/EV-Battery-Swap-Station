@@ -4,16 +4,58 @@ import axios from 'axios';
 const API_BASE_URL = 'http://localhost:8001/api';
 
 // Types for admin management
-export interface Complaint {
+export interface FeedbackUser {
     _id: string;
-    userId: string;
-    orderId?: string;
-    description: string;
-    category: string;
-    status: 'pending' | 'resolved';
-    response?: string;
+    email?: string;
+    fullName?: string;
+}
+
+export interface FeedbackStation {
+    _id: string;
+    stationName?: string;
+    address?: string;
+    city?: string;
+    district?: string;
+}
+
+export interface FeedbackBattery {
+    _id: string;
+    serial?: string;
+    model?: string;
+    status?: string;
+    manufacturer?: string;
+    capacity_kWh?: number;
+    price?: number;
+    voltage?: number;
+}
+
+export interface FeedbackBooking {
+    _id: string;
+    user?: string;
+    vehicle?: string;
+    station?: FeedbackStation & { batteryCounts?: any };
+    battery?: FeedbackBattery;
+    scheduledTime?: string;
+    status?: string;
+}
+
+export interface FeedbackItem {
+    _id: string;
+    user: FeedbackUser;
+    booking: FeedbackBooking;
+    rating: number;
+    comment?: string;
+    images: string[];
     createdAt: string;
     updatedAt: string;
+}
+
+export interface GetFeedbacksParams {
+    stationId?: string;
+    bookingId?: string;
+    userId?: string;
+    page?: number;
+    limit?: number;
 }
 
 export interface UsageReport {
@@ -65,18 +107,19 @@ api.interceptors.response.use(
 // Admin Service
 export class AdminService {
     /**
-     * Get all complaints
+     * Get feedbacks with filters
      */
-    static async getAllComplaints(): Promise<Complaint[]> {
+    static async getFeedbacks(params: GetFeedbacksParams = {}): Promise<FeedbackItem[]> {
         try {
-            const response = await api.get<{ success: boolean; data: Complaint[] }>(
-                '/admin/complaints'
+            const response = await api.get<{ success: boolean; data: FeedbackItem[] }>(
+                '/admin/feedbacks',
+                { params }
             );
 
             if (response.data.success) {
                 return response.data.data;
             } else {
-                throw new Error('Failed to fetch complaints');
+                throw new Error('Failed to fetch feedbacks');
             }
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -90,9 +133,9 @@ export class AdminService {
                         case 401:
                             throw new Error('Unauthorized: Please login again');
                         case 403:
-                            throw new Error('Forbidden: You do not have permission to access complaints');
+                            throw new Error('Forbidden: You do not have permission to access feedbacks');
                         case 404:
-                            throw new Error('Not Found: Complaints not found');
+                            throw new Error('Not Found: Feedbacks not found');
                         case 500:
                             throw new Error('Internal Server Error: Please try again later');
                         default:
@@ -109,35 +152,28 @@ export class AdminService {
     }
 
     /**
-     * Resolve a complaint
+     * Delete a feedback by id
      */
-    static async resolveComplaint(id: string, response: string): Promise<Complaint> {
+    static async deleteFeedback(id: string): Promise<void> {
         try {
-            const res = await api.put<{ success: boolean; data: Complaint; message: string }>(
-                `/admin/complaints/${id}/resolve`,
-                { response }
-            );
-
-            if (res.data.success) {
-                return res.data.data;
-            } else {
-                throw new Error(res.data.message || 'Failed to resolve complaint');
+            const res = await api.delete<{ success: boolean; message?: string }>(`/admin/feedbacks/${id}`);
+            if (!res.data.success) {
+                throw new Error(res.data.message || 'Failed to delete feedback');
             }
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 if (error.response) {
                     const status = error.response.status;
                     const message = error.response.data?.message || 'Server error';
-
                     switch (status) {
                         case 400:
                             throw new Error(`Bad Request: ${message}`);
                         case 401:
                             throw new Error('Unauthorized: Please login again');
                         case 403:
-                            throw new Error('Forbidden: You do not have permission to resolve complaints');
+                            throw new Error('Forbidden: You do not have permission to delete feedback');
                         case 404:
-                            throw new Error('Not Found: Complaint not found');
+                            throw new Error('Not Found: Feedback not found');
                         case 500:
                             throw new Error('Internal Server Error: Please try again later');
                         default:

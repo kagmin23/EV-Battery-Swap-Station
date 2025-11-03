@@ -1,15 +1,3 @@
-export interface Transaction {
-  transaction_id: string;
-  user_id: string;
-  user_name: string;
-  station_id: string;
-  station_name: string;
-  battery_given: string;
-  battery_returned: string;
-  transaction_time: string;
-  cost: number;
-}
-
 export const mockTransactions: Transaction[] = [
   {
     transaction_id: "TXN001",
@@ -67,6 +55,18 @@ export const mockTransactions: Transaction[] = [
     cost: 165000,
   },
 ];
+
+export interface Transaction {
+  transaction_id: string;
+  user_id: string;
+  user_name: string;
+  station_id: string;
+  station_name: string;
+  battery_given: string;
+  battery_returned: string;
+  transaction_time: string;
+  cost: number;
+}
 
 export const mockRevenueData = [
   { date: "2025-10-01", revenue: 4500000 },

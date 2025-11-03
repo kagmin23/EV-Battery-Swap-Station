@@ -6,45 +6,37 @@ const API_BASE_URL = 'http://localhost:8001/api';
 // Types for subscription management
 export interface SubscriptionPlan {
     _id: string;
-    subcriptionName: string;
+    subscriptionName: string;
     price: number;
-    period: 'monthly' | 'yearly';
-    benefits: string[];
-    status: 'active' | 'expired';
-    duration_months: number;
-    start_date?: string;
-    end_date?: string;
+    durations: number;
+    count_swap: number;
+    quantity_slot: number;
+    description: string;
+    status: 'active' | 'inactive';
     createdAt: string;
     updatedAt: string;
     __v: number;
 }
 
+// DTO based on backend swagger (price, durations, count_swap, quantity_slot, description, status)
 export interface CreateSubscriptionPlanRequest {
-    subcriptionName: string;
+    subscriptionName: string;
     price: number;
-    period?: 'monthly' | 'yearly';
-    benefits?: string[];
-    status?: 'active' | 'expired';
-    duration_months?: number;
-    start_date?: string;
-    end_date?: string;
-    // Legacy fields for backward compatibility
-    name?: string;
-    active?: boolean;
+    durations: number; // unit defined by backend (e.g., months)
+    count_swap: number;
+    quantity_slot: number;
+    description: string;
+    status: 'active' | 'inactive';
 }
 
 export interface UpdateSubscriptionPlanRequest {
-    subcriptionName?: string;
+    subscriptionName?: string;
     price?: number;
-    period?: 'monthly' | 'yearly';
-    benefits?: string[];
-    status?: 'active' | 'expired';
-    duration_months?: number;
-    start_date?: string;
-    end_date?: string;
-    // Legacy fields for backward compatibility
-    name?: string;
-    active?: boolean;
+    durations?: number;
+    count_swap?: number;
+    quantity_slot?: number;
+    description?: string;
+    status?: 'active' | 'inactive';
 }
 
 export interface ApiResponse<T> {
@@ -96,7 +88,7 @@ export class SubscriptionService {
     /**
      * Get all subscription plans
      */
-    static async getAllPlans(status?: 'active' | 'expired'): Promise<SubscriptionPlan[]> {
+    static async getAllPlans(status?: 'active' | 'inactive'): Promise<SubscriptionPlan[]> {
         try {
             const params = new URLSearchParams();
             if (status) {
@@ -332,7 +324,7 @@ export class SubscriptionService {
 
             const totalPlans = plans.length;
             const activePlans = plans.filter(plan => plan.status === 'active').length;
-            const expiredPlans = plans.filter(plan => plan.status === 'expired').length;
+            const expiredPlans = plans.filter(plan => plan.status === 'inactive').length;
             const totalRevenue = plans.reduce((sum, plan) => sum + plan.price, 0);
             const averagePrice = totalPlans > 0 ? totalRevenue / totalPlans : 0;
 

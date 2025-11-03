@@ -3,32 +3,30 @@ import axios from 'axios';
 const API_BASE_URL = 'http://localhost:8001/api';
 
 export interface SwapRequest {
-    _id: string;
-    driver: {
-        _id: string;
-        fullName: string;
-        phoneNumber: string;
-        email: string;
+    booking_id: string;
+    user: {
+        id: string;
+        name: string;
+        phone: string;
+        email?: string;
     };
-    oldBattery: {
-        _id: string;
+    vehicle_id: string;
+    station_id: string;
+    station_name: string;
+    battery_id: string;
+    battery_info: {
         serial: string;
-        model?: string;
+        model: string;
         soh: number;
         status: string;
-    };
-    newBattery?: {
-        _id: string;
-        serial: string;
-        model?: string;
-        soh: number;
-        status: string;
-    };
-    station: string;
-    status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-    requestedAt: string;
-    confirmedAt?: string;
-    completedAt?: string;
+        manufacturer?: string;
+        capacity_kWh?: number;
+        voltage?: number;
+    } | null;
+    scheduled_time: string;
+    status: 'pending' | 'confirmed' | 'ready' | 'completed' | 'cancelled';
+    created_at: string;
+    _id?: string; // Keep for backward compatibility
 }
 
 export interface ApiResponse<T> {
@@ -90,19 +88,23 @@ export const getSwapRequests = async (): Promise<SwapRequest[]> => {
     }
 };
 
-// Confirm a swap request
-export const confirmSwapRequest = async (requestId: string): Promise<SwapRequest> => {
+// Confirm / cancel / complete a swap request (optional status)
+export const confirmSwapRequest = async (
+    requestId: string,
+    status?: 'confirmed' | 'cancelled' | 'completed'
+): Promise<SwapRequest> => {
     try {
-        const response = await apiClient.put<ApiResponse<SwapRequest>>(`/staff/swap/requests/${requestId}/confirm`);
+        const payload = status ? { status } : undefined;
+        const response = await apiClient.put<ApiResponse<SwapRequest>>(`/staff/swap/requests/${requestId}/confirm`, payload);
         if (response.data.success) {
             return response.data.data;
         }
-        throw new Error(response.data.message || 'Failed to confirm swap request');
+        throw new Error(response.data.message || 'Failed to update swap request');
     } catch (error) {
         if (axios.isAxiosError(error)) {
-            throw new Error(error.response?.data?.message || 'Failed to confirm swap request');
+            throw new Error(error.response?.data?.message || 'Failed to update swap request');
         }
-        throw new Error('Failed to confirm swap request');
+        throw new Error('Failed to update swap request');
     }
 };
 

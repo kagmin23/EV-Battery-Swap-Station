@@ -88,7 +88,7 @@ function App() {
             </ProtectedRoute>
           } />
 
-          <Route path="/complaints" element={
+          <Route path="/feedbacks" element={
             <ProtectedRoute requiredRole="admin">
               <ManagementMainPage />
             </ProtectedRoute>

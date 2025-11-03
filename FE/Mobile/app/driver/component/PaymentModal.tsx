@@ -1,5 +1,6 @@
 import { useCreateBooking } from '@/features/driver/apis/booking';
 import { useVnPay } from '@/store/payment';
+import { useSubscriptionPlans } from '@/store/subcription';
 import { toCamelCase } from '@/utils/caseConverter';
 import { showErrorToast, showSuccessToast } from '@/utils/toast';
 import { useRouter } from 'expo-router';
@@ -20,6 +21,40 @@ interface PaymentModalProps {
     batteryPrice: number;
 }
 
+const styles = StyleSheet.create({
+    modalBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        width: '100%',
+        maxWidth: 480,
+        backgroundColor: '#1a0f3e',
+        borderRadius: 16,
+        padding: 16,
+    },
+    modalTitle: {
+        color: '#bfb6ff',
+        fontWeight: '700',
+        fontSize: 16,
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    actionBtn: {
+        paddingVertical: 12,
+        borderRadius: 12,
+        marginVertical: 6,
+    },
+    actionText: {
+        color: '#bfb6ff',
+        fontWeight: '700',
+        textAlign: 'center',
+    },
+});
+
 export default function PaymentModal({
     visible,
     onClose,
@@ -30,13 +65,24 @@ export default function PaymentModal({
     vehicles,
     getSelectedBatteryId,
     checkDuplicateBooking,
-    batteryPrice, // destructure nhận giá pin
+    batteryPrice,
 }: PaymentModalProps) {
     const router = useRouter();
     const createBookingMutation = useCreateBooking();
     const createBooking = createBookingMutation.mutateAsync;
     const bookingLoading = createBookingMutation.status === 'pending';
     const { createPayment, loading: vnpayLoading } = useVnPay();
+    const subscriptions = useSubscriptionPlans();
+
+    const hasInUseSubscription = useMemo(() => {
+        try {
+            return (subscriptions || []).some((s: any) =>
+                (s.userSubscription?.status || '').toString().toLowerCase() === 'in-use'
+            );
+        } catch {
+            return false;
+        }
+    }, [subscriptions]);
 
     const scheduled = useMemo(() => new Date(
         date.getFullYear(),
@@ -47,10 +93,10 @@ export default function PaymentModal({
         0
     ), [date, time]);
 
-    // ------------------- Pay at Station -------------------
     const handlePayAtStation = useCallback(async () => {
         const vehicle = vehicles.find(x => x.vehicleId === selectedVehicleId);
         if (!vehicle) return showErrorToast('Vehicle not found');
+        if (!vehicle.id) return showErrorToast('Vehicle ID missing');
 
         if (checkDuplicateBooking(vehicle.vehicleId!, station.id, scheduled)) {
             return showErrorToast('Duplicate booking within 20 minutes');
@@ -62,7 +108,7 @@ export default function PaymentModal({
         try {
             const res = await createBooking({
                 stationId: station.id,
-                vehicleId: vehicle.vehicleId!,
+                vehicleId: vehicle.id, // Use MongoDB ObjectId instead of UUID
                 scheduledTime: scheduled.toISOString(),
                 batteryId,
             });
@@ -81,14 +127,13 @@ export default function PaymentModal({
 
     const handlePayWithVnPay = useCallback(async () => {
         const vehicle = vehicles.find(x => x.vehicleId === selectedVehicleId);
-
         if (!vehicle) return showErrorToast('Vehicle not found');
 
         const batteryId = getSelectedBatteryId();
         if (!batteryId) return showErrorToast('No battery available');
 
         try {
-            // 1. create booking (no toast success)
+            // 1. Create booking first
             const bookingRes = await createBooking({
                 stationId: station.id,
                 vehicleId: vehicle.vehicleId!,
@@ -96,55 +141,59 @@ export default function PaymentModal({
                 batteryId,
             });
 
-            const data = toCamelCase(bookingRes)
+            const data = toCamelCase(bookingRes);
             const bookingId = data.data.bookingId;
 
             if (!data.success || !bookingId) {
                 return showErrorToast(data.message || 'Booking failed');
             }
 
-            // 2. create payment VNPAY
-            // ✅ Tạo returnUrl tự động theo môi trường (Expo Go hay app build)
+            // If booking is already confirmed (e.g. subscription), skip payment
+            const bookingStatus = (data.data.status || '').toString().toLowerCase();
+            if (bookingStatus === 'confirmed') {
+                showSuccessToast(data.message || 'Booking confirmed with subscription');
+                onClose();
+                router.push('/(tabs)/my_booking');
+                return;
+            }
+
+            // 2. Create VNPay payment URL with deep linking
+            // Create deep link URL with all necessary params
             const returnUrl = ExpoLinking.createURL('/payment-success', {
                 queryParams: {
                     amount: String(batteryPrice),
                     stationName: station.name || station.stationName || '',
+                    bookingId: bookingId,
+
                 },
             });
 
             const paymentRes = await createPayment({
                 amount: batteryPrice,
                 bookingId: bookingId,
+                orderInfo: `Booking #${bookingId} - Battery Swap`,
                 returnUrl,
             });
 
-            console.log('paymentRes', paymentRes);
-            if (!paymentRes) {
-                return showErrorToast('Payment failed - no response');
-            }
-
-            if (!paymentRes.url) {
-                return showErrorToast('Payment failed - no URL returned');
+            if (!paymentRes?.url) {
+                return showErrorToast('Payment URL creation failed');
             }
 
             onClose();
 
-            // open payment URL
+            // Open payment URL in device browser
             const supported = await Linking.canOpenURL(paymentRes.url);
 
             if (supported) {
                 await Linking.openURL(paymentRes.url);
             } else {
-                showErrorToast('Cannot open payment URL');
+                showErrorToast('Cannot open payment URL. Please try again.');
             }
         } catch (err: any) {
             console.error('❌ VNPAY Error:', err);
-            showErrorToast(err?.response?.data?.message || err.message || 'Payment failed');
+            showErrorToast(err?.message || 'Payment failed');
         }
-    }, [
-        vehicles, selectedVehicleId, station, scheduled,
-        getSelectedBatteryId, createBooking, createPayment, onClose, batteryPrice
-    ]);
+    }, [vehicles, selectedVehicleId, station, scheduled, getSelectedBatteryId, createBooking, createPayment, onClose, router, batteryPrice]);
 
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -162,15 +211,23 @@ export default function PaymentModal({
                         </Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={[styles.actionBtn, { backgroundColor: '#3b82f6' }]}
-                        onPress={handlePayWithVnPay}
-                        disabled={vnpayLoading}
-                    >
-                        <Text style={[styles.actionText, { color: '#fff' }]}>
-                            {vnpayLoading ? 'Processing...' : 'Pay with VNPAY'}
-                        </Text>
-                    </TouchableOpacity>
+                    {!hasInUseSubscription ? (
+                        <TouchableOpacity
+                            style={[styles.actionBtn, { backgroundColor: '#3b82f6' }]}
+                            onPress={handlePayWithVnPay}
+                            disabled={vnpayLoading}
+                        >
+                            <Text style={[styles.actionText, { color: '#fff' }]}>
+                                {vnpayLoading ? 'Processing...' : 'Pay with VNPAY'}
+                            </Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <View style={[styles.actionBtn, { backgroundColor: 'transparent' }]}>
+                            <Text style={[styles.actionText, { color: '#bfa8ff', textAlign: 'center' }]}>
+                                You have an active subscription
+                            </Text>
+                        </View>
+                    )}
 
                     <TouchableOpacity
                         style={[styles.actionBtn, { backgroundColor: '#120935' }]}
@@ -183,11 +240,3 @@ export default function PaymentModal({
         </Modal>
     );
 }
-
-const styles = StyleSheet.create({
-    modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-    modalContent: { width: '100%', maxWidth: 480, backgroundColor: '#1a0f3e', borderRadius: 16, padding: 16 },
-    modalTitle: { color: '#bfb6ff', fontWeight: '700', fontSize: 16, marginBottom: 12, textAlign: 'center' },
-    actionBtn: { paddingVertical: 12, borderRadius: 12, marginVertical: 6 },
-    actionText: { color: '#bfb6ff', fontWeight: '700', textAlign: 'center' },
-});

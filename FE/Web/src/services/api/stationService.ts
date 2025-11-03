@@ -18,6 +18,13 @@ export interface Station {
     capacity: number;
     sohAvg: number;
     availableBatteries: number;
+    batteryCounts?: {
+        total: number;
+        available: number;
+        charging: number;
+        inUse: number;
+        faulty: number;
+    };
     createdAt: string;
     updatedAt: string;
     __v: number;
@@ -25,15 +32,13 @@ export interface Station {
 
 export interface CreateStationRequest {
     stationName: string;
-    address: string;
-    city: string;
-    district: string;
-    location: {
-        type: 'Point';
-        coordinates: [number, number];
-    };
-    map_url: string;
-    capacity: number;
+    address?: string;
+    city?: string;
+    district?: string;
+    lat: number;
+    lng: number;
+    map_url?: string;
+    capacity?: number;
     sohAvg?: number;
     availableBatteries?: number;
 }
@@ -43,18 +48,12 @@ export interface UpdateStationRequest {
     address?: string;
     city?: string;
     district?: string;
-    location?: {
-        type: 'Point';
-        coordinates: [number, number];
-    };
+    lat?: number;
+    lng?: number;
     map_url?: string;
     capacity?: number;
     sohAvg?: number;
     availableBatteries?: number;
-}
-
-export interface ChangeStationStatusRequest {
-    status: 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
 }
 
 // Create axios instance
@@ -143,7 +142,8 @@ export class StationService {
         try {
             const response = await api.get(`/admin/stations/${id}`);
             if (response.data.success) {
-                return response.data.data;
+                // Backend returns { success: true, data: { station: st, batteries, staff } }
+                return response.data.data.station;
             }
             throw new Error(response.data.message || 'Failed to fetch station');
         } catch (error) {
@@ -219,7 +219,7 @@ export class StationService {
     // Update station
     static async updateStation(id: string, data: UpdateStationRequest): Promise<Station> {
         try {
-            const response = await api.put(`/admin/stations/${id}`, data);
+            const response = await api.patch(`/admin/stations/${id}`, data);
             if (response.data.success) {
                 return response.data.data;
             }
@@ -436,46 +436,6 @@ export class StationService {
                             throw new Error('Forbidden: You do not have permission to remove staff from station');
                         case 404:
                             throw new Error('Not Found: Station or staff not found');
-                        case 500:
-                            throw new Error('Internal Server Error: Please try again later');
-                        default:
-                            throw new Error(`Error ${status}: ${message}`);
-                    }
-                } else if (error.request) {
-                    throw new Error('Network Error: Please check your internet connection');
-                } else {
-                    throw new Error(`Request Error: ${error.message}`);
-                }
-            }
-            throw new Error('An unexpected error occurred');
-        }
-    }
-
-    // Change station status
-    static async changeStationStatus(id: string, status: 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE'): Promise<Station> {
-        try {
-            const response = await api.patch(`/admin/stations/${id}/status`, { status });
-            if (response.data.success) {
-                return response.data.data;
-            }
-            throw new Error(response.data.message || 'Failed to change station status');
-        } catch (error) {
-            if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    const status = error.response.status;
-                    const message = error.response.data?.message || 'Server error';
-
-                    switch (status) {
-                        case 400:
-                            throw new Error(`Bad Request: ${message}`);
-                        case 401:
-                            throw new Error('Unauthorized: Please login again');
-                        case 403:
-                            throw new Error('Forbidden: You do not have permission to change station status');
-                        case 404:
-                            throw new Error('Not Found: Station not found');
-                        case 409:
-                            throw new Error(`Conflict: ${message}`);
                         case 500:
                             throw new Error('Internal Server Error: Please try again later');
                         default:

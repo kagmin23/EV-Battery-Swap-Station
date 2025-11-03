@@ -13,6 +13,7 @@ interface StaffCardProps {
   onEdit: (staff: Staff) => void;
   onSuspend: (staff: Staff) => void;
   onViewDetails?: (staff: Staff) => void;
+  onDelete?: (staff: Staff) => void;
   isSuspending?: boolean;
   isSaving?: boolean;
 }
@@ -23,6 +24,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
   onEdit,
   onSuspend,
   onViewDetails,
+  onDelete,
   isSuspending = false,
   isSaving = false
 }) => {
@@ -31,27 +33,27 @@ export const StaffCard: React.FC<StaffCardProps> = ({
       case 'ONLINE':
       case 'SHIFT_ACTIVE':
       case 'active':
-        return <Badge variant="success">Hoạt động</Badge>;
+        return <Badge variant="success">Active</Badge>;
       case 'OFFLINE':
-        return <Badge variant="secondary">Ngoại tuyến</Badge>;
+        return <Badge variant="secondary">Offline</Badge>;
       case 'SUSPENDED':
       case 'locked':
-        return <Badge variant="destructive">Tạm khóa</Badge>;
+        return <Badge variant="destructive">Locked</Badge>;
       default:
-        return <Badge variant="secondary">Không xác định</Badge>;
+        return <Badge variant="secondary">Unknown</Badge>;
     }
   };
 
   const getRoleBadge = (role: StaffRole) => {
     switch (role) {
       case 'MANAGER':
-        return <Badge variant="outline">Quản lý</Badge>;
+        return <Badge variant="outline">Manager</Badge>;
       case 'SUPERVISOR':
-        return <Badge variant="outline">Giám sát</Badge>;
+        return <Badge variant="outline">Supervisor</Badge>;
       case 'STAFF':
-        return <Badge variant="outline">Nhân viên</Badge>;
+        return <Badge variant="outline">Staff</Badge>;
       default:
-        return <Badge variant="outline">Nhân viên</Badge>;
+        return <Badge variant="outline">Staff</Badge>;
     }
   };
 
@@ -68,10 +70,10 @@ export const StaffCard: React.FC<StaffCardProps> = ({
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
 
-    if (diffInMinutes < 1) return 'Vừa xong';
-    if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} giờ trước`;
-    return `${Math.floor(diffInMinutes / 1440)} ngày trước`;
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`;
+    return `${Math.floor(diffInMinutes / 1440)} days ago`;
   };
 
   return (
@@ -125,9 +127,6 @@ export const StaffCard: React.FC<StaffCardProps> = ({
             <Phone className="h-4 w-4 mr-2 text-green-500" />
             <span>{staff.phone}</span>
           </div>
-          <div className="text-xs text-slate-500 bg-slate-100 px-3 py-2 rounded-lg">
-            <span className="font-medium">Hoạt động cuối:</span> {formatLastActive(staff.lastActive)}
-          </div>
         </div>
 
         <div className="flex justify-end space-x-2 pt-4 border-t border-slate-100">
@@ -142,7 +141,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
               disabled={isSaving || isSuspending}
               className="flex-1 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
             >
-              Xem chi tiết
+              View Details
             </Button>
           )}
           <Button
@@ -156,11 +155,25 @@ export const StaffCard: React.FC<StaffCardProps> = ({
             className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
           >
             {isSaving ? (
-              <ButtonLoadingSpinner size="sm" variant="default" text="Đang lưu..." />
+              <ButtonLoadingSpinner size="sm" variant="default" text="Saving..." />
             ) : (
-              'Chỉnh sửa'
+              'Edit'
             )}
           </Button>
+          {onDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(staff);
+              }}
+              disabled={isSaving || isSuspending}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
+            >
+              Delete
+            </Button>
+          )}
           {staff.status === 'SUSPENDED' || staff.status === 'locked' ? (
             <Button
               variant="outline"
@@ -173,9 +186,9 @@ export const StaffCard: React.FC<StaffCardProps> = ({
               className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200 hover:border-green-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
             >
               {isSuspending ? (
-                <ButtonLoadingSpinner size="sm" variant="default" text="Đang xử lý..." />
+                <ButtonLoadingSpinner size="sm" variant="default" text="Processing..." />
               ) : (
-                'Kích hoạt'
+                'Unlock'
               )}
             </Button>
           ) : (
@@ -190,9 +203,9 @@ export const StaffCard: React.FC<StaffCardProps> = ({
               className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
             >
               {isSuspending ? (
-                <ButtonLoadingSpinner size="sm" variant="default" text="Đang xử lý..." />
+                <ButtonLoadingSpinner size="sm" variant="default" text="Processing..." />
               ) : (
-                'Tạm khóa'
+                'Lock'
               )}
             </Button>
           )}

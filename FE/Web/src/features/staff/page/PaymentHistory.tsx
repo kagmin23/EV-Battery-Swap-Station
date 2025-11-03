@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Search, 
   Filter, 
@@ -24,170 +24,86 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+import { TransactionService, type Transaction as ApiTransaction } from '@/services/api/transactionService';
 
-// Extended Transaction interface with payment details
-interface PaymentTransaction {
-  transaction_id: string;
-  user_id: string;
-  user_name: string;
-  station_id: string;
-  station_name: string;
-  battery_given: string;
-  battery_returned: string;
-  transaction_time: string;
-  cost: number;
-  payment_method: 'credit_card' | 'e_wallet' | 'cash' | 'subscription';
-  payment_status: 'completed' | 'pending' | 'failed' | 'refunded';
+// Extended Transaction interface for UI (optional payment fields if backend provides)
+interface PaymentTransactionUI extends ApiTransaction {
+  user_name?: string;
+  station_name?: string;
+  payment_method?: 'credit_card' | 'e_wallet' | 'cash' | 'subscription';
+  payment_status?: 'completed' | 'pending' | 'failed' | 'refunded';
   payment_reference?: string;
 }
-
-// Mock payment data
-const mockPaymentTransactions: PaymentTransaction[] = [
-  {
-    transaction_id: "TXN001",
-    user_id: "USR001",
-    user_name: "Nguyen Van A",
-    station_id: "ST001",
-    station_name: "Downtown Swap Station",
-    battery_given: "BAT015",
-    battery_returned: "BAT008",
-    transaction_time: "2025-10-15T08:30:00",
-    cost: 150000,
-    payment_method: 'e_wallet',
-    payment_status: 'completed',
-    payment_reference: 'EW-001-2025'
-  },
-  {
-    transaction_id: "TXN002",
-    user_id: "USR002",
-    user_name: "Tran Thi B",
-    station_id: "ST001",
-    station_name: "Downtown Swap Station",
-    battery_given: "BAT021",
-    battery_returned: "BAT002",
-    transaction_time: "2025-10-15T09:15:00",
-    cost: 180000,
-    payment_method: 'credit_card',
-    payment_status: 'completed',
-    payment_reference: 'CC-002-2025'
-  },
-  {
-    transaction_id: "TXN003",
-    user_id: "USR003",
-    user_name: "Le Van C",
-    station_id: "ST001",
-    station_name: "Downtown Swap Station",
-    battery_given: "BAT012",
-    battery_returned: "BAT018",
-    transaction_time: "2025-10-15T10:00:00",
-    cost: 160000,
-    payment_method: 'subscription',
-    payment_status: 'completed',
-    payment_reference: 'SUB-003-2025'
-  },
-  {
-    transaction_id: "TXN004",
-    user_id: "USR004",
-    user_name: "Pham Thi D",
-    station_id: "ST001",
-    station_name: "Downtown Swap Station",
-    battery_given: "BAT017",
-    battery_returned: "BAT001",
-    transaction_time: "2025-10-15T11:20:00",
-    cost: 170000,
-    payment_method: 'cash',
-    payment_status: 'completed',
-    payment_reference: 'CASH-004-2025'
-  },
-  {
-    transaction_id: "TXN005",
-    user_id: "USR005",
-    user_name: "Hoang Van E",
-    station_id: "ST001",
-    station_name: "Downtown Swap Station",
-    battery_given: "BAT022",
-    battery_returned: "BAT014",
-    transaction_time: "2025-10-15T12:45:00",
-    cost: 165000,
-    payment_method: 'e_wallet',
-    payment_status: 'pending',
-    payment_reference: 'EW-005-2025'
-  },
-  {
-    transaction_id: "TXN006",
-    user_id: "USR006",
-    user_name: "Vo Thi F",
-    station_id: "ST001",
-    station_name: "Downtown Swap Station",
-    battery_given: "BAT009",
-    battery_returned: "BAT013",
-    transaction_time: "2025-10-15T13:10:00",
-    cost: 155000,
-    payment_method: 'credit_card',
-    payment_status: 'failed',
-    payment_reference: 'CC-006-2025'
-  },
-  {
-    transaction_id: "TXN007",
-    user_id: "USR007",
-    user_name: "Nguyen Van G",
-    station_id: "ST001",
-    station_name: "Downtown Swap Station",
-    battery_given: "BAT019",
-    battery_returned: "BAT007",
-    transaction_time: "2025-10-15T14:30:00",
-    cost: 175000,
-    payment_method: 'subscription',
-    payment_status: 'completed',
-    payment_reference: 'SUB-007-2025'
-  },
-  {
-    transaction_id: "TXN008",
-    user_id: "USR001",
-    user_name: "Nguyen Van A",
-    station_id: "ST001",
-    station_name: "Downtown Swap Station",
-    battery_given: "BAT011",
-    battery_returned: "BAT016",
-    transaction_time: "2025-10-14T16:45:00",
-    cost: 145000,
-    payment_method: 'e_wallet',
-    payment_status: 'refunded',
-    payment_reference: 'EW-008-2025'
-  },
-];
 
 export default function PaymentHistory() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('all');
-  const [selectedTransaction, setSelectedTransaction] = useState<PaymentTransaction | null>(null);
-  const [isLoading] = useState(false); // Set to true when integrating real API
+  const [selectedTransaction, setSelectedTransaction] = useState<PaymentTransactionUI | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<PaymentTransactionUI[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          setTransactions([]);
+          setError('User not found. Please login again.');
+          return;
+        }
+        const user = JSON.parse(userStr) as { station?: string };
+        if (!user.station) {
+          setTransactions([]);
+          setError('No station assigned to this staff member.');
+          return;
+        }
+
+        const response = await TransactionService.getTransactionsByStation(user.station, 200);
+        const apiTransactions = response.data || [];
+
+        // Directly use api fields; optional enrichments if backend includes them
+        const converted: PaymentTransactionUI[] = apiTransactions.map((t: ApiTransaction) => ({
+          ...t,
+        }));
+
+        setTransactions(converted);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load transactions');
+        setTransactions([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   // Filter transactions
-  const filteredTransactions = mockPaymentTransactions.filter(transaction => {
+  const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = 
       transaction.transaction_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.user_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.payment_reference?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || transaction.payment_status === statusFilter;
-    const matchesPaymentMethod = paymentMethodFilter === 'all' || transaction.payment_method === paymentMethodFilter;
-
+      (transaction.user_name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+      (transaction.payment_reference?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+    const matchesStatus = statusFilter === 'all' || (transaction.payment_status === statusFilter);
+    const matchesPaymentMethod = paymentMethodFilter === 'all' || (transaction.payment_method === paymentMethodFilter);
     return matchesSearch && matchesStatus && matchesPaymentMethod;
   });
 
-  // Calculate statistics
-  const totalRevenue = mockPaymentTransactions
-    .filter(t => t.payment_status === 'completed')
-    .reduce((sum, t) => sum + t.cost, 0);
-  
-  const pendingAmount = mockPaymentTransactions
-    .filter(t => t.payment_status === 'pending')
-    .reduce((sum, t) => sum + t.cost, 0);
+  // Calculate statistics with guards for optional payment fields
+  const totalRevenue = transactions
+    .filter(t => t.payment_status === 'completed' || t.payment_status === undefined)
+    .reduce((sum, t) => sum + (t.cost || 0), 0);
 
-  const completedCount = mockPaymentTransactions.filter(t => t.payment_status === 'completed').length;
-  const todayTransactions = mockPaymentTransactions.filter(t => 
+  const pendingAmount = transactions
+    .filter(t => t.payment_status === 'pending')
+    .reduce((sum, t) => sum + (t.cost || 0), 0);
+
+  const completedCount = transactions.filter(t => t.payment_status === 'completed').length;
+  const todayTransactions = transactions.filter(t => 
     new Date(t.transaction_time).toDateString() === new Date().toDateString()
   ).length;
 
@@ -205,16 +121,25 @@ export default function PaymentHistory() {
     });
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status?: string) => {
+    if (!status) {
+      return (
+        <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+          N/A
+        </Badge>
+      );
+    }
     const variants = {
       completed: { variant: 'default' as const, icon: CheckCircle, label: 'Completed', color: 'text-green-600' },
       pending: { variant: 'secondary' as const, icon: Clock, label: 'Pending', color: 'text-yellow-600' },
       failed: { variant: 'destructive' as const, icon: XCircle, label: 'Failed', color: 'text-red-600' },
       refunded: { variant: 'outline' as const, icon: TrendingUp, label: 'Refunded', color: 'text-blue-600' }
-    };
+    } as const;
     const config = variants[status as keyof typeof variants];
+    if (!config) {
+      return <Badge variant="secondary">N/A</Badge>;
+    }
     const Icon = config.icon;
-    
     return (
       <Badge variant={config.variant} className="flex items-center gap-1 w-fit">
         <Icon className="h-3 w-3" />
@@ -223,7 +148,8 @@ export default function PaymentHistory() {
     );
   };
 
-  const getPaymentMethodLabel = (method: string) => {
+  const getPaymentMethodLabel = (method?: string) => {
+    if (!method) return 'N/A';
     const labels: Record<string, string> = {
       credit_card: 'Credit Card',
       e_wallet: 'E-Wallet',
@@ -235,7 +161,6 @@ export default function PaymentHistory() {
 
   const handleExport = () => {
     console.log('Exporting payment history...');
-    // Implement export functionality
   };
 
   if (isLoading) {
@@ -251,6 +176,11 @@ export default function PaymentHistory() {
 
   return (
     <div className="p-6 space-y-6 min-h-screen">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded" role="alert">
+          {error}
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -339,7 +269,6 @@ export default function PaymentHistory() {
                 className="pl-10"
               />
             </div>
-            
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full md:w-48">
                 <Filter className="h-4 w-4 mr-2" />
@@ -425,12 +354,12 @@ export default function PaymentHistory() {
                           {transaction.transaction_id}
                         </div>
                         <div className="text-xs text-slate-500">
-                          {transaction.payment_reference}
+                          {transaction.payment_reference || ''}
                         </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-slate-900">
-                          {transaction.user_name}
+                          {transaction.user_name || transaction.user_id}
                         </div>
                         <div className="text-xs text-slate-500">
                           {transaction.user_id}
@@ -499,7 +428,7 @@ export default function PaymentHistory() {
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Customer</p>
-                  <p className="font-semibold">{selectedTransaction.user_name}</p>
+                  <p className="font-semibold">{selectedTransaction.user_name || selectedTransaction.user_id}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Customer ID</p>
@@ -507,7 +436,7 @@ export default function PaymentHistory() {
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Station</p>
-                  <p className="font-semibold">{selectedTransaction.station_name}</p>
+                  <p className="font-semibold">{selectedTransaction.station_name || selectedTransaction.station_id}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Time</p>
@@ -515,11 +444,11 @@ export default function PaymentHistory() {
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Battery Installed</p>
-                  <p className="font-semibold">{selectedTransaction.battery_given}</p>
+                  <p className="font-semibold">{selectedTransaction.battery_given ?? ''}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Battery Removed</p>
-                  <p className="font-semibold">{selectedTransaction.battery_returned}</p>
+                  <p className="font-semibold">{selectedTransaction.battery_returned ?? ''}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Payment Method</p>
@@ -527,7 +456,7 @@ export default function PaymentHistory() {
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Reference Code</p>
-                  <p className="font-semibold">{selectedTransaction.payment_reference}</p>
+                  <p className="font-semibold">{selectedTransaction.payment_reference ?? ''}</p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-sm text-slate-600">Amount</p>

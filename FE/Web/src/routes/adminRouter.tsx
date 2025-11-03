@@ -6,6 +6,7 @@ import BatteryChanges from '../features/admin/page/BatteryChanges';
 import RevenueReport from '../features/admin/page/RevenueReport';
 import ReportManagement from '../features/admin/page/ReportManagement';
 import AIForecast from '@/features/admin/page/AIForecast';
+import SupportRequestsPage from '@/features/admin/pages/SupportRequestsPage';
 
 export default function AdminRouter() {
   const location = useLocation();
@@ -19,6 +20,7 @@ export default function AdminRouter() {
     else if (path.includes('/admin/ai-forecast')) setActiveTab('ai-forecast');
     else if (path.includes('/admin/report-management')) setActiveTab('report-management');
     else if (path.includes('/admin/revenue-report')) setActiveTab('revenue-report');
+    else if (path.includes('/admin/support-requests')) setActiveTab('support-requests');
   }, [location.pathname]);
 
   return (
@@ -29,6 +31,7 @@ export default function AdminRouter() {
         <Route path="revenue-report" element={<RevenueReport />} />
         <Route path="report-management" element={<ReportManagement />} />
         <Route path="ai-forecast" element={<AIForecast />} /> 
+        <Route path="support-requests" element={<SupportRequestsPage />} />
       </Routes>
     </ManagementLayout>
   );

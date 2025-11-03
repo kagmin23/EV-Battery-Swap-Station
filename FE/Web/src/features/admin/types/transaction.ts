@@ -24,6 +24,7 @@ export interface TransactionFilters {
     date: string;
     minCost: number;
     maxCost: number;
+    limit: string;
 }
 
 export interface TransactionDetailModalProps {

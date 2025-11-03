@@ -3,21 +3,24 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import SearchBar from "../components/SearchBar";
 import ActionMenu from "../components/ActionMenu";
-import TransferBatteryModal from "../components/TransferBatteryModal";
 import EditBatteryModal from "../components/EditBatteryModal";
-import { Plus, ArrowRightLeft } from "lucide-react";
 import Pagination from "../components/Pagination";
 import { getStationBatteries, updateBattery } from "../apis/DashboardApi";
-import type { Battery, UpdateBatteryRequest } from "../apis/DashboardApi";
+import type { Battery as OrigBattery, UpdateBatteryRequest } from "../apis/DashboardApi";
 import { Spinner } from "@/components/ui/spinner";
+import type { FilterValues } from "../components/FilterModal";
+
+type Battery = OrigBattery & { status: string };
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
-  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedBattery, setSelectedBattery] = useState<Battery | null>(null);
   const [batteries, setBatteries] = useState<Battery[]>([]);
+  const [filteredBatteries, setFilteredBatteries] = useState<Battery[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState<FilterValues>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const itemsPerPage = 10;
@@ -43,7 +46,8 @@ export default function Dashboard() {
         }
         
         const data = await getStationBatteries(stationId);
-        setBatteries(data);
+        setBatteries(data as Battery[]);
+        setFilteredBatteries(data as Battery[]);
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Failed to fetch batteries';
         setError(errorMsg);
@@ -57,12 +61,69 @@ export default function Dashboard() {
     fetchBatteries();
   }, []);
 
+  // Derive available models from batteries
+  const availableModels: string[] = Array.from(
+    new Set(
+      batteries
+        .map(b => (b.model || '').trim())
+        .filter((m): m is string => m !== '')
+    )
+  );
+
+  // Filter and search batteries
+  useEffect(() => {
+    let filtered = [...batteries];
+
+    // Apply search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(battery => 
+        battery.serial.toLowerCase().includes(query) ||
+        battery.model?.toLowerCase().includes(query) ||
+        battery.status.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply filters
+    if (filters.model) {
+      filtered = filtered.filter(battery => battery.model === filters.model);
+    }
+
+    if (filters.status) {
+      filtered = filtered.filter(battery => battery.status === filters.status);
+    }
+
+    if (filters.minSOH !== undefined && filters.maxSOH !== undefined) {
+      filtered = filtered.filter(battery => 
+        battery.soh >= (filters.minSOH || 0) && battery.soh <= (filters.maxSOH || 100)
+      );
+    } else if (filters.minSOH !== undefined) {
+      filtered = filtered.filter(battery => battery.soh >= (filters.minSOH || 0));
+    } else if (filters.maxSOH !== undefined) {
+      filtered = filtered.filter(battery => battery.soh <= (filters.maxSOH || 100));
+    }
+
+    if (filters.minCapacity !== undefined && filters.maxCapacity !== undefined) {
+      filtered = filtered.filter(battery => 
+        (battery.capacity_kWh || 0) >= (filters.minCapacity || 0) && 
+        (battery.capacity_kWh || 0) <= (filters.maxCapacity || 1000)
+      );
+    } else if (filters.minCapacity !== undefined) {
+      filtered = filtered.filter(battery => (battery.capacity_kWh || 0) >= (filters.minCapacity || 0));
+    } else if (filters.maxCapacity !== undefined) {
+      filtered = filtered.filter(battery => (battery.capacity_kWh || 0) <= (filters.maxCapacity || 1000));
+    }
+
+    setFilteredBatteries(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [batteries, searchQuery, filters]);
+
   // Calculate pagination
-  const totalItems = batteries.length;
+  const totalItems = filteredBatteries.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentBatteries = batteries.slice(startIndex, endIndex);
+  const currentBatteries = filteredBatteries.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -95,17 +156,13 @@ export default function Dashboard() {
         const stationId = user.station;
         if (stationId) {
           const updatedData = await getStationBatteries(stationId);
-          setBatteries(updatedData);
+          setBatteries(updatedData as Battery[]);
         }
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to update battery');
       throw error;
     }
-  };
-
-  const handleAddBattery = () => {
-    console.log("Add new battery");
   };
 
   if (isLoading) {
@@ -146,23 +203,7 @@ export default function Dashboard() {
     <div className="flex flex-col items-center py-8 min-h-screen">
       <div className="w-full max-w-7xl px-4">
         <div className="flex justify-between items-center mb-6">
-          <SearchBar />
-          <div className="flex gap-3">
-            <button
-              onClick={() => setIsTransferModalOpen(true)}
-              className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 dark:active:bg-blue-800"
-            >
-              <ArrowRightLeft className="w-5 h-5" />
-              Transfer to Station
-            </button>
-            <button
-              onClick={handleAddBattery}
-              className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg bg-button-secondary text-text-primary hover:bg-button-secondary-hover active:bg-button-secondary-hover disabled:opacity-50 disabled:pointer-events-none dark:hover:bg-button-secondary-hover dark:focus:bg-button-secondary-hover"
-            >
-              <Plus className="w-5 h-5" />
-              Add Battery
-            </button>
-          </div>
+          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} setFilters={setFilters} models={availableModels} />
         </div>
         <div className="overflow-x-auto">
           <div className="border border-black-500 rounded-lg shadow-xs dark:border-border dark:shadow-gray-900">
@@ -189,7 +230,7 @@ export default function Dashboard() {
                   </th>
                   <th
                     scope="col"
-                      className="px-6 py-3 text-start text-xs font-medium text-text-primary uppercase dark:text-text-primary"
+                    className="px-6 py-3 text-start text-xs font-medium text-text-primary uppercase dark:text-text-primary"
                   >
                     Health
                   </th>
@@ -228,9 +269,14 @@ export default function Dashboard() {
                           battery.status === 'faulty' ? 'bg-red-100 text-red-800' :
                           battery.status === 'in-use' ? 'bg-yellow-100 text-yellow-800' :
                           battery.status === 'idle' ? 'bg-gray-100 text-gray-800' :
+                          battery.status === 'is-booking' ? 'bg-indigo-100 text-indigo-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
-                          {battery.status}
+                          {battery.status === 'is-booking'
+                            ? 'Is Booking'
+                            : battery.status === 'in-use'
+                              ? 'In Use'
+                              : battery.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -256,14 +302,6 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
-
-    {/* Transfer Battery Modal */}
-    <TransferBatteryModal
-      isOpen={isTransferModalOpen}
-      onClose={() => setIsTransferModalOpen(false)}
-      batteries={batteries}
-      currentStation={JSON.parse(localStorage.getItem('user') || '{}').station || ''}
-    />
 
     {/* Edit Battery Modal */}
     <EditBatteryModal

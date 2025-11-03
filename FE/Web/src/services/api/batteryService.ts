@@ -23,6 +23,29 @@ export interface Battery {
     __v: number;
 }
 
+export interface CreateBatteryRequest {
+    serial: string;
+    model?: string;
+    soh?: number;
+    status?: 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';
+    stationId?: string;
+    manufacturer?: string;
+    capacity_kWh?: number;
+    voltage?: number;
+    price?: number;
+}
+
+export interface UpdateBatteryRequest {
+    model?: string;
+    soh?: number;
+    status?: 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';
+    stationId?: string;
+    manufacturer?: string;
+    capacity_kWh?: number;
+    voltage?: number;
+    price?: number;
+}
+
 export interface BatteryFilters {
     status?: 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';
     stationId?: string;
@@ -37,11 +60,26 @@ export interface BatteryFilters {
 export interface BatteryResponse {
     success: boolean;
     data: Battery[];
-    pagination: {
+    meta: {
         page: number;
         limit: number;
         total: number;
-        pages: number;
+    };
+}
+
+export interface BatteryLogsResponse {
+    success: boolean;
+    data: {
+        battery: {
+            id: string;
+            serial: string;
+            model?: string;
+            status: string;
+            soh: number;
+            station?: { _id: string; stationName: string; address?: string };
+            lastUpdated?: string;
+        };
+        history: Array<any>;
     };
 }
 
@@ -103,11 +141,10 @@ export class BatteryService {
                 return {
                     success: response.data.success,
                     data: response.data.data || [],
-                    pagination: response.data.pagination || {
+                    meta: response.data.meta || {
                         page: 1,
                         limit: 20,
-                        total: response.data.data?.length || 0,
-                        pages: 1
+                        total: response.data.data?.length || 0
                     }
                 };
             }
@@ -161,11 +198,10 @@ export class BatteryService {
                 return {
                     success: response.data.success,
                     data: response.data.data || [],
-                    pagination: response.data.pagination || {
+                    meta: response.data.meta || {
                         page: 1,
                         limit: 20,
-                        total: response.data.data?.length || 0,
-                        pages: 1
+                        total: response.data.data?.length || 0
                     }
                 };
             }
@@ -200,6 +236,43 @@ export class BatteryService {
         }
     }
 
+    // Get battery logs/history (admin)
+    static async getBatteryLogs(id: string): Promise<BatteryLogsResponse['data']> {
+        try {
+            const response = await api.get(`/batteries/${id}/logs`);
+            if (response.data.success) {
+                return response.data.data;
+            }
+            throw new Error(response.data.message || 'Failed to fetch battery logs');
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    const status = error.response.status;
+                    const message = error.response.data?.message || 'Server error';
+                    switch (status) {
+                        case 400:
+                            throw new Error(`Bad Request: ${message}`);
+                        case 401:
+                            throw new Error('Unauthorized: Please login again');
+                        case 403:
+                            throw new Error('Forbidden: You do not have permission to access this resource');
+                        case 404:
+                            throw new Error('Not Found: Battery not found');
+                        case 500:
+                            throw new Error('Internal Server Error: Please try again later');
+                        default:
+                            throw new Error(`Error ${status}: ${message}`);
+                    }
+                } else if (error.request) {
+                    throw new Error('Network Error: Please check your internet connection');
+                } else {
+                    throw new Error(`Request Error: ${error.message}`);
+                }
+            }
+            throw new Error('An unexpected error occurred');
+        }
+    }
+
     // Get all batteries by fetching from all stations
     static async getAllBatteriesFromAllStations(stations: Array<{ id: string; name: string }>, filters: Omit<BatteryFilters, 'stationId'> = {}): Promise<BatteryResponse> {
         try {
@@ -215,7 +288,7 @@ export class BatteryService {
                         stationName: station.name
                     }));
                     allBatteries.push(...stationBatteries);
-                    totalCount += stationResponse.pagination.total;
+                    totalCount += stationResponse.meta.total;
                 } catch (error) {
                     console.warn(`Failed to fetch batteries from station ${station.name}:`, error);
                     // Continue with other stations even if one fails
@@ -225,11 +298,10 @@ export class BatteryService {
             return {
                 success: true,
                 data: allBatteries,
-                pagination: {
+                meta: {
                     page: 1,
                     limit: allBatteries.length,
-                    total: totalCount,
-                    pages: 1
+                    total: totalCount
                 }
             };
         } catch (error) {
@@ -245,11 +317,10 @@ export class BatteryService {
                 return {
                     success: response.data.success,
                     data: response.data.data || [],
-                    pagination: {
+                    meta: {
                         page: 1,
                         limit: response.data.data?.length || 0,
-                        total: response.data.data?.length || 0,
-                        pages: 1
+                        total: response.data.data?.length || 0
                     }
                 };
             }
@@ -360,16 +431,7 @@ export class BatteryService {
     }
 
     // Create new battery
-    static async createBattery(batteryData: {
-        serial: string;
-        model?: string;
-        soh?: number;
-        status?: 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';
-        stationId?: string;
-        manufacturer?: string;
-        capacity_kWh?: number;
-        voltage?: number;
-    }): Promise<Battery> {
+    static async createBattery(batteryData: CreateBatteryRequest): Promise<Battery> {
         try {
             const response = await api.post('/batteries', batteryData);
             if (response.data.success) {
@@ -405,15 +467,7 @@ export class BatteryService {
     }
 
     // Update battery
-    static async updateBattery(id: string, updateData: {
-        model?: string;
-        soh?: number;
-        status?: 'charging' | 'full' | 'faulty' | 'in-use' | 'idle';
-        stationId?: string;
-        manufacturer?: string;
-        capacity_kWh?: number;
-        voltage?: number;
-    }): Promise<Battery> {
+    static async updateBattery(id: string, updateData: UpdateBatteryRequest): Promise<Battery> {
         try {
             const response = await api.put(`/batteries/${id}`, updateData);
             if (response.data.success) {

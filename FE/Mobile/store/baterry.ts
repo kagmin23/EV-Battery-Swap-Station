@@ -67,3 +67,11 @@ export const getAllBatteryByStationId = async (stationId: string): Promise<Batte
     }
 }
 
+
+export const getBatteryById = (
+    batteries: Battery[] | undefined,
+    batteryId: string
+): Battery | undefined => {
+    if (!batteries) return undefined;
+    return batteries.find(battery => battery.id === batteryId);
+};

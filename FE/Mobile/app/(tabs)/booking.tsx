@@ -130,8 +130,6 @@ export default function BookingScreen() {
         });
     };
 
-
-
     return (
         <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
             <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>

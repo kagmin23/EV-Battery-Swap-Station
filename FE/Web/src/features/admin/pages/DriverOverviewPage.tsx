@@ -226,7 +226,7 @@ export const DriverOverviewPage: React.FC = () => {
                             <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
                                 <div className="flex items-center space-x-3">
                                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                    <span className="font-medium text-slate-700">Hoạt động</span>
+                                    <span className="font-medium text-slate-700">Active</span>
                                 </div>
                                 <span className="text-2xl font-bold text-green-600">
                                     {mockStats.activeDrivers.toLocaleString()}
@@ -315,7 +315,7 @@ export const DriverOverviewPage: React.FC = () => {
                 <CardHeader>
                     <CardTitle className="text-xl font-semibold text-slate-800 flex items-center">
                         <Clock className="h-6 w-6 mr-2 text-indigo-600" />
-                        Hoạt động gần đây
+                        Recent Activity
                     </CardTitle>
                 </CardHeader>
                 <CardContent>

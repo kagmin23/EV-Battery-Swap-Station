@@ -10,14 +10,15 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getBatteryDetail, getStationById } from '../apis/BatteryLogApi';
-import type { BatteryDetail, Station } from '../apis/BatteryLogApi';
+import { getBatteryLogs, getStationById } from '../apis/BatteryLogApi';
+import type { BatteryDetail, Station, BatteryLogEntry } from '../apis/BatteryLogApi';
 import { Spinner } from '@/components/ui/spinner';
 
 export default function BatteryLog() {
   const { batteryId } = useParams<{ batteryId: string }>();
   const navigate = useNavigate();
   const [batteryData, setBatteryData] = useState<BatteryDetail | null>(null);
+  const [logs, setLogs] = useState<BatteryLogEntry[]>([]);
   const [station, setStation] = useState<Station | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,29 +26,29 @@ export default function BatteryLog() {
   useEffect(() => {
     const fetchBatteryData = async () => {
       try {
-      setIsLoading(true);
+        setIsLoading(true);
         setError(null);
         
         if (!batteryId) {
           throw new Error('Battery ID not provided');
         }
         
-        const data = await getBatteryDetail(batteryId);
-      setBatteryData(data);
+        const data = await getBatteryLogs(batteryId);
+        setBatteryData(data.battery);
+        setLogs(data.logs || []);
 
         // Fetch station name if station is provided
-        if (data.station) {
-          if (typeof data.station === 'string') {
-            // Station is ID, fetch station details
+        if (data.battery.station) {
+          const st = data.battery.station;
+          if (typeof st === 'string') {
             try {
-              const stationData = await getStationById(data.station);
+              const stationData = await getStationById(st);
               setStation(stationData);
             } catch (err) {
               console.error('Failed to fetch station details:', err);
-              // Create minimal station object with ID as name for fallback
               setStation({
-                _id: data.station,
-                stationName: data.station,
+                _id: st,
+                stationName: st,
                 address: '',
                 city: '',
                 district: '',
@@ -57,15 +58,14 @@ export default function BatteryLog() {
               });
             }
           } else {
-            // Station is already an object
-            setStation(data.station);
+            setStation(st);
           }
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch battery data');
         console.error('Error fetching battery data:', err);
       } finally {
-      setIsLoading(false);
+        setIsLoading(false);
       }
     };
 
@@ -111,7 +111,8 @@ export default function BatteryLog() {
       'in-use': { variant: 'default', label: 'In Use' },
       charging: { variant: 'warning', label: 'Charging' },
       idle: { variant: 'secondary', label: 'Idle' },
-      faulty: { variant: 'destructive', label: 'Faulty' }
+      faulty: { variant: 'destructive', label: 'Faulty' },
+      'is-booking': { variant: 'outline', label: 'Is Booking' }
     };
     
     const config = statusConfig[status] || { variant: 'outline', label: status };
@@ -210,26 +211,26 @@ export default function BatteryLog() {
 
         {/* Battery Details */}
         <div className="space-y-6">
-              <Card className="shadow-lg border-0 bg-white">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BatteryIcon className="h-5 w-5" />
+          <Card className="shadow-lg border-0 bg-white">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BatteryIcon className="h-5 w-5" />
                 Detailed Battery Information
-                  </CardTitle>
-                <CardDescription>
+              </CardTitle>
+              <CardDescription>
                 All technical information about the battery
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="p-4 bg-slate-50 rounded-lg">
                   <p className="text-sm text-slate-600 mb-1">Battery ID</p>
-                  <p className="font-semibold text-lg">{batteryData._id}</p>
-                        </div>
+                  <p className="font-semibold text-lg">{batteryData.id}</p>
+                </div>
                 <div className="p-4 bg-slate-50 rounded-lg">
                   <p className="text-sm text-slate-600 mb-1">Serial Number</p>
                   <p className="font-semibold text-lg">{batteryData.serial}</p>
-                      </div>
+                </div>
                 <div className="p-4 bg-slate-50 rounded-lg">
                   <p className="text-sm text-slate-600 mb-1">Battery Model</p>
                   <p className="font-semibold text-lg">{batteryData.model || 'N/A'}</p>
@@ -240,9 +241,7 @@ export default function BatteryLog() {
                 </div>
                 <div className="p-4 bg-slate-50 rounded-lg">
                   <p className="text-sm text-slate-600 mb-1">Battery Health (SOH)</p>
-                  <p className={`font-semibold text-lg ${getHealthColor(batteryData.soh)}`}>
-                    {batteryData.soh}%
-                  </p>
+                  <p className={`font-semibold text-lg ${getHealthColor(batteryData.soh)}`}>{batteryData.soh}%</p>
                 </div>
                 {station && (
                   <div className="p-4 bg-slate-50 rounded-lg">
@@ -268,10 +267,50 @@ export default function BatteryLog() {
                     <p className="font-semibold text-lg">{batteryData.voltage} V</p>
                   </div>
                 )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Logs table */}
+          <Card className="shadow-lg border-0 bg-white">
+            <CardHeader>
+              <CardTitle>Battery Logs</CardTitle>
+              <CardDescription>History of actions related to this battery</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead>
+                    <tr className="bg-slate-50">
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Time</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Action</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Actor</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Note</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {logs.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="text-center py-6 text-slate-500">No logs found</td>
+                      </tr>
+                    ) : (
+                      logs.map((log) => (
+                        <tr key={log._id} className="border-b">
+                          <td className="py-3 px-4 text-sm text-slate-700">{new Date(log.createdAt).toLocaleString()}</td>
+                          <td className="py-3 px-4 text-sm text-slate-700">{log.action}</td>
+                          <td className="py-3 px-4 text-sm text-slate-700">
+                            {typeof log.actor === 'string' ? log.actor : (log.actor?.fullName || log.actor?.email || 'N/A')}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-slate-700">{log.note || ''}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

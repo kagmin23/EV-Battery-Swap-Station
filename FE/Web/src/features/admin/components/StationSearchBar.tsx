@@ -1,20 +1,22 @@
 import React from 'react';
-import { Search, RotateCcw } from 'lucide-react';
+import { Search, RotateCcw, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { StationFilters, StationStatus } from '../types/station';
+import type { StationFilters } from '../types/station';
 
 interface StationSearchBarProps {
     filters: StationFilters;
     onFiltersChange: (filters: StationFilters) => void;
     onResetFilters?: () => void;
+    isResetting?: boolean;
 }
 
 export const StationSearchBar: React.FC<StationSearchBarProps> = ({
     filters,
     onFiltersChange,
-    onResetFilters
+    onResetFilters,
+    isResetting = false
 }) => {
     const handleSearchChange = (value: string) => {
         onFiltersChange({ ...filters, search: value });
@@ -28,8 +30,8 @@ export const StationSearchBar: React.FC<StationSearchBarProps> = ({
         onFiltersChange({ ...filters, district: value });
     };
 
-    const handleStatusChange = (value: string) => {
-        onFiltersChange({ ...filters, status: value as StationStatus | 'ALL' });
+    const handleLimitChange = (value: string) => {
+        onFiltersChange({ ...filters, limit: value });
     };
 
     return (
@@ -38,7 +40,7 @@ export const StationSearchBar: React.FC<StationSearchBarProps> = ({
                 <div className="p-2 bg-blue-100 rounded-xl">
                     <Search className="h-5 w-5 text-blue-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-800">Tìm kiếm & Lọc</h3>
+                <h3 className="text-lg font-semibold text-slate-800">Search & Filter</h3>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-4">
@@ -46,7 +48,7 @@ export const StationSearchBar: React.FC<StationSearchBarProps> = ({
                 <div className="flex-1 relative">
                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
                     <Input
-                        placeholder="Tìm kiếm trạm theo tên, địa chỉ, thành phố, quận..."
+                        placeholder="Search station by name, address, city, district..."
                         value={filters.search}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="pl-12 h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl text-slate-700 placeholder:text-slate-400"
@@ -58,10 +60,10 @@ export const StationSearchBar: React.FC<StationSearchBarProps> = ({
                     {/* City Filter */}
                     <Select value={filters.city} onValueChange={handleCityChange}>
                         <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl">
-                            <SelectValue placeholder="Thành phố" />
+                            <SelectValue placeholder="City" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                            <SelectItem value="ALL">Tất cả thành phố</SelectItem>
+                            <SelectItem value="ALL">All cities</SelectItem>
                             <SelectItem value="Ho Chi Minh City">TP.HCM</SelectItem>
                             <SelectItem value="Hanoi">Hà Nội</SelectItem>
                             <SelectItem value="Da Nang">Đà Nẵng</SelectItem>
@@ -72,10 +74,10 @@ export const StationSearchBar: React.FC<StationSearchBarProps> = ({
                     {/* District Filter */}
                     <Select value={filters.district} onValueChange={handleDistrictChange}>
                         <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl">
-                            <SelectValue placeholder="Quận/Huyện" />
+                            <SelectValue placeholder="District" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                            <SelectItem value="ALL">Tất cả quận</SelectItem>
+                            <SelectItem value="ALL">All districts</SelectItem>
                             <SelectItem value="District 1">Quận 1</SelectItem>
                             <SelectItem value="District 2">Quận 2</SelectItem>
                             <SelectItem value="District 3">Quận 3</SelectItem>
@@ -91,16 +93,15 @@ export const StationSearchBar: React.FC<StationSearchBarProps> = ({
                         </SelectContent>
                     </Select>
 
-                    {/* Status Filter */}
-                    <Select value={filters.status} onValueChange={handleStatusChange}>
-                        <SelectTrigger className="w-full sm:w-[150px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl">
-                            <SelectValue placeholder="Trạng thái" />
+                    {/* Limit Filter */}
+                    <Select value={filters.limit} onValueChange={handleLimitChange}>
+                        <SelectTrigger className="w-full sm:w-[120px] h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 hover:bg-white hover:border-slate-300 transition-all duration-200">
+                            <SelectValue placeholder="Limit" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                            <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-                            <SelectItem value="ACTIVE">Hoạt động</SelectItem>
-                            <SelectItem value="MAINTENANCE">Bảo trì</SelectItem>
-                            <SelectItem value="INACTIVE">Ngừng hoạt động</SelectItem>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl bg-white/95 backdrop-blur-sm z-50">
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="20">20</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
                         </SelectContent>
                     </Select>
 
@@ -108,9 +109,14 @@ export const StationSearchBar: React.FC<StationSearchBarProps> = ({
                     <Button
                         variant="outline"
                         onClick={onResetFilters}
-                        className="h-12 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl text-slate-700 px-4 whitespace-nowrap"
+                        disabled={isResetting}
+                        className="h-12 bg-white/90 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl text-slate-700 px-4 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <RotateCcw className="h-4 w-4 mr-2" />
+                        {isResetting ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                            <RotateCcw className="h-4 w-4 mr-2" />
+                        )}
                         Reset
                     </Button>
                 </div>
