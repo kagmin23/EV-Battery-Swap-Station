@@ -63,25 +63,26 @@ export default function PaymentSuccessScreen() {
                     <View style={styles.actionsRow}>
                         <TouchableOpacity
                             style={styles.actionBtn}
-                                            onPress={async () => {
-                                                // Try to confirm subscription on backend if subscriptionId is present
-                                                const subscriptionId = (routeParams.subscriptionId as string | undefined) ?? (transactionId as string | undefined);
-                                                if (subscriptionId) {
-                                                    try {
-                                                        const res = await confirmSubscriptionApi({ subscriptionId });
-                                                        if (res && res.success) {
-                                                            showSuccessToast(res.message || 'Subscription confirmed');
-                                                        } else {
-                                                            showErrorToast(res?.message || 'Failed to confirm subscription');
-                                                        }
-                                                    } catch (err: any) {
-                                                        showErrorToast(err?.message || 'Failed to confirm subscription');
-                                                    }
-                                                }
+                            onPress={async () => {
+                                // Try to confirm subscription on backend if subscriptionId is present
+                                const subscriptionId = (routeParams.subscriptionId as string | undefined) ?? (transactionId as string | undefined);
+                                if (subscriptionId) {
+                                    try {
+                                        const res = await confirmSubscriptionApi({ subscriptionId });
+                                        if (res && res.success) {
+                                            showSuccessToast(res.message || 'Subscription confirmed');
+                                        } else {
+                                            showErrorToast(res?.message || 'Failed to confirm subscription');
+                                        }
+                                    } catch (err: any) {
+                                        showErrorToast(err?.message || 'Failed to confirm subscription');
+                                    }
+                                }
 
-                                                // Navigate back to ListSubscriptions
-                                                router.push('/driver/ListSubscriptions');
-                                            }}
+                                // Navigate back to ListSubscriptions
+                                // Cast to any to satisfy the generated route union types
+                                router.push('/driver/ListSubscriptions' as any);
+                            }}
                         >
                             <Text style={styles.actionBtnText}>Confirm</Text>
                         </TouchableOpacity>

@@ -15,6 +15,7 @@ interface MapComponentProps {
     onStationSelect?: (station: StationInMapResponse) => void;
     showUserLocation?: boolean;
     style?: any;
+    searchQuery?: string;
 }
 
 export type MapComponentHandle = {
@@ -33,6 +34,7 @@ const MapComponent = forwardRef<MapComponentHandle, MapComponentProps>(({
     onStationSelect,
     showUserLocation = true,
     style,
+    searchQuery,
 }, ref) => {
     const mapRef = useRef<MapView>(null);
 

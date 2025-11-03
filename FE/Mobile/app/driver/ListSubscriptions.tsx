@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as ExpoLinking from 'expo-linking';
 
 function ListSubscriptions() {
     const router = useRouter();
@@ -103,7 +104,8 @@ function ListSubscriptions() {
             Alert.alert('Subscription', 'You already have an active subscription. You cannot purchase another plan until it ends.');
             return;
         }
-        const returnUrl = 'exp://192.168.1.38:8081/--/payment-success-sub';
+        const returnUrl = ExpoLinking.createURL('payment-success-sub');
+        // const  = 'exp://10.1.185.232:8081/--/payment-success-sub';
 
         // inner flow to create payment and open VNPay URL
         const runPayment = async () => {
@@ -210,7 +212,7 @@ function ListSubscriptions() {
                 'You already have an active subscription for this plan. Do you want to proceed to payment anyway (renew/extend)?',
                 [
                     { text: 'Cancel', style: 'cancel' },
-                    { text: 'Proceed', onPress: () => { runPayment().catch(() => {}); } },
+                    { text: 'Proceed', onPress: () => { runPayment().catch(() => { }); } },
                 ]
             );
             return;
@@ -223,7 +225,7 @@ function ListSubscriptions() {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.push('/driver/ProfileScreen')} style={styles.backButton}>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} style={styles.backButton}>
                     <Ionicons name="chevron-back" size={22} color="white" />
                 </TouchableOpacity>
                 <Text style={styles.title}>Subscriptions</Text>
@@ -257,9 +259,9 @@ function ListSubscriptions() {
                     {filtered.map((s, idx) => (
                         <View key={`${s._id ?? 'sub'}-${idx}`} style={styles.card}>
                             {/* Top row: title and status */}
-                            <View style={[styles.row, { marginBottom: 8 }] }>
+                            <View style={[styles.row, { marginBottom: 8 }]}>
                                 <Text style={styles.name}>{s.subscriptionName}</Text>
-                                <View style={[styles.statusPill, { backgroundColor: getStatusColor(s.status) }] }>
+                                <View style={[styles.statusPill, { backgroundColor: getStatusColor(s.status) }]}>
                                     <Text style={styles.statusPillText}>{capitalize(s.status)}</Text>
                                 </View>
                             </View>

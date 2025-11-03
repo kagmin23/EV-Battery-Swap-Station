@@ -49,7 +49,7 @@ const ProfileScreen: React.FC = () => {
         useCallback(() => {
             getAllVehicle();
             // refresh subscription plans so we can show current plan(s)
-            getSubscriptionPlansApi().catch(() => {});
+            getSubscriptionPlansApi().catch(() => { });
         }, [])
     )
     const openSheet = () => {
@@ -214,6 +214,18 @@ const ProfileScreen: React.FC = () => {
                     <View style={styles.cardContent}>
                         <Text style={styles.cardTitle}>My Booking</Text>
                         <Text style={styles.cardSubtitle}>View your swap reservations</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="white" />
+                </TouchableOpacity>
+
+                {/* Transaction History */}
+                <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/transactions')}>
+                    <View style={styles.iconContainer}>
+                        <Ionicons name="receipt" size={24} color="#6d4aff" />
+                    </View>
+                    <View style={styles.cardContent}>
+                        <Text style={styles.cardTitle}>Transaction History</Text>
+                        <Text style={styles.cardSubtitle}>View all your transactions</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={20} color="white" />
                 </TouchableOpacity>
