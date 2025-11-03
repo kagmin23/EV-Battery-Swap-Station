@@ -22,9 +22,26 @@ import { TransactionDetailModal } from '../components/TransactionDetailModal';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
 import { PageLoadingSpinner } from '@/components/ui/loading-spinner';
+import axios from 'axios';
 import { TransactionService, type Transaction as ApiTransaction } from '@/services/api/transactionService';
 import { StationService, type Station as ApiStation } from '@/services/api/stationService';
+import { UserService, type User } from '@/services/api/userService';
+import { BatteryService, type Battery } from '@/services/api/batteryService';
 import type { Transaction, TransactionFilters } from '../types/transaction';
+
+const API_BASE_URL = 'http://localhost:8001/api';
+
+// Helper function to create authenticated axios instance
+const createApiRequest = () => {
+    const token = localStorage.getItem('accessToken');
+    return axios.create({
+        baseURL: API_BASE_URL,
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+    });
+};
 
 export const TransactionPage: React.FC = () => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -73,9 +90,114 @@ export const TransactionPage: React.FC = () => {
             const response = await TransactionService.getAllTransactions(apiFilters);
             const apiTransactions = response.data;
 
+            // Get unique IDs to fetch details
+            const uniqueUserIds = [...new Set(apiTransactions.map((t: ApiTransaction) => t.user_id).filter(Boolean))];
+            const uniqueBatteryIds = [...new Set(apiTransactions.map((t: ApiTransaction) => t.battery_id).filter(Boolean))];
+            const uniqueVehicleIds = [...new Set(apiTransactions.map((t: ApiTransaction) => t.vehicle_id).filter(Boolean))];
+            const uniqueBookingIds = [...new Set(apiTransactions.map((t: ApiTransaction) => t.booking_id).filter(Boolean))];
+            
+            const api = createApiRequest();
+            
+            // Fetch all details in parallel
+            const [userMap, batteryMap, vehicleMap, bookingMap] = await Promise.all([
+                // Fetch user details
+                (async () => {
+                    const map = new Map<string, User>();
+                    await Promise.all(
+                        uniqueUserIds.map(async (userId) => {
+                            try {
+                                const userResponse = await UserService.getUserById(userId);
+                                if (userResponse.success && userResponse.data) {
+                                    map.set(userId, userResponse.data);
+                                }
+                            } catch (err) {
+                                console.error(`Error fetching user ${userId}:`, err);
+                            }
+                        })
+                    );
+                    return map;
+                })(),
+                // Fetch battery details
+                (async () => {
+                    const map = new Map<string, Battery>();
+                    await Promise.all(
+                        uniqueBatteryIds.map(async (batteryId) => {
+                            try {
+                                const battery = await BatteryService.getBatteryById(batteryId);
+                                map.set(batteryId, battery);
+                            } catch (err) {
+                                console.error(`Error fetching battery ${batteryId}:`, err);
+                            }
+                        })
+                    );
+                    return map;
+                })(),
+                // Fetch vehicle details
+                (async () => {
+                    const map = new Map<string, any>();
+                    await Promise.all(
+                        uniqueVehicleIds.map(async (vehicleId) => {
+                            try {
+                                const response = await api.get(`/vehicles/${vehicleId}`);
+                                if (response.data.success && response.data.data) {
+                                    map.set(vehicleId, response.data.data);
+                                }
+                            } catch (err) {
+                                console.error(`Error fetching vehicle ${vehicleId}:`, err);
+                            }
+                        })
+                    );
+                    return map;
+                })(),
+                // Fetch booking details
+                (async () => {
+                    const map = new Map<string, any>();
+                    await Promise.all(
+                        uniqueBookingIds.map(async (bookingId) => {
+                            try {
+                                const response = await api.get(`/booking/${bookingId}`);
+                                if (response.data.success && response.data.data) {
+                                    map.set(bookingId, response.data.data);
+                                }
+                            } catch (err) {
+                                console.error(`Error fetching booking ${bookingId}:`, err);
+                            }
+                        })
+                    );
+                    return map;
+                })(),
+            ]);
+
             // Convert API transactions to UI format
             const convertedTransactions: Transaction[] = apiTransactions.map((apiTransaction: ApiTransaction) => {
                 const station = stations.find(s => s.id === apiTransaction.station_id);
+                const user = userMap.get(apiTransaction.user_id);
+                const battery = apiTransaction.battery_id ? batteryMap.get(apiTransaction.battery_id) : null;
+                const vehicle = apiTransaction.vehicle_id ? vehicleMap.get(apiTransaction.vehicle_id) : null;
+                const booking = apiTransaction.booking_id ? bookingMap.get(apiTransaction.booking_id) : null;
+
+                // Build vehicle name
+                let vehicleName: string | undefined = undefined;
+                if (vehicle) {
+                    const parts: string[] = [];
+                    if (vehicle.car_name) parts.push(vehicle.car_name);
+                    if (vehicle.brand) parts.push(vehicle.brand);
+                    if (vehicle.license_plate) parts.push(`(${vehicle.license_plate})`);
+                    vehicleName = parts.length > 0 ? parts.join(' ') : vehicle.license_plate || undefined;
+                }
+
+                // Build booking description
+                let bookingDescription: string | undefined = undefined;
+                if (booking) {
+                    const parts: string[] = [];
+                    if (booking.station_name) parts.push(`Station: ${booking.station_name}`);
+                    if (booking.scheduled_time) {
+                        const scheduledDate = new Date(booking.scheduled_time);
+                        parts.push(`Scheduled: ${scheduledDate.toLocaleString()}`);
+                    }
+                    if (booking.status) parts.push(`Status: ${booking.status}`);
+                    bookingDescription = parts.join(' | ') || undefined;
+                }
 
                 return {
                     id: apiTransaction.transaction_id,
@@ -89,12 +211,15 @@ export const TransactionPage: React.FC = () => {
                     bookingId: apiTransaction.booking_id,
                     transactionTime: new Date(apiTransaction.transaction_time),
                     cost: apiTransaction.cost,
+                    status: 'completed' as const, // Transactions are completed when they exist
                     // Additional fields for display
-                    userName: `User ${apiTransaction.user_id}`,
-                    stationName: station?.name || 'Unknown Station',
-                    vehicleName: undefined, // Not available in API
-                    batterySerial: undefined, // Not available in API
-                    bookingStatus: undefined // Not available in API
+                    userName: user?.fullName || user?.email || 'User',
+                    stationName: station?.name || 'Station',
+                    vehicleName: vehicleName,
+                    batterySerial: battery?.serial || undefined,
+                    batteryModel: battery?.model || undefined,
+                    bookingStatus: booking?.status || undefined,
+                    bookingDescription: bookingDescription
                 };
             });
 
@@ -157,9 +282,98 @@ export const TransactionPage: React.FC = () => {
         }
     }, [filters, stations]);
 
-    const handleViewTransactionDetails = (transaction: Transaction) => {
-        setSelectedTransaction(transaction);
-        setIsDetailModalOpen(true);
+    const handleViewTransactionDetails = async (transaction: Transaction) => {
+        try {
+            // Clear previous transaction and open modal to show loading state
+            setSelectedTransaction(null);
+            setIsDetailModalOpen(true);
+            
+            // Fetch full transaction details from API
+            const response = await TransactionService.getTransactionById(transaction.transactionId);
+            const apiTransaction = response.data;
+            
+            const api = createApiRequest();
+            
+            // Fetch all related details in parallel
+            const [station, userResponse, batteryResponse, vehicleResponse, bookingResponse] = await Promise.all([
+                // Station
+                Promise.resolve(stations.find(s => s.id === apiTransaction.station_id)),
+                // User
+                UserService.getUserById(apiTransaction.user_id).catch(() => null),
+                // Battery
+                apiTransaction.battery_id 
+                    ? BatteryService.getBatteryById(apiTransaction.battery_id).catch(() => null)
+                    : Promise.resolve(null),
+                // Vehicle
+                apiTransaction.vehicle_id
+                    ? api.get(`/vehicles/${apiTransaction.vehicle_id}`).catch(() => null)
+                    : Promise.resolve(null),
+                // Booking
+                apiTransaction.booking_id
+                    ? api.get(`/booking/${apiTransaction.booking_id}`).catch(() => null)
+                    : Promise.resolve(null),
+            ]);
+            
+            const user = userResponse?.success ? userResponse.data : null;
+            const battery = batteryResponse || null;
+            const vehicle = vehicleResponse?.data?.success ? vehicleResponse.data.data : null;
+            const booking = bookingResponse?.data?.success ? bookingResponse.data.data : null;
+
+            // Build vehicle name
+            let vehicleName: string | undefined = undefined;
+            if (vehicle) {
+                const parts: string[] = [];
+                if (vehicle.car_name) parts.push(vehicle.car_name);
+                if (vehicle.brand) parts.push(vehicle.brand);
+                if (vehicle.license_plate) parts.push(`(${vehicle.license_plate})`);
+                vehicleName = parts.length > 0 ? parts.join(' ') : vehicle.license_plate || undefined;
+            }
+
+            // Build booking description
+            let bookingDescription: string | undefined = undefined;
+            if (booking) {
+                const parts: string[] = [];
+                if (booking.station_name) parts.push(`Station: ${booking.station_name}`);
+                if (booking.scheduled_time) {
+                    const scheduledDate = new Date(booking.scheduled_time);
+                    parts.push(`Scheduled: ${scheduledDate.toLocaleString()}`);
+                }
+                if (booking.status) parts.push(`Status: ${booking.status}`);
+                bookingDescription = parts.join(' | ') || undefined;
+            }
+            
+            // Convert API transaction to UI format
+            const detailedTransaction: Transaction = {
+                id: apiTransaction.transaction_id,
+                transactionId: apiTransaction.transaction_id,
+                userId: apiTransaction.user_id,
+                stationId: apiTransaction.station_id,
+                batteryGiven: apiTransaction.battery_given || null,
+                batteryReturned: apiTransaction.battery_returned || null,
+                vehicleId: apiTransaction.vehicle_id,
+                batteryId: apiTransaction.battery_id,
+                bookingId: apiTransaction.booking_id,
+                transactionTime: new Date(apiTransaction.transaction_time),
+                cost: apiTransaction.cost,
+                status: 'completed' as const,
+                // Additional fields for display
+                userName: user?.fullName || user?.email || 'User',
+                stationName: station?.name || 'Station',
+                vehicleName: vehicleName,
+                batterySerial: battery?.serial || undefined,
+                batteryModel: battery?.model || undefined,
+                bookingStatus: booking?.status || undefined,
+                bookingDescription: bookingDescription
+            };
+            
+            setSelectedTransaction(detailedTransaction);
+        } catch (err) {
+            console.error('Error fetching transaction details:', err);
+            // Fallback to using the transaction from the list if API call fails
+            setSelectedTransaction(transaction);
+            // Optionally show error message
+            setError('Failed to load transaction details. Showing available information.');
+        }
     };
 
     const handleCloseDetailModal = () => {

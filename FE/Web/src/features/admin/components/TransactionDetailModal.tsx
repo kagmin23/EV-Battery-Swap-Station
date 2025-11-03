@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { PageLoadingSpinner } from '@/components/ui/loading-spinner';
 import {
     CreditCard,
     MapPin,
@@ -15,8 +16,7 @@ import {
     Car,
     Calendar,
     DollarSign,
-    FileText,
-    X
+    FileText
 } from 'lucide-react';
 import type { TransactionDetailModalProps } from '../types/transaction';
 
@@ -25,17 +25,36 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     onClose,
     transaction
 }) => {
-    if (!transaction) return null;
+    // Show loading state if transaction is not yet loaded
+    if (!transaction) {
+        return (
+            <Dialog open={isOpen} onOpenChange={onClose}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader className="pb-4">
+                        <DialogTitle className="flex items-center text-xl font-bold text-slate-800">
+                            <div className="p-2 bg-green-100 rounded-xl mr-3">
+                                <CreditCard className="h-6 w-6 text-green-600" />
+                            </div>
+                            Transaction Details
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="flex items-center justify-center py-12">
+                        <PageLoadingSpinner text="Loading transaction details..." />
+                    </div>
+                </DialogContent>
+            </Dialog>
+        );
+    }
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('vi-VN', {
+        return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'VND'
         }).format(amount);
     };
 
     const formatDateTime = (date: Date) => {
-        return new Intl.DateTimeFormat('vi-VN', {
+        return new Intl.DateTimeFormat('en-US', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -47,54 +66,68 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
     const getTransactionType = () => {
         if (transaction.batteryGiven && transaction.batteryReturned) {
-            return { label: 'Đổi pin', variant: 'default' as const, color: 'bg-blue-100 text-blue-800' };
+            return { label: 'Battery Swap', variant: 'default' as const, color: 'bg-blue-100 text-blue-800' };
         } else if (transaction.batteryGiven) {
-            return { label: 'Lấy pin', variant: 'success' as const, color: 'bg-green-100 text-green-800' };
+            return { label: 'Pick Up', variant: 'success' as const, color: 'bg-green-100 text-green-800' };
         } else if (transaction.batteryReturned) {
-            return { label: 'Trả pin', variant: 'warning' as const, color: 'bg-orange-100 text-orange-800' };
+            return { label: 'Return', variant: 'warning' as const, color: 'bg-orange-100 text-orange-800' };
         }
-        return { label: 'Không xác định', variant: 'secondary' as const, color: 'bg-gray-100 text-gray-800' };
+        return { label: 'Battery Exchange', variant: 'secondary' as const, color: 'bg-gray-100 text-gray-800' };
+    };
+
+    const getStatusBadge = () => {
+        switch (transaction.status) {
+            case 'completed':
+                return { label: 'Completed', color: 'bg-green-100 text-green-800' };
+            case 'pending':
+                return { label: 'Pending', color: 'bg-yellow-100 text-yellow-800' };
+            case 'cancelled':
+                return { label: 'Cancelled', color: 'bg-red-100 text-red-800' };
+            default:
+                return { label: 'Completed', color: 'bg-green-100 text-green-800' };
+        }
     };
 
     const transactionType = getTransactionType();
+    const statusBadge = getStatusBadge();
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                        <DialogTitle className="flex items-center text-xl font-bold text-slate-800">
-                            <div className="p-2 bg-green-100 rounded-xl mr-3">
-                                <CreditCard className="h-6 w-6 text-green-600" />
-                            </div>
-                            Chi tiết giao dịch
-                        </DialogTitle>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={onClose}
-                            className="h-8 w-8 hover:bg-slate-100"
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
+                    <DialogTitle className="flex items-center text-2xl font-bold text-slate-800">
+                        <div className="p-2 bg-green-100 rounded-xl mr-3">
+                            <CreditCard className="h-6 w-6 text-green-600" />
+                        </div>
+                        Transaction Details
+                    </DialogTitle>
                 </DialogHeader>
 
                 <div className="space-y-6">
                     {/* Transaction Header */}
                     <div className="bg-slate-50 rounded-xl p-4">
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-lg font-bold text-slate-800">
-                                {transaction.transactionId}
-                            </h3>
-                            <Badge className={transactionType.color}>
-                                {transactionType.label}
-                            </Badge>
+                            <div className="flex-1">
+                                <h3 className="text-2xl font-bold text-slate-800 mb-1">
+                                    {transaction.userName || 'User'} exchange battery
+                                </h3>
+                                <p className="text-base text-slate-500 font-mono">
+                                    {transaction.transactionId}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Badge className={transactionType.color}>
+                                    {transactionType.label}
+                                </Badge>
+                                <Badge className={statusBadge.color}>
+                                    {statusBadge.label}
+                                </Badge>
+                            </div>
                         </div>
-                        <div className="text-sm text-slate-600">
-                            <div className="flex items-center mb-1">
-                                <Calendar className="h-4 w-4 mr-2" />
-                                <span>{formatDateTime(transaction.transactionTime)}</span>
+                        <div>
+                            <div className="flex items-center">
+                                <Calendar className="h-5 w-5 mr-2 text-slate-500" />
+                                <span className="font-medium text-slate-800">{formatDateTime(transaction.transactionTime)}</span>
                             </div>
                         </div>
                     </div>
@@ -103,59 +136,65 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* User Information */}
                         <div className="bg-white border border-slate-200 rounded-xl p-4">
-                            <h4 className="font-semibold text-slate-800 mb-3 flex items-center">
+                            <h4 className="text-lg font-semibold text-slate-800 mb-3 flex items-center">
                                 <User className="h-5 w-5 mr-2 text-blue-500" />
-                                Thông tin người dùng
+                                User Information
                             </h4>
-                            <div className="space-y-2 text-sm">
+                            <div className="space-y-2">
                                 <div>
-                                    <span className="text-slate-500">Tên:</span>
-                                    <span className="ml-2 font-medium">{transaction.userName || 'Không xác định'}</span>
+                                    <p className="text-sm text-slate-600">Name</p>
+                                    <p className="font-medium text-slate-800">{transaction.userName || 'User'}</p>
                                 </div>
-                                <div>
-                                    <span className="text-slate-500">ID:</span>
-                                    <span className="ml-2 font-mono text-xs">{transaction.userId}</span>
+                                <div className="flex items-center">
+                                    <span className="text-sm text-slate-600 mr-2">ID:</span>
+                                    <span className="font-medium text-slate-800 font-mono">{transaction.userId}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Station Information */}
                         <div className="bg-white border border-slate-200 rounded-xl p-4">
-                            <h4 className="font-semibold text-slate-800 mb-3 flex items-center">
+                            <h4 className="text-lg font-semibold text-slate-800 mb-3 flex items-center">
                                 <MapPin className="h-5 w-5 mr-2 text-green-500" />
-                                Thông tin trạm
+                                Station Information
                             </h4>
-                            <div className="space-y-2 text-sm">
+                            <div className="space-y-2">
                                 <div>
-                                    <span className="text-slate-500">Tên trạm:</span>
-                                    <span className="ml-2 font-medium">{transaction.stationName || 'Không xác định'}</span>
+                                    <p className="text-sm text-slate-600">Station Name</p>
+                                    <p className="font-medium text-slate-800">{transaction.stationName || 'Station'}</p>
                                 </div>
-                                <div>
-                                    <span className="text-slate-500">ID:</span>
-                                    <span className="ml-2 font-mono text-xs">{transaction.stationId}</span>
+                                <div className="flex items-center">
+                                    <span className="text-sm text-slate-600 mr-2">ID:</span>
+                                    <span className="font-medium text-slate-800 font-mono">{transaction.stationId}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Battery Information */}
-                    {(transaction.batteryGiven || transaction.batteryReturned) && (
+                    {(transaction.batteryId || transaction.batterySerial || transaction.batteryModel) && (
                         <div className="bg-white border border-slate-200 rounded-xl p-4">
-                            <h4 className="font-semibold text-slate-800 mb-3 flex items-center">
+                            <h4 className="text-lg font-semibold text-slate-800 mb-3 flex items-center">
                                 <Battery className="h-5 w-5 mr-2 text-purple-500" />
-                                Thông tin pin
+                                Battery Information
                             </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {transaction.batteryGiven && (
-                                    <div className="bg-green-50 rounded-lg p-3">
-                                        <div className="text-sm font-medium text-green-800 mb-1">Pin lấy</div>
-                                        <div className="font-mono text-sm">{transaction.batteryGiven}</div>
+                            <div className="space-y-2">
+                                {transaction.batterySerial && (
+                                    <div>
+                                        <p className="text-sm text-slate-600">Serial</p>
+                                        <p className="font-medium text-slate-800 font-mono">{transaction.batterySerial}</p>
                                     </div>
                                 )}
-                                {transaction.batteryReturned && (
-                                    <div className="bg-orange-50 rounded-lg p-3">
-                                        <div className="text-sm font-medium text-orange-800 mb-1">Pin trả</div>
-                                        <div className="font-mono text-sm">{transaction.batteryReturned}</div>
+                                {transaction.batteryModel && (
+                                    <div>
+                                        <p className="text-sm text-slate-600">Model</p>
+                                        <p className="font-medium text-slate-800">{transaction.batteryModel}</p>
+                                    </div>
+                                )}
+                                {transaction.batteryId && (
+                                    <div className="flex items-center">
+                                        <span className="text-sm text-slate-600 mr-2">ID:</span>
+                                        <span className="font-medium text-slate-800 font-mono">{transaction.batteryId}</span>
                                     </div>
                                 )}
                             </div>
@@ -163,23 +202,23 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                     )}
 
                     {/* Vehicle Information */}
-                    {transaction.vehicleName && (
+                    {transaction.vehicleId && (
                         <div className="bg-white border border-slate-200 rounded-xl p-4">
-                            <h4 className="font-semibold text-slate-800 mb-3 flex items-center">
+                            <h4 className="text-lg font-semibold text-slate-800 mb-3 flex items-center">
                                 <Car className="h-5 w-5 mr-2 text-indigo-500" />
-                                Thông tin xe
+                                Vehicle Information
                             </h4>
-                            <div className="space-y-2 text-sm">
-                                <div>
-                                    <span className="text-slate-500">Tên xe:</span>
-                                    <span className="ml-2 font-medium">{transaction.vehicleName}</span>
-                                </div>
-                                {transaction.vehicleId && (
+                            <div className="space-y-2">
+                                {transaction.vehicleName && (
                                     <div>
-                                        <span className="text-slate-500">ID:</span>
-                                        <span className="ml-2 font-mono text-xs">{transaction.vehicleId}</span>
+                                        <p className="text-sm text-slate-600">Vehicle Name</p>
+                                        <p className="font-medium text-slate-800">{transaction.vehicleName}</p>
                                     </div>
                                 )}
+                                <div className="flex items-center">
+                                    <span className="text-sm text-slate-600 mr-2">ID:</span>
+                                    <span className="font-medium text-slate-800 font-mono">{transaction.vehicleId}</span>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -187,19 +226,25 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                     {/* Booking Information */}
                     {transaction.bookingId && (
                         <div className="bg-white border border-slate-200 rounded-xl p-4">
-                            <h4 className="font-semibold text-slate-800 mb-3 flex items-center">
+                            <h4 className="text-lg font-semibold text-slate-800 mb-3 flex items-center">
                                 <FileText className="h-5 w-5 mr-2 text-cyan-500" />
-                                Thông tin đặt chỗ
+                                Booking Information
                             </h4>
-                            <div className="space-y-2 text-sm">
-                                <div>
-                                    <span className="text-slate-500">ID đặt chỗ:</span>
-                                    <span className="ml-2 font-mono text-xs">{transaction.bookingId}</span>
+                            <div className="space-y-2">
+                                <div className="flex items-center">
+                                    <span className="text-sm text-slate-600 mr-2">Booking ID:</span>
+                                    <span className="font-medium text-slate-800 font-mono">{transaction.bookingId}</span>
                                 </div>
                                 {transaction.bookingStatus && (
                                     <div>
-                                        <span className="text-slate-500">Trạng thái:</span>
-                                        <span className="ml-2 font-medium">{transaction.bookingStatus}</span>
+                                        <p className="text-sm text-slate-600">Status</p>
+                                        <p className="font-medium text-slate-800">{transaction.bookingStatus}</p>
+                                    </div>
+                                )}
+                                {transaction.bookingDescription && (
+                                    <div className="mt-3 pt-3 border-t border-slate-200">
+                                        <p className="text-sm text-slate-600 mb-1">Description</p>
+                                        <p className="font-medium text-slate-800">{transaction.bookingDescription}</p>
                                     </div>
                                 )}
                             </div>
@@ -208,9 +253,9 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
                     {/* Cost Information */}
                     <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-                        <h4 className="font-semibold text-slate-800 mb-3 flex items-center">
+                        <h4 className="text-lg font-semibold text-slate-800 mb-3 flex items-center">
                             <DollarSign className="h-5 w-5 mr-2 text-green-500" />
-                            Chi phí giao dịch
+                            Transaction Cost
                         </h4>
                         <div className="text-2xl font-bold text-green-600">
                             {formatCurrency(transaction.cost)}
@@ -220,7 +265,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
                 <div className="flex justify-end pt-4 border-t border-slate-200">
                     <Button onClick={onClose} className="px-6">
-                        Đóng
+                        Close
                     </Button>
                 </div>
             </DialogContent>

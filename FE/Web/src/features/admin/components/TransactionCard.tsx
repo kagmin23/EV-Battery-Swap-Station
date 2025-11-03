@@ -43,10 +43,24 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
         } else if (transaction.batteryReturned) {
             return { label: 'Return', variant: 'warning' as const };
         }
-        return { label: 'Unknown', variant: 'secondary' as const };
+        return { label: 'Battery Exchange', variant: 'secondary' as const };
+    };
+
+    const getStatusBadge = () => {
+        switch (transaction.status) {
+            case 'completed':
+                return { label: 'Completed', variant: 'default' as const, color: 'bg-green-100 text-green-800' };
+            case 'pending':
+                return { label: 'Pending', variant: 'default' as const, color: 'bg-yellow-100 text-yellow-800' };
+            case 'cancelled':
+                return { label: 'Cancelled', variant: 'default' as const, color: 'bg-red-100 text-red-800' };
+            default:
+                return { label: 'Completed', variant: 'default' as const, color: 'bg-green-100 text-green-800' };
+        }
     };
 
     const transactionType = getTransactionType();
+    const statusBadge = getStatusBadge();
 
     return (
         <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-0 shadow-lg bg-white/90 backdrop-blur-sm hover:bg-white overflow-hidden">
@@ -59,15 +73,18 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
                             </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-slate-800 truncate text-lg">
-                                {transaction.transactionId}
+                            <h3 className="font-bold text-slate-800 truncate text-lg mb-2">
+                                {transaction.userName || 'User'} exchange battery
                             </h3>
-                            <p className="text-sm text-slate-500 truncate">
-                                {transaction.userName || 'Unknown User'}
+                            <p className="text-sm text-slate-600 truncate font-mono mb-2">
+                                <span className="font-medium">ID:</span> {transaction.transactionId}
                             </p>
-                            <div className="flex items-center space-x-2 mt-2">
+                            <div className="flex items-center space-x-2 mt-2 flex-wrap gap-1">
                                 <Badge variant={transactionType.variant}>
                                     {transactionType.label}
+                                </Badge>
+                                <Badge className={statusBadge.color}>
+                                    {statusBadge.label}
                                 </Badge>
                             </div>
                         </div>
@@ -78,7 +95,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
                     <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-2 rounded-lg">
                         <MapPin className="h-4 w-4 mr-2 text-blue-500" />
                         <span className="truncate font-medium">
-                            {transaction.stationName || 'Unknown station'}
+                            {transaction.stationName || 'Station'}
                         </span>
                     </div>
 

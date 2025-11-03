@@ -81,6 +81,10 @@ export class TransactionService {
             const response = await api.get(`/transactions/admin?${params.toString()}`);
             return response.data;
         } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error fetching transactions:', error.response?.data || error.message);
+                throw new Error(error.response?.data?.message || 'Failed to fetch transactions');
+            }
             console.error('Error fetching transactions:', error);
             throw error;
         }
@@ -92,6 +96,10 @@ export class TransactionService {
             const response = await api.get(`/transactions/admin/${transactionId}`);
             return response.data;
         } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error fetching transaction:', error.response?.data || error.message);
+                throw new Error(error.response?.data?.message || 'Failed to fetch transaction');
+            }
             console.error('Error fetching transaction:', error);
             throw error;
         }
@@ -107,6 +115,10 @@ export class TransactionService {
             const response = await api.get(`/transactions/station?${params.toString()}`);
             return response.data;
         } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error fetching station transactions:', error.response?.data || error.message);
+                throw new Error(error.response?.data?.message || 'Failed to fetch station transactions');
+            }
             console.error('Error fetching station transactions:', error);
             throw error;
         }
@@ -118,6 +130,10 @@ export class TransactionService {
             const response = await api.get(`/transactions/station/${transactionId}`);
             return response.data;
         } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error fetching station transaction:', error.response?.data || error.message);
+                throw new Error(error.response?.data?.message || 'Failed to fetch station transaction');
+            }
             console.error('Error fetching station transaction:', error);
             throw error;
         }
@@ -129,6 +145,10 @@ export class TransactionService {
             const response = await api.get('/transactions/me');
             return response.data;
         } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error fetching my transactions:', error.response?.data || error.message);
+                throw new Error(error.response?.data?.message || 'Failed to fetch my transactions');
+            }
             console.error('Error fetching my transactions:', error);
             throw error;
         }
@@ -140,6 +160,10 @@ export class TransactionService {
             const response = await api.get(`/transactions/me/${transactionId}`);
             return response.data;
         } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error('Error fetching my transaction:', error.response?.data || error.message);
+                throw new Error(error.response?.data?.message || 'Failed to fetch my transaction');
+            }
             console.error('Error fetching my transaction:', error);
             throw error;
         }

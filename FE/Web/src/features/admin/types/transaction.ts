@@ -10,12 +10,15 @@ export interface Transaction {
     bookingId: string | null;
     transactionTime: Date;
     cost: number;
+    status: 'completed' | 'pending' | 'cancelled';
     // Additional fields for display
     userName?: string;
     stationName?: string;
     vehicleName?: string;
     batterySerial?: string;
+    batteryModel?: string;
     bookingStatus?: string;
+    bookingDescription?: string;
 }
 
 export interface TransactionFilters {
