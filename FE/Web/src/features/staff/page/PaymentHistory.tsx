@@ -1,30 +1,20 @@
 import { useState, useEffect } from 'react';
 import { 
   Search, 
-  Filter, 
   Download, 
   CreditCard, 
   DollarSign, 
   TrendingUp,
   Calendar,
-  Eye,
-  CheckCircle,
-  XCircle,
-  Clock
+  Eye
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { TransactionService, type Transaction as ApiTransaction } from '@/services/api/transactionService';
+import { UserService } from '@/services/api/userService';
 
 // Extended Transaction interface for UI (optional payment fields if backend provides)
 interface PaymentTransactionUI extends ApiTransaction {
@@ -37,8 +27,6 @@ interface PaymentTransactionUI extends ApiTransaction {
 
 export default function PaymentHistory() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('all');
   const [selectedTransaction, setSelectedTransaction] = useState<PaymentTransactionUI | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,9 +54,29 @@ export default function PaymentHistory() {
         const response = await TransactionService.getTransactionsByStation(user.station, 200);
         const apiTransactions = response.data || [];
 
-        // Directly use api fields; optional enrichments if backend includes them
+        // Fetch user details for all unique user IDs
+        const uniqueUserIds = Array.from(new Set(apiTransactions.map((t: ApiTransaction) => t.user_id)));
+        const userDetailsMap = new Map<string, string>();
+
+        // Fetch user details in parallel
+        await Promise.all(
+          uniqueUserIds.map(async (userId) => {
+            try {
+              const userResponse = await UserService.getUserById(userId);
+              if (userResponse.success && userResponse.data) {
+                userDetailsMap.set(userId, userResponse.data.fullName || userResponse.data.email);
+              }
+            } catch (err) {
+              console.error(`Failed to fetch user details for ${userId}:`, err);
+              // Keep the ID as fallback
+            }
+          })
+        );
+
+        // Enrich transactions with user names
         const converted: PaymentTransactionUI[] = apiTransactions.map((t: ApiTransaction) => ({
           ...t,
+          user_name: userDetailsMap.get(t.user_id),
         }));
 
         setTransactions(converted);
@@ -87,25 +95,19 @@ export default function PaymentHistory() {
     const matchesSearch = 
       transaction.transaction_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (transaction.user_name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
-      (transaction.payment_reference?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
-    const matchesStatus = statusFilter === 'all' || (transaction.payment_status === statusFilter);
-    const matchesPaymentMethod = paymentMethodFilter === 'all' || (transaction.payment_method === paymentMethodFilter);
-    return matchesSearch && matchesStatus && matchesPaymentMethod;
+      transaction.user_id.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
   });
 
-  // Calculate statistics with guards for optional payment fields
-  const totalRevenue = transactions
-    .filter(t => t.payment_status === 'completed' || t.payment_status === undefined)
-    .reduce((sum, t) => sum + (t.cost || 0), 0);
-
-  const pendingAmount = transactions
-    .filter(t => t.payment_status === 'pending')
-    .reduce((sum, t) => sum + (t.cost || 0), 0);
-
-  const completedCount = transactions.filter(t => t.payment_status === 'completed').length;
+  // Calculate statistics
+  const totalRevenue = transactions.reduce((sum, t) => sum + (t.cost || 0), 0);
+  const totalTransactions = transactions.length;
   const todayTransactions = transactions.filter(t => 
     new Date(t.transaction_time).toDateString() === new Date().toDateString()
   ).length;
+  const todayRevenue = transactions
+    .filter(t => new Date(t.transaction_time).toDateString() === new Date().toDateString())
+    .reduce((sum, t) => sum + (t.cost || 0), 0);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
@@ -119,44 +121,6 @@ export default function PaymentHistory() {
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
-
-  const getStatusBadge = (status?: string) => {
-    if (!status) {
-      return (
-        <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-          N/A
-        </Badge>
-      );
-    }
-    const variants = {
-      completed: { variant: 'default' as const, icon: CheckCircle, label: 'Completed', color: 'text-green-600' },
-      pending: { variant: 'secondary' as const, icon: Clock, label: 'Pending', color: 'text-yellow-600' },
-      failed: { variant: 'destructive' as const, icon: XCircle, label: 'Failed', color: 'text-red-600' },
-      refunded: { variant: 'outline' as const, icon: TrendingUp, label: 'Refunded', color: 'text-blue-600' }
-    } as const;
-    const config = variants[status as keyof typeof variants];
-    if (!config) {
-      return <Badge variant="secondary">N/A</Badge>;
-    }
-    const Icon = config.icon;
-    return (
-      <Badge variant={config.variant} className="flex items-center gap-1 w-fit">
-        <Icon className="h-3 w-3" />
-        {config.label}
-      </Badge>
-    );
-  };
-
-  const getPaymentMethodLabel = (method?: string) => {
-    if (!method) return 'N/A';
-    const labels: Record<string, string> = {
-      credit_card: 'Credit Card',
-      e_wallet: 'E-Wallet',
-      cash: 'Cash',
-      subscription: 'Subscription'
-    };
-    return labels[method] || method;
   };
 
   const handleExport = () => {
@@ -206,37 +170,37 @@ export default function PaymentHistory() {
             <div className="text-2xl font-bold text-green-900">
               {formatCurrency(totalRevenue)}
             </div>
-              <p className="text-xs text-green-700 mt-1">From completed transactions</p>
+              <p className="text-xs text-green-700 mt-1">From all transactions</p>
           </CardContent>
         </Card>
 
         <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-100 to-blue-200">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-blue-800 flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              Completed
+              <CreditCard className="h-4 w-4" />
+              Total Transactions
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-900">
-              {completedCount}
+              {totalTransactions}
             </div>
-              <p className="text-xs text-blue-700 mt-1">Successful payments</p>
+              <p className="text-xs text-blue-700 mt-1">All time transactions</p>
           </CardContent>
         </Card>
 
         <Card className="border-0 shadow-lg bg-gradient-to-br from-yellow-100 to-yellow-200">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-yellow-800 flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Pending
+              <TrendingUp className="h-4 w-4" />
+              Today's Revenue
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-900">
-              {formatCurrency(pendingAmount)}
+              {formatCurrency(todayRevenue)}
             </div>
-              <p className="text-xs text-yellow-700 mt-1">Awaiting confirmation</p>
+              <p className="text-xs text-yellow-700 mt-1">Revenue from today</p>
           </CardContent>
         </Card>
 
@@ -251,7 +215,7 @@ export default function PaymentHistory() {
             <div className="text-2xl font-bold text-purple-900">
               {todayTransactions}
             </div>
-              <p className="text-xs text-purple-700 mt-1">Today's transactions</p>
+              <p className="text-xs text-purple-700 mt-1">Transactions today</p>
           </CardContent>
         </Card>
       </div>
@@ -263,39 +227,12 @@ export default function PaymentHistory() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search by transaction ID, customer name or reference code..."
+                placeholder="Search by transaction ID or customer name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-                <SelectItem value="refunded">Refunded</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <CreditCard className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Method" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="credit_card">Credit Card</SelectItem>
-                <SelectItem value="e_wallet">E-Wallet</SelectItem>
-                <SelectItem value="cash">Cash</SelectItem>
-                <SelectItem value="subscription">Subscription</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
@@ -326,12 +263,6 @@ export default function PaymentHistory() {
                     Amount
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
-                    Method
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -339,7 +270,7 @@ export default function PaymentHistory() {
               <tbody className="bg-white divide-y divide-slate-200">
                 {filteredTransactions.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
                       No transactions found
                     </td>
                   </tr>
@@ -353,17 +284,16 @@ export default function PaymentHistory() {
                         <div className="text-sm font-medium text-slate-900">
                           {transaction.transaction_id}
                         </div>
-                        <div className="text-xs text-slate-500">
-                          {transaction.payment_reference || ''}
-                        </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-slate-900">
                           {transaction.user_name || transaction.user_id}
                         </div>
-                        <div className="text-xs text-slate-500">
-                          {transaction.user_id}
-                        </div>
+                        {transaction.user_name && (
+                          <div className="text-xs text-slate-500">
+                            ID: {transaction.user_id}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-700">
                         {formatDateTime(transaction.transaction_time)}
@@ -372,14 +302,6 @@ export default function PaymentHistory() {
                         <div className="text-sm font-semibold text-slate-900">
                           {formatCurrency(transaction.cost)}
                         </div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-sm text-slate-700">
-                          {getPaymentMethodLabel(transaction.payment_method)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        {getStatusBadge(transaction.payment_status)}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm">
                         <Button
@@ -423,8 +345,8 @@ export default function PaymentHistory() {
                   <p className="font-semibold">{selectedTransaction.transaction_id}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Status</p>
-                  {getStatusBadge(selectedTransaction.payment_status)}
+                  <p className="text-sm text-slate-600">Time</p>
+                  <p className="font-semibold">{formatDateTime(selectedTransaction.transaction_time)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Customer</p>
@@ -435,34 +357,22 @@ export default function PaymentHistory() {
                   <p className="font-semibold">{selectedTransaction.user_id}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Station</p>
-                  <p className="font-semibold">{selectedTransaction.station_name || selectedTransaction.station_id}</p>
+                  <p className="text-sm text-slate-600">Station ID</p>
+                  <p className="font-semibold">{selectedTransaction.station_id}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Time</p>
-                  <p className="font-semibold">{formatDateTime(selectedTransaction.transaction_time)}</p>
+                  <p className="text-sm text-slate-600">Amount</p>
+                  <p className="text-xl font-bold text-green-600">
+                    {formatCurrency(selectedTransaction.cost)}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Battery Installed</p>
-                  <p className="font-semibold">{selectedTransaction.battery_given ?? ''}</p>
+                  <p className="font-semibold">{selectedTransaction.battery_given || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Battery Removed</p>
-                  <p className="font-semibold">{selectedTransaction.battery_returned ?? ''}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-600">Payment Method</p>
-                  <p className="font-semibold">{getPaymentMethodLabel(selectedTransaction.payment_method)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-600">Reference Code</p>
-                  <p className="font-semibold">{selectedTransaction.payment_reference ?? ''}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-slate-600">Amount</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {formatCurrency(selectedTransaction.cost)}
-                  </p>
+                  <p className="font-semibold">{selectedTransaction.battery_returned || 'N/A'}</p>
                 </div>
               </div>
             </CardContent>

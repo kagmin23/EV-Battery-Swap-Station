@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react';
 import { mockBatteries } from '../../../mock/BatteryData';
-import { mockStations } from '../../../mock/StationData';
-import { mockRevenueData } from '../../../mock/TransactionData';
 import { getPendingSupportRequestsCount } from '../../../mock/SupportRequestData';
 import KPICard from '../components/KPICard';
-import BatteryStatusChart from '../components/BatteryStatusChart';
-import AlertsPanel from '../components/AlertsPanel';
 import RecentTransactionsTable from '../components/RecentTransactionsTable';
 import { Spinner } from '@/components/ui/spinner';
 import { BatteryApi, type Battery } from '../apis/batteryApi';
@@ -13,12 +9,16 @@ import { toast } from 'sonner';
 import { StaffService, type Staff } from '../../../services/api/staffService';
 import { DriverService, type Driver } from '../../../services/api/driverService';
 import { TransactionApi } from '../apis/transactionApi';
+import { UserService } from '@/services/api/userService';
+import { StationService } from '@/services/api/stationService';
 
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [batteries, setBatteries] = useState<Battery[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [stations, setStations] = useState<Array<{ _id: string; stationName: string; capacity: number; availableBatteries: number }>>([]);
+  const [allTransactions, setAllTransactions] = useState<Array<{ cost: number; transaction_time: string }>>([]);
   const [recentTransactions, setRecentTransactions] = useState<Array<{
     transaction_id: string;
     user_name: string;
@@ -72,32 +72,85 @@ export default function Dashboard() {
           console.error('Error fetching drivers data:', err);
           setDrivers([]);
         }
+
+        // Fetch stations from API
+        try {
+          const stationData = await StationService.getAllStations();
+          setStations(stationData.map(s => ({ 
+            _id: s._id, 
+            stationName: s.stationName,
+            capacity: s.capacity || 0,
+            availableBatteries: s.availableBatteries || 0
+          })));
+        } catch (err) {
+          console.error('Error fetching stations data:', err);
+          setStations([]);
+        }
+
+        // Fetch all transactions for revenue calculation
+        try {
+          const allTransactionData = await TransactionApi.getAllTransactions();
+          setAllTransactions(allTransactionData.map(t => ({
+            cost: t.cost || t.amount || 0,
+            transaction_time: t.transaction_time || t.createdAt || t.created_at || new Date().toISOString()
+          })));
+        } catch (err) {
+          console.error('Error fetching all transactions:', err);
+          setAllTransactions([]);
+        }
         
         // Fetch recent transactions from API (limit to 5)
         try {
           const transactionData = await TransactionApi.getAllTransactions({ limit: 5 });
-          // Map API response to table format
-          const formattedTransactions = transactionData.map(t => {
-            // Helper to get user name safely
-            const getUserName = () => {
-              if (typeof t.user === 'string') return 'Unknown User';
-              return t.user?.fullName || 'Unknown User';
-            };
+          
+          // Get unique user IDs and station IDs
+          const uniqueUserIds = Array.from(new Set(
+            transactionData.map(t => t.user_id || t.userId).filter(Boolean)
+          ));
+          const uniqueStationIds = Array.from(new Set(
+            transactionData.map(t => t.station_id || t.stationId).filter(Boolean)
+          ));
 
-            // Helper to get station name safely
-            const getStationName = () => {
-              if (typeof t.station === 'string') return 'Unknown Station';
-              return t.station?.stationName || 'Unknown Station';
-            };
+          // Fetch user and station details in parallel
+          const userDetailsMap = new Map<string, string>();
+          const stationDetailsMap = new Map<string, string>();
 
-            return {
-              transaction_id: t._id,
-              user_name: getUserName(),
-              station_name: getStationName(),
-              transaction_time: t.createdAt || t.created_at || t.transaction_time || new Date().toISOString(),
-              cost: t.amount || t.cost || 0,
-            };
-          });
+          await Promise.all([
+            // Fetch all users
+            ...uniqueUserIds.map(async (userId) => {
+              try {
+                const userResponse = await UserService.getUserById(userId);
+                if (userResponse.success && userResponse.data) {
+                  userDetailsMap.set(userId, userResponse.data.fullName || userResponse.data.email);
+                }
+              } catch (err) {
+                console.error(`Failed to fetch user ${userId}:`, err);
+                userDetailsMap.set(userId, 'Unknown User');
+              }
+            }),
+            // Fetch all stations
+            ...uniqueStationIds.map(async (stationId) => {
+              try {
+                const stationResponse = await StationService.getStationById(stationId);
+                if (stationResponse) {
+                  stationDetailsMap.set(stationId, stationResponse.stationName);
+                }
+              } catch (err) {
+                console.error(`Failed to fetch station ${stationId}:`, err);
+                stationDetailsMap.set(stationId, 'Unknown Station');
+              }
+            }),
+          ]);
+
+          // Map API response to table format with fetched names
+          const formattedTransactions = transactionData.map(t => ({
+            transaction_id: t.transaction_id || t.transactionId || t._id,
+            user_name: userDetailsMap.get(t.user_id || t.userId) || 'Unknown User',
+            station_name: stationDetailsMap.get(t.station_id || t.stationId) || 'Unknown Station',
+            transaction_time: t.transaction_time || t.createdAt || t.created_at || new Date().toISOString(),
+            cost: t.cost || t.amount || 0,
+          }));
+          
           setRecentTransactions(formattedTransactions);
         } catch (err) {
           console.error('Error fetching transactions data:', err);
@@ -118,14 +171,19 @@ export default function Dashboard() {
   }, []);
 
   // Calculate statistics
-  const totalStations = mockStations.length;
+  const totalStations = stations.length;
+  const totalStationCapacity = stations.reduce((sum, s) => sum + s.capacity, 0);
+  const totalAvailableBatteries = stations.reduce((sum, s) => sum + s.availableBatteries, 0);
   const totalBatteries = batteries.length;
   // Count active users from API data
   const activeDrivers = drivers.filter(u => u.status === 'active').length;
   const activeStaff = staff.filter(u => u.status === 'active').length;
 
-  const todayRevenue = mockRevenueData[mockRevenueData.length - 1]?.revenue || 0;
-  const totalRevenue = mockRevenueData.reduce((sum, day) => sum + day.revenue, 0);
+  // Calculate revenue from actual transactions
+  const totalRevenue = allTransactions.reduce((sum, t) => sum + t.cost, 0);
+  const todayRevenue = allTransactions
+    .filter(t => new Date(t.transaction_time).toDateString() === new Date().toDateString())
+    .reduce((sum, t) => sum + t.cost, 0);
 
   // Map API status to display status (in-use without dash for display)
   const batteryByStatus = {
@@ -221,7 +279,7 @@ export default function Dashboard() {
         <KPICard
           title="Total Stations"
           value={totalStations}
-          subtitle="Active"
+          subtitle={`${totalAvailableBatteries} batteries available`}
           icon="🏢"
           bgColor="bg-blue-100"
         />
