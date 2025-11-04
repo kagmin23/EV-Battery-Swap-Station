@@ -7,7 +7,7 @@ import EditBatteryModal from "../components/EditBatteryModal";
 import Pagination from "../components/Pagination";
 import { getStationBatteries, updateBattery } from "../apis/DashboardApi";
 import type { Battery as OrigBattery, UpdateBatteryRequest } from "../apis/DashboardApi";
-import { Spinner } from "@/components/ui/spinner";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import type { FilterValues } from "../components/FilterModal";
 
 type Battery = OrigBattery & { status: string };
@@ -167,10 +167,12 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Spinner size="xl" className="mb-4" />
-          <p className="text-gray-600">Loading battery data...</p>
+      <div className="flex flex-col items-center py-8 min-h-screen">
+        <div className="w-full max-w-7xl px-4">
+          <div className="flex justify-between items-center mb-6">
+            <div className="h-10 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+          </div>
+          <TableSkeleton rows={10} columns={6} />
         </div>
       </div>
     );
