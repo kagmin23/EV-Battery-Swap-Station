@@ -51,20 +51,6 @@ const menuItems = [
     route: '/admin/battery-changes'
   },
   {
-    id: 'report-management',
-    label: 'Report Management',
-    icon: FolderOpen,
-    description: 'System report management',
-    route: '/admin/report-management'
-  },
-  {
-    id: 'revenue-report',
-    label: 'Revenue Report',
-    icon: DollarSign,
-    description: 'Revenue report',
-    route: '/admin/revenue-report'
-  },
-  {
     id: 'staff-list',
     label: 'Staff List',
     icon: Users,

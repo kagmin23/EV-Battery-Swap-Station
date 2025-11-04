@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
+import { TableSkeleton, KPISkeletonGroup, CardSkeleton } from '@/components/ui/table-skeleton';
 import { TransactionApi } from '../apis/transactionApi';
 
 type ViewMode = 'table' | 'analytics';
@@ -296,10 +297,30 @@ export default function BatteryChanges() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Spinner size="xl" className="mb-4" />
-          <p className="text-gray-600">Loading battery change data...</p>
+      <div className="p-6 min-h-screen">
+        {/* Header Skeleton */}
+        <div className="mb-8 space-y-2">
+          <div className="h-9 bg-gray-200 rounded w-64 animate-pulse"></div>
+          <div className="h-5 bg-gray-200 rounded w-96 animate-pulse"></div>
+        </div>
+
+        {/* Stats Cards Skeleton */}
+        <KPISkeletonGroup count={4} className="mb-8" />
+
+        {/* Filters Skeleton */}
+        <div className="mb-8">
+          <div className="bg-white rounded-xl shadow-lg p-6 space-y-4 animate-pulse">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="h-10 bg-gray-200 rounded"></div>
+              <div className="h-10 bg-gray-200 rounded"></div>
+              <div className="h-10 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Table Skeleton */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <TableSkeleton rows={10} columns={7} />
         </div>
       </div>
     );

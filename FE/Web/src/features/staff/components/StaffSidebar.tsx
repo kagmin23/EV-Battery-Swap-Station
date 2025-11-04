@@ -26,13 +26,6 @@ const menuItems = [
     path: '/staff/dashboard'
   },
   {
-    id: 'confirm-exchange',
-    label: 'Confirm Battery Swap',
-    icon: RefreshCw,
-    description: 'Confirm transaction',
-    path: '/staff/confirm-exchange'
-  },
-  {
     id: 'payment-history',
     label: 'Payment History',
     icon: ClipboardCheck,
