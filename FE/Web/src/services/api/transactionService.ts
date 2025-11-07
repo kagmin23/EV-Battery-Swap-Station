@@ -41,10 +41,12 @@ api.interceptors.response.use(
 export interface Transaction {
     transaction_id: string;
     user_id: string;
+    user_name?: string;
     station_id: string;
     battery_given: string | null;
     battery_returned: string | null;
     vehicle_id: string | null;
+    vehicleId?: string | null;
     battery_id: string | null;
     booking_id: string | null;
     transaction_time: string;

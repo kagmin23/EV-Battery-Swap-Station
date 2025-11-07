@@ -14,12 +14,16 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { TableSkeleton, KPISkeletonGroup } from '@/components/ui/table-skeleton';
 import { TransactionService, type Transaction as ApiTransaction } from '@/services/api/transactionService';
-import { UserService } from '@/services/api/userService';
+import { BatteryService } from '@/services/api/batteryService';
+import { VehicleService } from '@/services/api/vehicleService';
 
 // Extended Transaction interface for UI (optional payment fields if backend provides)
 interface PaymentTransactionUI extends ApiTransaction {
   user_name?: string;
   station_name?: string;
+  battery_serial?: string;
+  car_name?: string;
+  vehicleId?: string | null;
   payment_method?: 'credit_card' | 'e_wallet' | 'cash' | 'subscription';
   payment_status?: 'completed' | 'pending' | 'failed' | 'refunded';
   payment_reference?: string;
@@ -54,30 +58,65 @@ export default function PaymentHistory() {
         const response = await TransactionService.getTransactionsByStation(user.station, 200);
         const apiTransactions = response.data || [];
 
-        // Fetch user details for all unique user IDs
-        const uniqueUserIds = Array.from(new Set(apiTransactions.map((t: ApiTransaction) => t.user_id)));
-        const userDetailsMap = new Map<string, string>();
+        // Fetch battery serials for all unique battery IDs
+        const uniqueBatteryIds = Array.from(
+          new Set(
+            apiTransactions
+              .map((t: ApiTransaction) => t.battery_id)
+              .filter((id): id is string => id !== null && id !== undefined)
+          )
+        );
 
-        // Fetch user details in parallel
-        await Promise.all(
-          uniqueUserIds.map(async (userId) => {
+        // Fetch vehicle names for all unique vehicle IDs
+        const uniqueVehicleIds = Array.from(
+          new Set(
+            apiTransactions
+              .map((t: ApiTransaction) => t.vehicle_id || t.vehicleId)
+              .filter((id): id is string => id !== null && id !== undefined)
+          )
+        );
+
+        const batterySerialMap = new Map<string, string>();
+        const vehicleNameMap = new Map<string, string>();
+
+        // Fetch battery and vehicle details in parallel
+        await Promise.all([
+          ...uniqueBatteryIds.map(async (batteryId) => {
             try {
-              const userResponse = await UserService.getUserById(userId);
-              if (userResponse.success && userResponse.data) {
-                userDetailsMap.set(userId, userResponse.data.fullName || userResponse.data.email);
+              const batteryData = await BatteryService.getBatteryById(batteryId);
+              if (batteryData.serial) {
+                batterySerialMap.set(batteryId, batteryData.serial);
               }
             } catch (err) {
-              console.error(`Failed to fetch user details for ${userId}:`, err);
+              console.error(`Failed to fetch battery details for ${batteryId}:`, err);
+              // Keep the ID as fallback
+            }
+          }),
+          ...uniqueVehicleIds.map(async (vehicleId) => {
+            try {
+              const vehicleData = await VehicleService.getVehicleById(vehicleId);
+              
+              // Try both carName and car_name fields
+              const carName = vehicleData.carName || (vehicleData as any).car_name;
+              if (carName) {
+                vehicleNameMap.set(vehicleId, carName);
+              }
+            } catch (err) {
+              console.error(`Failed to fetch vehicle details for ${vehicleId}:`, err);
               // Keep the ID as fallback
             }
           })
-        );
+        ]);
 
-        // Enrich transactions with user names
-        const converted: PaymentTransactionUI[] = apiTransactions.map((t: ApiTransaction) => ({
-          ...t,
-          user_name: userDetailsMap.get(t.user_id),
-        }));
+        // Enrich transactions with battery serial numbers and vehicle names
+        const converted: PaymentTransactionUI[] = apiTransactions.map((t: ApiTransaction) => {
+          const vehicleId = t.vehicle_id || t.vehicleId;
+          return {
+            ...t,
+            battery_serial: t.battery_id ? batterySerialMap.get(t.battery_id) : undefined,
+            car_name: vehicleId ? vehicleNameMap.get(vehicleId) : undefined,
+          };
+        });
 
         setTransactions(converted);
       } catch (err) {
@@ -385,12 +424,12 @@ export default function PaymentHistory() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Battery Installed</p>
-                  <p className="font-semibold">{selectedTransaction.battery_given || 'N/A'}</p>
+                  <p className="text-sm text-slate-600">Battery Serial</p>
+                  <p className="font-semibold">{selectedTransaction.battery_serial || selectedTransaction.battery_id || 'N/A'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Battery Removed</p>
-                  <p className="font-semibold">{selectedTransaction.battery_returned || 'N/A'}</p>
+                  <p className="text-sm text-slate-600">Vehicle</p>
+                  <p className="font-semibold">{selectedTransaction.car_name || selectedTransaction.vehicle_id || selectedTransaction.vehicleId || 'N/A'}</p>
                 </div>
               </div>
             </CardContent>
