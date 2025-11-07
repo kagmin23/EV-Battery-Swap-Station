@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Spinner } from '@/components/ui/spinner';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { SupportApi, type SupportRequest } from '../apis/SupportApi';
 import Pagination from '../components/Pagination';
 import { toast } from 'sonner';
@@ -95,10 +95,23 @@ export default function SupportRequests() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Spinner size="xl" className="mb-4" />
-          <p className="text-gray-600">Loading support requests...</p>
+      <div className="flex flex-col items-center py-8 min-h-screen">
+        <div className="w-full max-w-7xl px-4">
+          {/* Header Skeleton */}
+          <div className="mb-6 flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="h-8 bg-gray-200 rounded w-64 animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded w-96 animate-pulse"></div>
+            </div>
+            <div className="w-80 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+          </div>
+
+          {/* Table Skeleton */}
+          <div className="overflow-x-auto">
+            <div className="border border-black-500 rounded-lg shadow-xs">
+              <TableSkeleton rows={10} columns={5} />
+            </div>
+          </div>
         </div>
       </div>
     );
