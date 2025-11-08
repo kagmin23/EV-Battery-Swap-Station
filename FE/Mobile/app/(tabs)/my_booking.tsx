@@ -11,11 +11,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const getStatusColor = (status: string) => {
     switch (status) {
-        case 'confirmed': return '#4CAF50';  // Green
-        case 'ready': return '#2196F3';      // Blue
-        case 'pending': return '#FFC107';    // Yellow
-        case 'cancelled': return '#F44336';  // Red
-        case 'completed': return '#6C63FF';  // Purple
+        case 'booked': return '#4CAF50';
+        case 'ready': return '#2196F3';
+        case 'pending': return '#FFC107';
+        case 'cancelled': return '#F44336';
+        case 'completed': return '#6C63FF';
         default: return '#999';
     }
 };

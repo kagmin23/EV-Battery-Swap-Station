@@ -157,6 +157,18 @@ export default function LinkVehicleSheet({ visible, onClose }: Props) {
         }
     }, [visible, sheetY]);
 
+    // Check if all required fields are filled
+    const isFormValid = useMemo(() => {
+        return (
+            vin.trim() !== '' &&
+            brand.trim() !== '' &&
+            carName.trim() !== '' &&
+            batteryModel.trim() !== '' &&
+            modelYear.trim() !== '' &&
+            licensePlate.trim() !== ''
+        );
+    }, [vin, brand, carName, batteryModel, modelYear, licensePlate]);
+
     const handleAdd = async () => {
         const payload = {
             vin,
@@ -222,8 +234,19 @@ export default function LinkVehicleSheet({ visible, onClose }: Props) {
                             </ScrollView>
 
                             <View style={styles.actionsRow}>
-                                <TouchableOpacity style={[styles.button, styles.buttonPrimary]} onPress={handleAdd}>
-                                    <Text style={styles.buttonPrimaryText}>Add Vehicle</Text>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.button,
+                                        styles.buttonPrimary,
+                                        !isFormValid && styles.buttonDisabled
+                                    ]}
+                                    onPress={handleAdd}
+                                    disabled={!isFormValid}
+                                >
+                                    <Text style={[
+                                        styles.buttonPrimaryText,
+                                        !isFormValid && styles.buttonDisabledText
+                                    ]}>Add Vehicle</Text>
                                 </TouchableOpacity>
                             </View>
                         </Animated.View>
@@ -345,6 +368,13 @@ const styles = StyleSheet.create({
     buttonPrimaryText: {
         color: 'white',
         fontWeight: '700',
+    },
+    buttonDisabled: {
+        backgroundColor: '#3a2f5e',
+        opacity: 0.5,
+    },
+    buttonDisabledText: {
+        color: '#8b7bb8',
     },
 });
 
