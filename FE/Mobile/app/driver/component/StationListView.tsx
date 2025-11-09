@@ -1,4 +1,4 @@
-import { getListStationNear, initFavorites, isFavorite, sSelectedStation, toggleFavorite, useFavorites, useStation } from '@/store/station';
+import { getListStationNear, initFavorites, isFavorite, sSelectedStation, toggleFavorite, useFavorites, useStation, clearFavorites, getAllStationInMap, useStationInMap } from '@/store/station';
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Location from 'expo-location';
@@ -6,6 +6,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
 import {
     Animated,
+    Alert,
     FlatList,
     StyleSheet,
     Text,
@@ -33,13 +34,18 @@ const StationList: React.FC<{
     const favoriteStations = useFavorites();
     const [isLoading, setIsLoading] = React.useState(false);
     const [processingFavorites, setProcessingFavorites] = React.useState<Set<string>>(new Set());
-    const nearStation = useStation()
+    const nearStation = useStation();
+    const allStations = useStationInMap(); // Get all stations for favorites tab
 
     useFocusEffect(
         useCallback(() => {
             (async () => {
                 try {
                     setIsLoading(true);
+
+                    // Fetch all stations for favorites
+                    await getAllStationInMap();
+
                     let { status } = await Location.requestForegroundPermissionsAsync();
                     if (status !== 'granted') {
                         console.warn('Permission to access location was denied');
@@ -70,12 +76,47 @@ const StationList: React.FC<{
         }
     };
 
+    const handleClearFavorites = async () => {
+        Alert.alert(
+            'Clear All Favorites',
+            'Are you sure you want to remove all favorite stations? This action cannot be undone.',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Clear All',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await clearFavorites();
+                            console.log('✅ Favorites cache cleared successfully');
+                        } catch (error) {
+                            console.error('❌ Failed to clear favorites cache:', error);
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     const availableStations = nearStation.length > 0 ? nearStation : [];
 
     // Filter stations based on active tab
     const filteredStations = activeTab === 'favorites'
-        ? availableStations.filter(station => isFavorite(station.id))
-        : availableStations;
+        ? allStations.filter(station => isFavorite(station.id)) // Use all stations for favorites
+        : availableStations; // Use nearby stations for nearby tab
+
+    console.log('🔍 Debug Favorites:', {
+        activeTab,
+        favoriteCount: favoriteStations.length,
+        favoriteIds: favoriteStations,
+        allStationsCount: allStations.length,
+        nearStationsCount: nearStation.length,
+        filteredCount: filteredStations.length,
+        filteredIds: filteredStations.map(s => s.id)
+    });
 
     // Loading skeleton component
     const LoadingSkeleton = () => (
@@ -206,9 +247,20 @@ const StationList: React.FC<{
                 </View>
 
                 {activeTab === 'favorites' && (
-                    <Text style={styles.locationText}>
-                        {`${favoriteStations.length} favorite locations`}
-                    </Text>
+                    <View style={styles.favoritesHeader}>
+                        <Text style={styles.locationText}>
+                            {`${favoriteStations.length} favorite locations`}
+                        </Text>
+                        {favoriteStations.length > 0 && (
+                            <TouchableOpacity
+                                style={styles.clearButton}
+                                onPress={handleClearFavorites}
+                            >
+                                <Ionicons name="trash-outline" size={16} color="#ff4757" />
+                                <Text style={styles.clearButtonText}>Clear All</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
                 )}
             </View>
 
@@ -355,6 +407,28 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 14,
         marginBottom: 20,
+    },
+    favoritesHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    clearButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#ff4757',
+        backgroundColor: 'rgba(255, 71, 87, 0.1)',
+    },
+    clearButtonText: {
+        color: '#ff4757',
+        fontSize: 12,
+        fontWeight: '600',
     },
     stationList: {
         flex: 1,

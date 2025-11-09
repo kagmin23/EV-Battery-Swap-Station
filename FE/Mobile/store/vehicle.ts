@@ -9,7 +9,7 @@ export type Vehicle = {
     batteryModel: string;
     vin: string | null;
     modelYear: number | null;
-    licensePlate: string
+    licensePlate: string;
 };
 
 interface CreateVehicleResponse {
@@ -69,4 +69,19 @@ export const getNameVehicleById = (vehicles: Vehicle[] | undefined, vehicleId: s
     return vehicle || null;
 }
 
+/**
+ * Get vehicle detail by ID (includes current battery info)
+ * @param vehicleId - Vehicle ID
+ * @returns Vehicle with current battery information
+ */
+export const getVehicleById = async (vehicleId: string): Promise<Vehicle | null> => {
+    try {
+        const res = await httpClient.get<{ data: Vehicle }>(`/vehicles/${vehicleId}`);
+        const vehicleData = toCamelCase(res.data);
+        return vehicleData as Vehicle;
+    } catch (error: any) {
+        console.error('Error fetching vehicle:', error);
+        return null;
+    }
+}
 

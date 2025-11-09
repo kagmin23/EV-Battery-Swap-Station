@@ -127,7 +127,7 @@ export default function TransactionsScreen() {
                                     </View>
                                     <View style={styles.cardHeaderText}>
                                         <Text style={styles.transactionId} numberOfLines={1}>
-                                            #{item.transactionId.slice(0, 8)}...
+                                            #{item.transactionId ? item.transactionId.slice(0, 8) : 'N/A'}...
                                         </Text>
                                         <Text style={styles.transactionDate}>
                                             {formatDate(item.transactionTime)} • {formatTime(item.transactionTime)}
@@ -167,7 +167,7 @@ export default function TransactionsScreen() {
                                     <Ionicons name="calendar-outline" size={16} color="#9EA0A5" />
                                     <Text style={styles.detailLabel}>Booking ID:</Text>
                                     <Text style={styles.detailValue} numberOfLines={1}>
-                                        {item.bookingId.slice(0, 12)}...
+                                        {item.bookingId ? item.bookingId.slice(0, 12) : 'N/A'}...
                                     </Text>
                                 </View>
                             </View>

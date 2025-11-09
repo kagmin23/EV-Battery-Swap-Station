@@ -17,6 +17,7 @@ interface PaymentModalProps {
     time: Date;
     vehicles: any[];
     getSelectedBatteryId: () => string | null;
+    getSelectedPillarId: () => string | null;
     checkDuplicateBooking: (vehicleId: string, stationId: string, scheduledTime: Date) => boolean;
     batteryPrice: number;
 }
@@ -64,6 +65,7 @@ export default function PaymentModal({
     time,
     vehicles,
     getSelectedBatteryId,
+    getSelectedPillarId,
     checkDuplicateBooking,
     batteryPrice,
 }: PaymentModalProps) {
@@ -105,12 +107,16 @@ export default function PaymentModal({
         const batteryId = getSelectedBatteryId();
         if (!batteryId) return showErrorToast('No battery available');
 
+        const pillarId = getSelectedPillarId();
+        if (!pillarId) return showErrorToast('No pillar available');
+
         try {
             const res = await createBooking({
                 stationId: station.id,
                 vehicleId: vehicle.id, // Use MongoDB ObjectId instead of UUID
                 scheduledTime: scheduled.toISOString(),
                 batteryId,
+                pillarId, // Use pillar ID from selected battery
             });
 
             if (res.success) {
@@ -123,7 +129,7 @@ export default function PaymentModal({
         } catch (err: any) {
             showErrorToast(err.message || 'Booking failed');
         }
-    }, [vehicles, selectedVehicleId, scheduled, station, getSelectedBatteryId, checkDuplicateBooking, createBooking, onClose, router]);
+    }, [vehicles, selectedVehicleId, scheduled, station, getSelectedBatteryId, getSelectedPillarId, checkDuplicateBooking, createBooking, onClose, router]);
 
     const handlePayWithVnPay = useCallback(async () => {
         const vehicle = vehicles.find(x => x.vehicleId === selectedVehicleId);
@@ -132,6 +138,9 @@ export default function PaymentModal({
         const batteryId = getSelectedBatteryId();
         if (!batteryId) return showErrorToast('No battery available');
 
+        const pillarId = getSelectedPillarId();
+        if (!pillarId) return showErrorToast('No pillar available');
+
         try {
             // 1. Create booking first
             const bookingRes = await createBooking({
@@ -139,6 +148,7 @@ export default function PaymentModal({
                 vehicleId: vehicle.vehicleId!,
                 scheduledTime: scheduled.toISOString(),
                 batteryId,
+                pillarId, // Use pillar ID from selected battery
             });
 
             const data = toCamelCase(bookingRes);
@@ -193,7 +203,7 @@ export default function PaymentModal({
             console.error('❌ VNPAY Error:', err);
             showErrorToast(err?.message || 'Payment failed');
         }
-    }, [vehicles, selectedVehicleId, station, scheduled, getSelectedBatteryId, createBooking, createPayment, onClose, router, batteryPrice]);
+    }, [vehicles, selectedVehicleId, station, scheduled, getSelectedBatteryId, getSelectedPillarId, createBooking, createPayment, onClose, router, batteryPrice]);
 
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>

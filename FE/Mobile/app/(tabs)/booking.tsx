@@ -138,6 +138,29 @@ export default function BookingScreen() {
         return null;
     }, [selectedVehicleId, pillars, vehicles]);
 
+    // Get pillar ID for the selected battery
+    const getSelectedPillarId = useCallback(() => {
+        if (!selectedVehicleId || !pillars || pillars.length === 0) return null;
+
+        const selectedVehicle = vehicles.find(v => v.vehicleId === selectedVehicleId);
+        if (!selectedVehicle) return null;
+
+        // Find the pillar containing matching battery
+        for (const pillar of pillars) {
+            const matchingSlot = pillar.slots.find(slot =>
+                slot.status === 'occupied' &&
+                slot.battery &&
+                slot.battery.model === selectedVehicle.batteryModel
+            );
+
+            if (matchingSlot?.battery) {
+                return pillar.id || null;
+            }
+        }
+
+        return null;
+    }, [selectedVehicleId, pillars, vehicles]);
+
     // Get selected battery info for display from pillar slots
     const getSelectedBatteryInfo = useCallback(() => {
         if (!selectedVehicleId || !pillars || pillars.length === 0) {
@@ -534,6 +557,7 @@ export default function BookingScreen() {
                     time={time}
                     vehicles={vehicles}
                     getSelectedBatteryId={getSelectedBatteryId}
+                    getSelectedPillarId={getSelectedPillarId}
                     checkDuplicateBooking={checkDuplicateBooking}
                     batteryPrice={getSelectedBatteryInfo()?.price || 0}
                 />
