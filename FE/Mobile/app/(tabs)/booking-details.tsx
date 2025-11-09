@@ -1,5 +1,5 @@
 import { getAllBatteryByStationId, useBatteriesInStation } from '@/store/baterry';
-import { cancelBooking, completeBooking, getAllBookings, useBookings } from '@/store/booking';
+import { arriveBooking, cancelBooking, getAllBookings, useBookings } from '@/store/booking';
 import type { Feedback } from '@/store/feedback';
 import { createFeedbackApi, getAllFeedbacks, getFeedbackByBookingApi } from '@/store/feedback';
 import { getAllStationInMap, getNameStationById, useStationInMap } from '@/store/station';
@@ -16,11 +16,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const getStatusColor = (status: string) => {
     switch (status) {
-        case 'confirmed': return '#4CAF50';  // Green
-        case 'ready': return '#2196F3';      // Blue
-        case 'pending': return '#FFC107';    // Yellow
-        case 'cancelled': return '#F44336';  // Red
-        case 'completed': return '#6C63FF';  // Purple
+        case 'booked': return '#4CAF50';
+        case 'ready': return '#2196F3';
+        case 'cancelled': return '#F44336';
+        case 'completed': return '#6C63FF';
         default: return '#999';
     }
 };
@@ -54,14 +53,28 @@ export default function BookingDetailsScreen() {
     const handleConfirmBooking = async () => {
         if (!selectedBooking) return;
         try {
-            const res = await completeBooking(selectedBooking.bookingId);
+            const res = await arriveBooking(selectedBooking.bookingId);
             if (res?.success) {
                 setIsModalVisible(false);
-                showSuccessToast(res.message || 'Booking confirmed');
+                showSuccessToast(res.message || 'Start to swap battery');
                 await getAllBookings();
-                setSelectedBooking((prev: any) => prev ? { ...prev, status: 'ready' } : prev);
+                setSelectedBooking((prev: any) => prev ? { ...prev, status: 'arrived' } : prev);
+
+                // Navigate to battery swap simulation - pillarId is required
+                if (selectedBooking.pillarId) {
+                    const queryParams = new URLSearchParams({
+                        pillarId: selectedBooking.pillarId,
+                        vehicleId: selectedBooking.vehicleId,
+                        bookingId: selectedBooking.bookingId,
+                        ...(selectedBooking.id && { id: selectedBooking.id }) // MongoDB ObjectId (preferred)
+                    }).toString();
+                    console.log('Navigation to swap:', selectedBooking)
+                    router.push(`/driver/battery-swap-simulation?${queryParams}`);
+                } else {
+                    showErrorToast('Pillar information is missing from this booking');
+                }
             } else {
-                showErrorToast(res?.message || 'Failed to confirm booking');
+                showErrorToast(res?.message || 'Failed to action booking');
             }
         } catch (err: any) {
             showErrorToast(err?.message || 'Request failed');
@@ -103,6 +116,7 @@ export default function BookingDetailsScreen() {
         if (bookingId && mybookings.length > 0) {
             const booking = mybookings.find(b => b.bookingId === bookingId);
             setSelectedBooking(booking);
+            console.log('booking select', booking)
 
             // Load battery info for the station
             if (booking?.stationId) {
@@ -424,8 +438,8 @@ export default function BookingDetailsScreen() {
                         <View style={styles.statusContainer}>
                             <Text style={[styles.value, { color: getStatusColor(selectedBooking.status), flexDirection: 'row', alignItems: 'center', textAlign: 'right' }]}>
                                 <Ionicons
-                                    name={selectedBooking.status === 'approved' ? 'checkmark-circle' :
-                                        selectedBooking.status === 'pending' ? 'time' :
+                                    name={selectedBooking.status === 'arrived' ? 'checkmark-circle' :
+                                        selectedBooking.status === 'booked' ? 'time' :
                                             selectedBooking.status === 'cancelled' ? 'close-circle' : 'checkmark-done-circle'}
                                     size={16}
                                     color={getStatusColor(selectedBooking.status)}
@@ -499,8 +513,8 @@ export default function BookingDetailsScreen() {
                             <Ionicons name="close" size={22} color="#FFF" />
                         </TouchableOpacity>
 
-                        <Text style={styles.modalConfirm}>Confirm Booking!</Text>
-                        <Text style={styles.modalMessage}>Confirm you will come to change the battery!</Text>
+                        <Text style={styles.modalConfirm}>Arrived Booking!</Text>
+                        <Text style={styles.modalMessage}>Confirm you have arrived at the station!</Text>
                         <View style={styles.modalButtonsRow}>
                             <TouchableOpacity
                                 style={[styles.modalButton, styles.cancelModalButton]}
@@ -515,7 +529,7 @@ export default function BookingDetailsScreen() {
                                 onPress={handleConfirmBooking}
                             >
                                 <Text style={[styles.modalButtonText, styles.confirmModalButtonText]}>
-                                    Confirm Booking
+                                    Confirm Arrival
                                 </Text>
                             </TouchableOpacity>
                         </View>
@@ -745,9 +759,9 @@ export default function BookingDetailsScreen() {
                             </TouchableOpacity>
                         )}
 
-                        {String(selectedBooking.status || '').toLowerCase() === 'confirmed' && (
+                        {String(selectedBooking.status || '').toLowerCase() === 'booked' && (
                             <TouchableOpacity style={[styles.actionButton, styles.confirmOnlyButton]} onPress={handleOpenModal}>
-                                <Text style={styles.actionButtonText}>Confirm</Text>
+                                <Text style={styles.actionButtonText}>Arrived station</Text>
                             </TouchableOpacity>
                         )}
                     </View>

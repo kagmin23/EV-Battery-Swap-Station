@@ -3,11 +3,13 @@ import { toCamelCase } from "@/utils/caseConverter";
 import { signify } from "react-signify";
 
 export interface Booking {
-  bookingId: string;
+  id?: string;
+  bookingId: string; // UUID format
   userId: string;
   stationId: string;
   vehicleId: string;
   batteryId?: string;
+  pillarId?: string;
   scheduledTime: string;
   status: string;
   createdAt: string;
@@ -83,7 +85,7 @@ export const cancelBooking = async (
   }
 };
 
-export const completeBooking = async (
+export const arriveBooking = async (
   id: string
 ): Promise<{
   success: boolean;
@@ -94,7 +96,7 @@ export const completeBooking = async (
       success: boolean;
       message: string;
       data: null;
-    }>(`/booking/${id}/complete`);
+    }>(`/booking/${id}/arrived`);
 
     if (response?.success) {
       // Refresh the booking list to keep the UI updated
@@ -106,13 +108,13 @@ export const completeBooking = async (
 
       return {
         success: true,
-        message: response.message || "Booking completed successfully",
+        message: response.message || "Booking arrived at station",
       };
     }
 
     return {
       success: false,
-      message: response?.message || "Failed to complete booking",
+      message: response?.message || "Failed to arrive booking",
     };
   } catch (error: any) {
     return {

@@ -182,7 +182,7 @@ const ProfileScreen: React.FC = () => {
                 </TouchableOpacity>
 
                 {/* Electrocard Card */}
-                <TouchableOpacity style={styles.actionCard}>
+                {/* <TouchableOpacity style={styles.actionCard}>
                     <View style={styles.dashedIconContainer}>
                         <Ionicons name="card" size={24} color="#6d4aff" />
                         <View style={styles.plusIcon}>
@@ -196,7 +196,7 @@ const ProfileScreen: React.FC = () => {
                         </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={20} color="white" />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
 
                 {/* My EVs */}
                 {/* <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/evs')}>

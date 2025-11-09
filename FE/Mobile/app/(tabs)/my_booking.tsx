@@ -11,11 +11,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const getStatusColor = (status: string) => {
     switch (status) {
-        case 'confirmed': return '#4CAF50';  // Green
-        case 'ready': return '#2196F3';      // Blue
-        case 'pending': return '#FFC107';    // Yellow
-        case 'cancelled': return '#F44336';  // Red
-        case 'completed': return '#6C63FF';  // Purple
+        case 'booked': return '#4CAF50';
+        case 'ready': return '#2196F3';
+        case 'arrived': return '#FF9800';
+        case 'cancelled': return '#F44336';
+        case 'completed': return '#6C63FF';
         default: return '#999';
     }
 };
@@ -25,11 +25,11 @@ export default function MyBookingsScreen() {
     const mybooking = useBookings()
     const stationInMap = useStationInMap()
     const vehicles = useVehicles()
-    const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'ready' | 'cancelled' | 'completed'>('all');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'arrived' | 'confirmed' | 'ready' | 'cancelled' | 'completed'>('all');
 
-    const STATUS_OPTIONS: { key: 'all' | 'pending' | 'confirmed' | 'ready' | 'completed' | 'cancelled'; label: string }[] = [
+    const STATUS_OPTIONS: { key: 'all' | 'arrived' | 'confirmed' | 'ready' | 'completed' | 'cancelled'; label: string }[] = [
         { key: 'all', label: 'All' },
-        { key: 'pending', label: 'Pending' },
+        { key: 'arrived', label: 'Arrived' },
         { key: 'confirmed', label: 'Confirmed' },
         { key: 'ready', label: 'Ready' },
         { key: 'completed', label: 'Completed' },

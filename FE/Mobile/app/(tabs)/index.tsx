@@ -24,6 +24,7 @@ import MapComponent, { MapComponentHandle } from '../driver/component/MapCompone
 import StationListView from '../driver/component/StationListView';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+
 const { width, height } = Dimensions.get('window');
 
 const RECENT_SEARCHES_KEY = 'recentSearches';

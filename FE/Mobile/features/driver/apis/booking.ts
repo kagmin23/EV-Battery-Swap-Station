@@ -6,7 +6,8 @@ export interface BookingRequest {
     stationId: string;
     scheduledTime: string;
     vehicleId: string;
-    batteryId: string
+    batteryId: string;
+    pillarId?: string; // Make optional if backend doesn't require it
 }
 
 export interface BookingResponse {
@@ -19,11 +20,40 @@ export interface BookingResponse {
 
 export const bookingAPI = {
     async createBooking(data: BookingRequest): Promise<BookingResponse> {
-        const payload = await toSnakeCase(data)
 
-        return httpClient.post<BookingResponse>("/booking", payload, {
-            "Content-Type": "application/json",
-        });
+        const payload = await toSnakeCase(data);
+
+        const endpoint = "/booking";
+        console.log('🚀 CREATE BOOKING - Full Request Details:');
+        console.log('   URL:', endpoint);
+        console.log('   Method: POST');
+        console.log('   Original Data:', JSON.stringify(data, null, 2));
+        console.log('   Payload (snake_case):', JSON.stringify(payload, null, 2));
+
+        try {
+            const response = await httpClient.post<BookingResponse>(endpoint, payload, {
+                "Content-Type": "application/json",
+            });
+
+            console.log('✅ CREATE BOOKING - Response received:', response);
+            return response;
+        } catch (error: any) {
+            console.log('❌ CREATE BOOKING - Error Details:');
+            console.log('   Status:', error?.response?.status);
+            console.log('   Status Text:', error?.response?.statusText);
+            console.log('   Error Data:', JSON.stringify(error?.response?.data, null, 2));
+            console.log('   Error Message:', error?.message);
+            console.log('   Sent Payload:', JSON.stringify(payload, null, 2));
+
+            console.error('❌ Booking API Error:', {
+                message: error.message,
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                data: error.response?.data,
+                payload: payload,
+            });
+            throw error;
+        }
     },
 };
 
