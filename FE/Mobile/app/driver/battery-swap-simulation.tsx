@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,6 +30,10 @@ export default function BatterySwapSimulation() {
     const [completingSwap, setCompletingSwap] = useState(false);
     const [swapCompleted, setSwapCompleted] = useState(false);
     const [vehicleData, setVehicleData] = useState<Vehicle | null>(null);
+
+    // Animation values
+    const emptySlotPulseAnim = useRef(new Animated.Value(1)).current;
+    const bookedBatteryRiseAnim = useRef(new Animated.Value(0)).current;
 
     // Debug: Log when swapData changes
     useEffect(() => {
@@ -77,6 +81,48 @@ export default function BatterySwapSimulation() {
             clearPillarGrid();
         };
     }, [pillarId]);
+
+    // Animation effect: Pulsing empty slot after swap initiated
+    useEffect(() => {
+        if (swapData && !oldBatteryInserted) {
+            // Start pulsing animation for empty slot
+            const pulseAnimation = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(emptySlotPulseAnim, {
+                        toValue: 1.2,
+                        duration: 800,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(emptySlotPulseAnim, {
+                        toValue: 1,
+                        duration: 800,
+                        useNativeDriver: true,
+                    }),
+                ])
+            );
+            pulseAnimation.start();
+
+            return () => {
+                pulseAnimation.stop();
+                emptySlotPulseAnim.setValue(1);
+            };
+        }
+    }, [swapData, oldBatteryInserted, emptySlotPulseAnim]);
+
+    // Animation effect: Battery rising when old battery is inserted
+    useEffect(() => {
+        if (oldBatteryInserted && !swapCompleted) {
+            // Reset and start rise animation
+            bookedBatteryRiseAnim.setValue(0);
+
+            Animated.spring(bookedBatteryRiseAnim, {
+                toValue: 1,
+                friction: 4,
+                tension: 40,
+                useNativeDriver: true,
+            }).start();
+        }
+    }, [oldBatteryInserted, swapCompleted, bookedBatteryRiseAnim]);
 
     const getSlotColor = (slot: GridSlot) => {
         // Highlight slot that was booked after swap init (slot containing new battery)
@@ -619,29 +665,69 @@ export default function BatterySwapSimulation() {
                                     const isDisabled = !isReservedEmptySlot &&
                                         (slot.status === 'empty' || swapProgress !== 'idle');
 
+                                    // Check if this is the slot where new battery will come from
+                                    const isBookedBatterySlot = swapData &&
+                                        slot.slotNumber === swapData.bookedBattery.slotNumber;
+
+                                    // Animated styles for slots
+                                    const animatedStyle: any = {
+                                        ...styles.slotCard,
+                                        backgroundColor: getSlotColor(slot),
+                                    };
+
+                                    // Pulsing glow for empty slot waiting for old battery
+                                    if (isReservedEmptySlot && !oldBatteryInserted) {
+                                        animatedStyle.transform = [{ scale: emptySlotPulseAnim }];
+                                        animatedStyle.shadowColor = '#8b5cf6';
+                                        animatedStyle.shadowOffset = { width: 0, height: 0 };
+                                        animatedStyle.shadowOpacity = 0.8;
+                                        animatedStyle.shadowRadius = 10;
+                                        animatedStyle.elevation = 8;
+                                    }
+
+                                    // Rising animation for new battery slot
+                                    if (isBookedBatterySlot && oldBatteryInserted && !swapCompleted) {
+                                        animatedStyle.transform = [
+                                            {
+                                                translateY: bookedBatteryRiseAnim.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: [30, 0]
+                                                })
+                                            }
+                                        ];
+                                    }
+
+                                    // Add selected border
+                                    if (isSelected) {
+                                        animatedStyle.borderWidth = 3;
+                                        animatedStyle.borderColor = '#fbbf24';
+                                        animatedStyle.shadowColor = '#fbbf24';
+                                        animatedStyle.shadowOpacity = 0.5;
+                                        animatedStyle.shadowRadius = 10;
+                                        animatedStyle.elevation = 8;
+                                    }
+
                                     return (
                                         <TouchableOpacity
                                             key={slot.id}
-                                            style={[
-                                                styles.slotCard,
-                                                { backgroundColor: getSlotColor(slot) },
-                                                isSelected && styles.slotCardSelected
-                                            ]}
                                             onPress={() => handleSlotPress(slot)}
                                             disabled={isDisabled}
+                                            activeOpacity={0.7}
                                         >
-                                            <Text style={styles.slotNumber}>{slot.slotNumber}</Text>
-                                            {batteryIcon && (
-                                                <Ionicons name={batteryIcon.name} size={24} color={batteryIcon.color} />
-                                            )}
-                                            {/* Show "Tap to insert" hint for reserved empty slot */}
-                                            {isReservedEmptySlot && !oldBatteryInserted && (
-                                                <Ionicons name="add-circle" size={20} color="#fff" />
-                                            )}
-                                            <Text style={styles.slotStatus}>{slot.status}</Text>
-                                            {slot.battery && (
-                                                <Text style={styles.batterySOH}>SOH: {slot.battery.soh}%</Text>
-                                            )}
+                                            <Animated.View style={animatedStyle}>
+                                                <Text style={styles.slotNumber}>{slot.slotNumber}</Text>
+                                                {batteryIcon && (
+                                                    <Ionicons name={batteryIcon.name} size={20} color={batteryIcon.color} />
+                                                )}
+                                                {/* Show "Tap to insert" hint for reserved empty slot */}
+                                                {isReservedEmptySlot && !oldBatteryInserted && (
+                                                    <Ionicons name="add-circle" size={16} color="#fff" />
+                                                )}
+                                                <Text style={styles.slotStatus}>{slot.status}</Text>
+                                                {slot.battery && (
+                                                    <Text style={styles.batterySOH}>SOH: {slot.battery.soh}%</Text>
+                                                )}
+                                            </Animated.View>
                                         </TouchableOpacity>
                                     );
                                 })}
@@ -862,15 +948,16 @@ const styles = StyleSheet.create({
     gridRow: {
         flexDirection: 'row',
         gap: 12,
+        justifyContent: 'center',
     },
     slotCard: {
-        flex: 1,
-        aspectRatio: 1,
+        width: 75,
+        height: 75,
         borderRadius: 12,
-        padding: 8,
+        padding: 6,
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 4,
+        gap: 2,
     },
     slotCardSelected: {
         borderWidth: 3,
@@ -883,17 +970,17 @@ const styles = StyleSheet.create({
     },
     slotNumber: {
         color: '#fff',
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '700',
     },
     slotStatus: {
         color: '#d1d5db',
-        fontSize: 10,
+        fontSize: 9,
         textTransform: 'capitalize',
     },
     batterySOH: {
         color: '#a3e635',
-        fontSize: 9,
+        fontSize: 8,
         fontWeight: '600',
     },
     detailsCard: {

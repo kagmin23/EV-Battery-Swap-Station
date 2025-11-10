@@ -157,10 +157,10 @@ export default function LinkVehicleSheet({ visible, onClose }: Props) {
         }
     }, [visible, sheetY]);
 
-    // Check if all required fields are filled
+    // Check if all required fields are filled and VIN is exactly 17 characters
     const isFormValid = useMemo(() => {
         return (
-            vin.trim() !== '' &&
+            vin.trim().length === 17 &&
             brand.trim() !== '' &&
             carName.trim() !== '' &&
             batteryModel.trim() !== '' &&
@@ -212,8 +212,27 @@ export default function LinkVehicleSheet({ visible, onClose }: Props) {
                                         placeholderTextColor="#7f6fb1"
                                         value={vin}
                                         onChangeText={setVin}
-                                        style={styles.input}
+                                        style={[
+                                            styles.input,
+                                            vin.length > 0 && vin.length !== 17 && {
+                                                borderColor: '#ef4444',
+                                                borderWidth: 1.5,
+                                            }
+                                        ]}
+                                        maxLength={17}
+                                        autoCapitalize="characters"
                                     />
+                                    {vin.length > 0 && vin.length !== 17 && (
+                                        <Text style={styles.errorText}>
+                                            VIN must be exactly 17 characters ({vin.length}/17)
+                                        </Text>
+                                    )}
+                                    {vin.length === 17 && (
+                                        <View style={styles.successRow}>
+                                            <Ionicons name="checkmark-circle" size={16} color="#10b981" />
+                                            <Text style={styles.successText}>Valid VIN</Text>
+                                        </View>
+                                    )}
                                 </View>
                                 <View style={styles.formRow}>
                                     <Text style={styles.inputLabel}>License Plate</Text>
@@ -375,6 +394,23 @@ const styles = StyleSheet.create({
     },
     buttonDisabledText: {
         color: '#8b7bb8',
+    },
+    errorText: {
+        color: '#ef4444',
+        fontSize: 12,
+        marginTop: 4,
+        fontWeight: '500',
+    },
+    successRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        marginTop: 4,
+    },
+    successText: {
+        color: '#10b981',
+        fontSize: 12,
+        fontWeight: '500',
     },
 });
 

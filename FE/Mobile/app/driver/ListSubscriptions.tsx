@@ -153,6 +153,16 @@ function ListSubscriptions() {
             } catch (err: any) {
                 console.error('Subscription VNPay error:', err);
 
+                // Extract error message from API response
+                let errorMessage = 'Payment failed';
+                if (err?.message) {
+                    errorMessage = err.message;
+                } else if (err?.response?.data?.message) {
+                    errorMessage = err.response.data.message;
+                } else if (err?.data?.message) {
+                    errorMessage = err.data.message;
+                }
+
                 // Attempt to recover: if the server error still contains a payment URL
                 // (some backend implementations may return url even on partial failures),
                 // open it so the user can complete VNPay.
@@ -192,12 +202,21 @@ function ListSubscriptions() {
                         ]
                     );
                 } else {
-                    // show raw error to help server-side debugging
-                    const text = err && typeof err === 'object' ? JSON.stringify(err) : String(err);
-                    Alert.alert('Payment error', err?.message || 'Payment failed', [
-                        { text: 'Details', onPress: () => Alert.alert('Error details', text) },
-                        { text: 'OK' },
-                    ]);
+                    // Show clear error message from backend
+                    Alert.alert(
+                        'Subscription Error',
+                        errorMessage,
+                        [
+                            {
+                                text: 'Details',
+                                onPress: () => {
+                                    const text = err && typeof err === 'object' ? JSON.stringify(err, null, 2) : String(err);
+                                    Alert.alert('Error details', text);
+                                }
+                            },
+                            { text: 'OK' },
+                        ]
+                    );
                 }
             } finally {
                 setModalLoading(false);
