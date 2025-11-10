@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { ManagementLayout } from '../features/admin/layout/ManagementLayout';
 import { useState, useEffect } from 'react';
 import Dashboard from '../features/admin/page/Dashboard';
@@ -22,6 +22,7 @@ export default function AdminRouter() {
   return (
     <ManagementLayout activeTab={activeTab} onTabChange={setActiveTab}>
       <Routes>
+        <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="battery-changes" element={<BatteryChanges />} />
         <Route path="ai-forecast" element={<AIForecast />} /> 
