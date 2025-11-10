@@ -1,8 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
-import { MapPin, ExternalLink, Users } from 'lucide-react';
+import { MapPin, Users, Layers, PlusCircle } from 'lucide-react';
 import type { Station } from '../types/station';
 
 interface StationTableProps {
@@ -11,15 +10,19 @@ interface StationTableProps {
     onEdit: (station: Station) => void;
     onViewDetails?: (station: Station) => void;
     onViewStaff?: (station: Station) => void;
+    onViewPillars?: (station: Station) => void;
+    onAddPillar?: (station: Station) => void;
     savingStationId?: string | null;
 }
 
 export const StationTable: React.FC<StationTableProps> = ({
     stations,
-    onSelect,
+    onSelect: _onSelect,
     onEdit,
     onViewDetails,
     onViewStaff,
+    onViewPillars,
+    onAddPillar,
     savingStationId
 }) => {
     const formatCapacity = (capacity: number) => {
@@ -66,7 +69,7 @@ export const StationTable: React.FC<StationTableProps> = ({
                             <td className="px-6 py-4 text-sm text-slate-800">{station.batteryCounts?.total ?? station.availableBatteries ?? 0}</td>
                             <td className="px-6 py-4 text-sm text-slate-800">{formatSoh(station.sohAvg)}</td>
                             <td className="px-6 py-4">
-                                <div className="flex space-x-2">
+                                <div className="flex flex-wrap gap-2">
                                     {onViewDetails && (
                                         <Button
                                             variant="outline"
@@ -88,6 +91,30 @@ export const StationTable: React.FC<StationTableProps> = ({
                                         >
                                             <Users className="h-4 w-4 mr-1" />
                                             Staff
+                                        </Button>
+                                    )}
+                                    {onViewPillars && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => onViewPillars(station)}
+                                            disabled={savingStationId === station.id}
+                                            className="flex-1 hover:bg-sky-50 hover:border-sky-300 hover:text-sky-700 transition-all duration-200 border-slate-200 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <Layers className="h-4 w-4 mr-1" />
+                                            Pillars
+                                        </Button>
+                                    )}
+                                    {onAddPillar && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => onAddPillar(station)}
+                                            disabled={savingStationId === station.id}
+                                            className="flex-1 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-all duration-200 border-slate-200 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <PlusCircle className="h-4 w-4 mr-1" />
+                                            Add Pillar
                                         </Button>
                                     )}
                                     <Button

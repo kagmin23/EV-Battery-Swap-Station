@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
-import { MapPin, Battery, Users, MoreVertical } from 'lucide-react';
+import { MapPin, Battery, Users, MoreVertical, Layers, PlusCircle } from 'lucide-react';
 import type { Station } from '../types/station';
 
 interface StationCardProps {
@@ -11,6 +11,8 @@ interface StationCardProps {
     onEdit: (station: Station) => void;
     onViewDetails?: (station: Station) => void;
     onViewStaff?: (station: Station) => void;
+    onViewPillars?: (station: Station) => void;
+    onAddPillar?: (station: Station) => void;
     onDelete?: (station: Station) => void;
     isSaving?: boolean;
     staffCount?: number;
@@ -22,6 +24,8 @@ export const StationCard: React.FC<StationCardProps> = ({
     onEdit,
     onViewDetails,
     onViewStaff,
+    onViewPillars,
+    onAddPillar,
     onDelete,
     isSaving = false,
     staffCount = 0
@@ -80,7 +84,7 @@ export const StationCard: React.FC<StationCardProps> = ({
                     </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 pt-4 border-t border-slate-100">
+                <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-100">
                     {onViewDetails && (
                         <Button
                             variant="outline"
@@ -108,6 +112,36 @@ export const StationCard: React.FC<StationCardProps> = ({
                         >
                             <Users className="h-4 w-4 mr-1" />
                             Staff
+                        </Button>
+                    )}
+                    {onViewPillars && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onViewPillars(station);
+                            }}
+                            disabled={isSaving}
+                            className="hover:bg-sky-50 hover:border-sky-300 hover:text-sky-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
+                        >
+                            <Layers className="h-4 w-4 mr-1" />
+                            Pillars
+                        </Button>
+                    )}
+                    {onAddPillar && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onAddPillar(station);
+                            }}
+                            disabled={isSaving}
+                            className="hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-slate-200 hover:shadow-sm"
+                        >
+                            <PlusCircle className="h-4 w-4 mr-1" />
+                            Add Pillar
                         </Button>
                     )}
                     <Button

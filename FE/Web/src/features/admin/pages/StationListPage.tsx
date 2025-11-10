@@ -9,13 +9,17 @@ import { StationTable } from '../components/StationTable';
 import { StationModal } from '../components/StationModal';
 import { StationDetailModal } from '../components/StationDetailModal';
 import { StationStaffModal } from '../components/StationStaffModal';
+import { StationPillarsModal } from '../components/StationPillarsModal';
+import { CreatePillarModal } from '../components/CreatePillarModal';
 import { PageHeader } from '../components/PageHeader';
 import { StatsCard } from '../components/StatsCard';
 import { PageLoadingSpinner, ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
 import { StationService, type CreateStationRequest, type UpdateStationRequest as ApiUpdateStationRequest, type Station as ApiStation } from '@/services/api/stationService';
 import { StaffService, type Staff as ApiStaff } from '@/services/api/staffService';
+import { PillarService, type ApiPillar } from '@/services/api/pillarService';
 import type { Station, StationFilters, AddStationRequest, UpdateStationRequest } from '../types/station';
 import type { Staff } from '../types/staff';
+import type { Pillar, CreatePillarFormData } from '../types/pillar.ts';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 
 interface StationListPageProps {
@@ -49,6 +53,49 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [isCannotDeleteOpen, setIsCannotDeleteOpen] = useState(false);
     const [cannotDeleteStation, setCannotDeleteStation] = useState<Station | null>(null);
+    const [isPillarListModalOpen, setIsPillarListModalOpen] = useState(false);
+    const [isCreatePillarModalOpen, setIsCreatePillarModalOpen] = useState(false);
+    const [selectedStationForPillars, setSelectedStationForPillars] = useState<Station | null>(null);
+    const [stationPillars, setStationPillars] = useState<Pillar[]>([]);
+    const [pillarListLoading, setPillarListLoading] = useState(false);
+    const [pillarListError, setPillarListError] = useState<string | null>(null);
+    const [isCreatingPillar, setIsCreatingPillar] = useState(false);
+    const [createPillarError, setCreatePillarError] = useState<string | null>(null);
+
+    const convertApiPillarToUi = (apiPillar: ApiPillar): Pillar => ({
+        id: apiPillar._id,
+        pillarName: apiPillar.pillarName,
+        pillarCode: apiPillar.pillarCode,
+        pillarNumber: apiPillar.pillarNumber,
+        status: apiPillar.status,
+        totalSlots: apiPillar.totalSlots,
+        slotStats: apiPillar.slotStats,
+        station: (apiPillar.station && typeof apiPillar.station === 'object' && '_id' in apiPillar.station)
+            ? {
+                id: (apiPillar.station as { _id: string })._id,
+                name: (apiPillar.station as { stationName?: string }).stationName ?? 'Unknown station',
+                address: (apiPillar.station as { address?: string }).address,
+            }
+            : undefined,
+        slots: apiPillar.slots?.map(slot => ({
+            id: slot._id,
+            slotNumber: slot.slotNumber,
+            slotCode: slot.slotCode,
+            status: slot.status,
+            battery: slot.battery
+                ? {
+                    id: slot.battery._id,
+                    serial: slot.battery.serial,
+                    model: slot.battery.model,
+                    soh: slot.battery.soh,
+                    status: slot.battery.status,
+                    price: slot.battery.price,
+                }
+                : null,
+        })) ?? [],
+        createdAt: new Date(apiPillar.createdAt),
+        updatedAt: new Date(apiPillar.updatedAt),
+    });
 
     // Load staff data from API
     const loadStaff = async () => {
@@ -111,6 +158,69 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
             console.error('Error loading stations:', err);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchStationPillars = async (stationId: string) => {
+        try {
+            setPillarListLoading(true);
+            setPillarListError(null);
+            const apiPillars = await PillarService.getPillarsByStation(stationId);
+            const converted = apiPillars.map(convertApiPillarToUi);
+            setStationPillars(converted);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Unable to load pillars. Please try again later.';
+            setPillarListError(message);
+            setStationPillars([]);
+            console.error('Error loading pillars:', err);
+        } finally {
+            setPillarListLoading(false);
+        }
+    };
+
+    const handleViewStationPillars = async (station: Station) => {
+        setSelectedStationForPillars(station);
+        setIsPillarListModalOpen(true);
+        await fetchStationPillars(station.id);
+    };
+
+    const handleOpenCreatePillar = (station: Station) => {
+        setSelectedStationForPillars(station);
+        setCreatePillarError(null);
+        setIsCreatePillarModalOpen(true);
+    };
+
+    const handleCreatePillar = async (data: CreatePillarFormData) => {
+        if (!selectedStationForPillars) {
+            const message = 'Please select a station before creating a pillar.';
+            toast.error(message);
+            setCreatePillarError(message);
+            throw new Error(message);
+        }
+
+        try {
+            setIsCreatingPillar(true);
+            setCreatePillarError(null);
+            const createdPillar = await PillarService.createPillar({
+                stationId: selectedStationForPillars.id,
+                pillarName: data.pillarName,
+                pillarNumber: data.pillarNumber,
+                totalSlots: data.totalSlots,
+            });
+
+            toast.success(`Pillar "${createdPillar.pillarName}" added to ${selectedStationForPillars.name}`);
+
+            if (isPillarListModalOpen) {
+                await fetchStationPillars(selectedStationForPillars.id);
+            }
+
+            setIsCreatePillarModalOpen(false);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Unable to create pillar. Please try again later.';
+            setCreatePillarError(message);
+            throw new Error(message);
+        } finally {
+            setIsCreatingPillar(false);
         }
     };
 
@@ -554,6 +664,8 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                                     onEdit={handleStationEdit}
                                     onViewDetails={handleViewStationDetails}
                                     onViewStaff={handleViewStationStaff}
+                                    onViewPillars={handleViewStationPillars}
+                                    onAddPillar={handleOpenCreatePillar}
                                     onDelete={handleDeleteStation}
                                     isSaving={savingStationId === station.id}
                                     staffCount={getStaffByStation(station.id).length}
@@ -568,6 +680,8 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                                 onEdit={handleStationEdit}
                                 onViewDetails={handleViewStationDetails}
                                 onViewStaff={handleViewStationStaff}
+                                onViewPillars={handleViewStationPillars}
+                                onAddPillar={handleOpenCreatePillar}
                                 savingStationId={savingStationId}
                             />
                         </div>
@@ -737,6 +851,47 @@ export const StationListPage: React.FC<StationListPageProps> = ({ onStationSelec
                 onRemoveStaff={handleRemoveStaffFromStation}
                 onReloadStaff={handleReloadStaff}
                 savingStaffId={savingStaffId}
+            />
+
+            <StationPillarsModal
+                isOpen={isPillarListModalOpen}
+                onClose={() => {
+                    setIsPillarListModalOpen(false);
+                    setPillarListError(null);
+                    if (!isCreatePillarModalOpen) {
+                        setSelectedStationForPillars(null);
+                    }
+                }}
+                station={selectedStationForPillars}
+                pillars={stationPillars}
+                isLoading={pillarListLoading}
+                onReload={() => {
+                    if (selectedStationForPillars) {
+                        fetchStationPillars(selectedStationForPillars.id);
+                    }
+                }}
+                onAddPillar={() => {
+                    if (selectedStationForPillars) {
+                        setIsCreatePillarModalOpen(true);
+                        setCreatePillarError(null);
+                    }
+                }}
+                error={pillarListError}
+            />
+
+            <CreatePillarModal
+                isOpen={isCreatePillarModalOpen}
+                onClose={() => {
+                    setIsCreatePillarModalOpen(false);
+                    setCreatePillarError(null);
+                    if (!isPillarListModalOpen) {
+                        setSelectedStationForPillars(null);
+                    }
+                }}
+                station={selectedStationForPillars}
+                onCreate={handleCreatePillar}
+                isSubmitting={isCreatingPillar}
+                errorMessage={createPillarError}
             />
 
             {/* Delete Station Modal */}
