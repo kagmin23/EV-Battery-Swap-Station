@@ -79,7 +79,7 @@ export const getSubscriptionPlansApi = async (): Promise<
     const camelData = Array.isArray(response.data)
       ? response.data.map(normalizeSubscriptionPlan)
       : [];
-
+    console.log(camelData)
     sSubscriptionPlans.set(camelData);
     return { ...response, data: camelData };
   } catch (error) {
