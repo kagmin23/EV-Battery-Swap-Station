@@ -9,7 +9,7 @@ export interface Battery {
     serial: string;
     model: string;
     soh: number;
-    status: 'charging' | 'faulty' | 'idle' | 'full' | 'in-use';
+    status: 'charging' | 'faulty' | 'idle' | 'full' | 'in-use' | 'is-booking';
     station?: {
         _id: string;
         stationName: string;

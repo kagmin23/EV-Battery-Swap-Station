@@ -154,7 +154,7 @@ export default function BatteryLog() {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-slate-50">
+    <div className="p-6 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

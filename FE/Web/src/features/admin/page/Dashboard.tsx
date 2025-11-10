@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { mockBatteries } from '../../../mock/BatteryData';
-import { getPendingSupportRequestsCount } from '../../../mock/SupportRequestData';
 import KPICard from '../components/KPICard';
 import RecentTransactionsTable from '../components/RecentTransactionsTable';
-import { Spinner } from '@/components/ui/spinner';
 import { BatteryApi, type Battery } from '../apis/batteryApi';
 import { toast } from 'sonner';
 import { StaffService, type Staff } from '../../../services/api/staffService';
 import { DriverService, type Driver } from '../../../services/api/driverService';
-import { TransactionApi } from '../apis/transactionApi';
+import { TransactionService } from '@/services/api/transactionService';
 import { UserService } from '@/services/api/userService';
 import { StationService } from '@/services/api/stationService';
 import { ReportsApi } from '../apis/reportsApi';
@@ -93,10 +91,10 @@ export default function Dashboard() {
 
         // Fetch all transactions for revenue calculation
         try {
-          const allTransactionData = await TransactionApi.getAllTransactions();
-          setAllTransactions(allTransactionData.map(t => ({
-            cost: t.cost || t.amount || 0,
-            transaction_time: t.transaction_time || t.createdAt || t.created_at || new Date().toISOString()
+          const allTransactionResponse = await TransactionService.getAllTransactions({});
+          setAllTransactions(allTransactionResponse.data.map(t => ({
+            cost: t.cost || 0,
+            transaction_time: t.transaction_time || new Date().toISOString()
           })));
         } catch (err) {
           console.error('Error fetching all transactions:', err);
@@ -105,14 +103,15 @@ export default function Dashboard() {
         
         // Fetch recent transactions from API (limit to 5)
         try {
-          const transactionData = await TransactionApi.getAllTransactions({ limit: 5 });
+          const transactionResponse = await TransactionService.getAllTransactions({ limit: 5 });
+          const transactionData = transactionResponse.data;
           
           // Get unique user IDs and station IDs
           const uniqueUserIds = Array.from(new Set(
-            transactionData.map(t => t.user_id || t.userId).filter(Boolean)
+            transactionData.map(t => t.user_id).filter(Boolean)
           ));
           const uniqueStationIds = Array.from(new Set(
-            transactionData.map(t => t.station_id || t.stationId).filter(Boolean)
+            transactionData.map(t => t.station_id).filter(Boolean)
           ));
 
           // Fetch user and station details in parallel
@@ -148,11 +147,11 @@ export default function Dashboard() {
 
           // Map API response to table format with fetched names
           const formattedTransactions = transactionData.map(t => ({
-            transaction_id: t.transaction_id || t.transactionId || t._id,
-            user_name: userDetailsMap.get(t.user_id || t.userId) || 'Unknown User',
-            station_name: stationDetailsMap.get(t.station_id || t.stationId) || 'Unknown Station',
-            transaction_time: t.transaction_time || t.createdAt || t.created_at || new Date().toISOString(),
-            cost: t.cost || t.amount || 0,
+            transaction_id: t.transaction_id,
+            user_name: userDetailsMap.get(t.user_id) || 'Unknown User',
+            station_name: stationDetailsMap.get(t.station_id) || 'Unknown Station',
+            transaction_time: t.transaction_time,
+            cost: t.cost,
           }));
           
           setRecentTransactions(formattedTransactions);
@@ -194,7 +193,6 @@ export default function Dashboard() {
 
   // Calculate statistics
   const totalStations = stations.length;
-  const totalStationCapacity = stations.reduce((sum, s) => sum + s.capacity, 0);
   const totalAvailableBatteries = stations.reduce((sum, s) => sum + s.availableBatteries, 0);
   const totalBatteries = batteries.length;
   // Count active users from API data
@@ -228,14 +226,6 @@ export default function Dashboard() {
   };
 
   // Convert to display-friendly object for chart consumption
-  const batteryByStatusDisplay = Object.entries(batteryByStatus).reduce<Record<string, number>>((acc, [key, value]) => {
-    const display = statusDisplayMap[key as keyof typeof batteryByStatus];
-    acc[display.label] = value;
-    return acc;
-  }, {});
-
-  const pendingSupport = getPendingSupportRequestsCount();
-  const lowHealthBatteries = batteries.filter(b => b.soh < 85).length;
 
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('vi-VN', {
@@ -328,7 +318,7 @@ export default function Dashboard() {
         <KPICard
           title="Total Batteries"
           value={totalBatteries}
-          subtitle={`${batteryByStatus.full} available`}
+          subtitle={`${batteryByStatus.idle + batteryByStatus.full} available`}
           icon="🔋"
           bgColor="bg-green-100"
         />

@@ -34,15 +34,10 @@ export default function RecentTransactionsTable({ transactions }: RecentTransact
       <div 
         className="bg-white p-6 rounded-xl shadow-lg border border-gray-200"
       >
-        <div className="flex justify-between items-center mb-5">
+        <div className="mb-5">
           <h3 className="text-lg font-bold text-gray-900">
             Recent Transactions
           </h3>
-          <button 
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium shadow-md"
-          >
-            View All
-          </button>
         </div>
         
         {/* Empty State */}
@@ -78,15 +73,10 @@ export default function RecentTransactionsTable({ transactions }: RecentTransact
     <div 
       className="bg-white p-6 rounded-xl shadow-lg border border-gray-200"
     >
-      <div className="flex justify-between items-center mb-5">
+      <div className="mb-5">
         <h3 className="text-lg font-bold text-gray-900">
           Recent Transactions
         </h3>
-        <button 
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium shadow-md"
-        >
-          View All
-        </button>
       </div>
       
       <div className="overflow-x-auto">

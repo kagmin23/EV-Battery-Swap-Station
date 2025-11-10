@@ -7,7 +7,8 @@ import {
   ChevronRight,
   ClipboardCheck,
   Battery,
-  Headphones
+  Headphones,
+  Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -24,6 +25,13 @@ const menuItems = [
     icon: Home,
     description: 'Overview',
     path: '/staff/dashboard'
+  },
+  {
+    id: 'battery-swap',
+    label: 'Battery Swap',
+    icon: Zap,
+    description: 'Manage battery slots',
+    path: '/staff/battery-swap'
   },
   {
     id: 'payment-history',
