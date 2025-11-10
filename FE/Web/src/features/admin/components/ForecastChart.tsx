@@ -1,13 +1,20 @@
 import React from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import type { ForecastDataPoint } from '@/mock/ForecastData';
 
 interface ForecastChartProps {
-  data: ForecastDataPoint[];
+  data: ForecastChartPoint[];
   title: string;
   unit: string;
   color: string;
   showConfidence?: boolean;
+}
+
+export interface ForecastChartPoint {
+  date: string;
+  predicted: number;
+  confidenceLow?: number;
+  confidenceHigh?: number;
+  actual?: number;
 }
 
 export const ForecastChart: React.FC<ForecastChartProps> = ({
@@ -17,13 +24,24 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
   color,
   showConfidence = true,
 }) => {
-  const maxValue = Math.max(
-    ...data.map(d => showConfidence ? d.confidenceHigh : d.predicted)
+  if (data.length === 0) {
+    return (
+      <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6 flex items-center justify-center h-64">
+        <p className="text-sm text-slate-500">Không có dữ liệu dự báo</p>
+      </div>
+    );
+  }
+
+  const confidenceUpperValues = data.map((d) =>
+    showConfidence && typeof d.confidenceHigh === 'number' ? d.confidenceHigh : d.predicted
   );
-  const minValue = Math.min(
-    ...data.map(d => showConfidence ? d.confidenceLow : d.predicted)
+  const confidenceLowerValues = data.map((d) =>
+    showConfidence && typeof d.confidenceLow === 'number' ? d.confidenceLow : d.predicted
   );
-  const range = maxValue - minValue;
+
+  const maxValue = Math.max(...confidenceUpperValues);
+  const minValue = Math.min(...confidenceLowerValues);
+  const range = maxValue - minValue || 1;
 
   const getY = (value: number): number => {
     return 100 - ((value - minValue) / range) * 100;
@@ -80,12 +98,19 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
       <div className="relative h-64 mb-4">
         <svg className="w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none">
           {/* Confidence Band */}
-          {showConfidence && (
+          {showConfidence && data.every((d) => typeof d.confidenceHigh === 'number' && typeof d.confidenceLow === 'number') && (
             <path
-              d={`M 0,${getY(data[0].confidenceHigh)} ${data.map((d, i) => 
-                `L ${(i / (data.length - 1)) * 800},${getY(d.confidenceHigh)}`
-              ).join(' ')} ${data.slice().reverse().map((d, i) => 
-                `L ${((data.length - 1 - i) / (data.length - 1)) * 800},${getY(d.confidenceLow)}`
+              d={`M 0,${getY(data[0].confidenceHigh ?? data[0].predicted)} ${data
+                .map((d, i) =>
+                  `L ${(i / (data.length - 1)) * 800},${getY(d.confidenceHigh ?? d.predicted)}`
+                )
+                .join(' ')} ${data
+                .slice()
+                .reverse()
+                .map((d, i) =>
+                  `L ${((data.length - 1 - i) / (data.length - 1)) * 800},${getY(
+                    d.confidenceLow ?? d.predicted
+                  )}`
               ).join(' ')} Z`}
               fill={color}
               fillOpacity="0.1"
@@ -94,9 +119,9 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
 
           {/* Predicted Line */}
           <path
-            d={`M 0,${getY(data[0].predicted)} ${data.map((d, i) => 
-              `L ${(i / (data.length - 1)) * 800},${getY(d.predicted)}`
-            ).join(' ')}`}
+            d={`M 0,${getY(data[0].predicted)} ${data
+              .map((d, i) => `L ${(i / (data.length - 1)) * 800},${getY(d.predicted)}`)
+              .join(' ')}`}
             stroke={color}
             strokeWidth="3"
             fill="none"
@@ -105,20 +130,20 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
           />
 
           {/* Actual Data Points (if available) */}
-          {data.filter(d => d.actual !== undefined).map((d, i) => {
-            const actualIndex = data.indexOf(d);
-            return (
+          {data
+            .map((d, i) => ({ d, i }))
+            .filter(({ d }) => typeof d.actual === 'number')
+            .map(({ d, i }) => (
               <circle
                 key={i}
-                cx={(actualIndex / (data.length - 1)) * 800}
+                cx={(i / (data.length - 1)) * 800}
                 cy={getY(d.actual!)}
                 r="4"
                 fill="#10b981"
                 stroke="white"
                 strokeWidth="2"
               />
-            );
-          })}
+            ))}
 
           {/* Grid Lines */}
           {[0, 25, 50, 75, 100].map((y) => (
