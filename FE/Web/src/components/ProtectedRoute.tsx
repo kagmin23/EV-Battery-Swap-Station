@@ -38,7 +38,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     // Redirect based on user's actual role
     switch (user.role) {
       case 'admin':
-        return <Navigate to="/overview" replace />;
+        return <Navigate to="/admin/dashboard" replace />;
       case 'staff':
         return <Navigate to="/staff" replace />;
       case 'driver':

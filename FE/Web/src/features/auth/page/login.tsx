@@ -14,7 +14,7 @@ const LoginPage: React.FC = () => {
   const redirectBasedOnRole = useCallback((role: string) => {
     switch (role) {
       case 'admin':
-        navigate('/overview', { replace: true });
+        navigate('/admin/dashboard', { replace: true });
         break;
       case 'staff':
         navigate('/staff', { replace: true });
