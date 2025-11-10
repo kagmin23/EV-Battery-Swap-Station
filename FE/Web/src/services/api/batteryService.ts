@@ -21,6 +21,8 @@ export interface Battery {
     createdAt: string;
     updatedAt: string;
     __v: number;
+    currentSlot?: string | null;
+    currentPillar?: string | null;
 }
 
 export interface CreateBatteryRequest {

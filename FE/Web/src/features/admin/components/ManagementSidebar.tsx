@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   Users,
-  Home,
   ChevronLeft,
   ChevronRight,
   CreditCard,
@@ -16,8 +15,8 @@ import {
   RefreshCw,
   FolderOpen,
   DollarSign,
-  MessageSquareText
-  , LifeBuoy
+  MessageSquareText,
+  LifeBuoy
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -30,13 +29,6 @@ interface ManagementSidebarProps {
 
 const menuItems = [
   {
-    id: 'overview',
-    label: 'Overview',
-    icon: Home,
-    description: 'Overall statistics',
-    route: '/staff/overview'
-  },
-  {
     id: 'dashboard',
     label: 'Dashboard',
     icon: LayoutDashboard,
@@ -45,9 +37,9 @@ const menuItems = [
   },
   {
     id: 'battery-changes',
-    label: 'Battery Changes',
+    label: 'Swap History',
     icon: RefreshCw,
-    description: 'Manage battery changes',
+    description: 'Battery swap history',
     route: '/admin/battery-changes'
   },
   {

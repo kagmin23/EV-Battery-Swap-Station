@@ -138,8 +138,6 @@ export const OverviewPage: React.FC = () => {
                     resolved: [resolvedComplaints.length]
                 }
             });
-
-            toast.success('Successfully loaded overview data');
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Error loading overview data';
             setError(errorMessage);

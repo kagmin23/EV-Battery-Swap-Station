@@ -45,6 +45,7 @@ const createApiRequest = () => {
 
 export const TransactionPage: React.FC = () => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [allTransactionsForStats, setAllTransactionsForStats] = useState<Transaction[]>([]);
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const [stations, setStations] = useState<Array<{ id: string; name: string }>>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -72,6 +73,38 @@ export const TransactionPage: React.FC = () => {
             setStations(stationList);
         } catch (err) {
             console.error('Error loading stations:', err);
+        }
+    };
+
+    // Load all transactions for stats calculation only
+    const loadAllTransactionsForStats = async () => {
+        try {
+            const response = await TransactionService.getAllTransactions({});
+            const apiTransactions = response.data;
+            
+            // Simple conversion for stats only - we only need cost
+            const convertedForStats = apiTransactions.map((t: ApiTransaction) => ({
+                id: t.transaction_id,
+                transactionId: t.transaction_id,
+                userId: t.user_id,
+                stationId: t.station_id,
+                batteryGiven: t.battery_given,
+                batteryReturned: t.battery_returned,
+                vehicleId: t.vehicle_id,
+                batteryId: t.battery_id,
+                bookingId: t.booking_id,
+                transactionTime: new Date(t.transaction_time),
+                cost: t.cost,
+                status: 'completed' as const,
+                userName: '',
+                stationName: '',
+                vehicleName: '',
+            }));
+            
+            setAllTransactionsForStats(convertedForStats);
+        } catch (err) {
+            console.error('Error loading all transactions for stats:', err);
+            setAllTransactionsForStats([]);
         }
     };
 
@@ -271,6 +304,7 @@ export const TransactionPage: React.FC = () => {
     useEffect(() => {
         const loadData = async () => {
             await loadStations();
+            await loadAllTransactionsForStats();
         };
         loadData();
     }, []);
@@ -413,11 +447,11 @@ export const TransactionPage: React.FC = () => {
         setCurrentPage(1);
     }, [filters.search, filters.stationId, filters.date, filters.limit]);
 
-    // Calculate stats
-    const totalTransactions = transactions.length;
-    const totalRevenue = transactions.reduce((sum, t) => sum + t.cost, 0);
+    // Calculate stats from ALL transactions, not just filtered ones
+    const totalTransactions = allTransactionsForStats.length;
+    const totalRevenue = allTransactionsForStats.reduce((sum, t) => sum + t.cost, 0);
     const averageCost = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
-    const uniqueUsers = new Set(transactions.map(t => t.userId)).size;
+    const uniqueUsers = new Set(allTransactionsForStats.map(t => t.userId)).size;
 
     return (
         <div className="p-6 space-y-8">
