@@ -49,7 +49,7 @@ export const StationPillarsModal: React.FC<StationPillarsModalProps> = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden">
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden bg-slate-50/95 border border-slate-200 shadow-[0_35px_80px_rgba(15,23,42,0.35)] drop-shadow-2xl">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-semibold text-slate-800 flex items-center gap-2">
                         <Layers className="h-5 w-5 text-blue-600" />

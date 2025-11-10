@@ -94,7 +94,7 @@ export const CreatePillarModal: React.FC<CreatePillarModalProps> = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md border border-slate-200 shadow-2xl drop-shadow-2xl">
                 <DialogHeader>
                     <DialogTitle className="text-lg font-semibold text-slate-800">
                         Add New Pillar
