@@ -138,7 +138,8 @@ const handleAxiosError = (error: unknown) => {
   if (axios.isAxiosError(error)) {
     if (error.response) {
       const status = error.response.status;
-      const message = error.response.data?.message || 'Server error';
+      const responseMessage = error.response.data?.message;
+      const message = responseMessage || 'Server error';
 
       switch (status) {
         case 400:
@@ -154,7 +155,7 @@ const handleAxiosError = (error: unknown) => {
         case 422:
           throw new Error(`Validation Error: ${message}`);
         case 500:
-          throw new Error('Internal Server Error: Please try again later');
+          throw new Error(responseMessage ? responseMessage : 'Internal Server Error: Please try again later');
         default:
           throw new Error(`Error ${status}: ${message}`);
       }

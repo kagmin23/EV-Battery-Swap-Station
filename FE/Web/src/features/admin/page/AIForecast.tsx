@@ -106,6 +106,38 @@ export default function AIForecast() {
     }));
   }, [forecast, capacityRecommendation]);
 
+  const demandInsight = useMemo(() => {
+    if (!forecast || forecast.forecast.length === 0) return null;
+    const points = forecast.forecast;
+    const totalHours = points.length;
+    const totalDays = totalHours / 24;
+    const start = points[0].predicted_demand;
+    const end = points[points.length - 1].predicted_demand;
+    return {
+      start,
+      end,
+      totalDays,
+      dailyChange: totalDays > 0 ? (end - start) / totalDays : 0
+    };
+  }, [forecast]);
+
+  const capacityInsight = useMemo(() => {
+    if (!forecast || !capacityRecommendation || forecast.forecast.length === 0) return null;
+    const currentCapacity = capacityRecommendation.analysis.current_capacity;
+    if (!currentCapacity || currentCapacity <= 0) return null;
+    const points = forecast.forecast;
+    const totalHours = points.length;
+    const totalDays = totalHours / 24;
+    const start = (points[0].predicted_demand / currentCapacity) * 100;
+    const end = (points[points.length - 1].predicted_demand / currentCapacity) * 100;
+    return {
+      start,
+      end,
+      totalDays,
+      dailyChange: totalDays > 0 ? (end - start) / totalDays : 0
+    };
+  }, [forecast, capacityRecommendation]);
+
   const filteredRecommendations = useMemo(() => {
     if (!recommendationsSummary) return [];
     if (selectedInsightCategory === 'all') return recommendationsSummary.recommendations;
@@ -425,20 +457,34 @@ export default function AIForecast() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ForecastChart
-          data={demandChartData}
-          title="Station Usage Demand Forecast"
-          unit="swaps"
-          color="#3b82f6"
-          showConfidence={false}
-        />
-        <ForecastChart
-          data={capacityChartData}
-          title="Capacity Utilization Forecast (%)"
-          unit="%"
-          color="#10b981"
-          showConfidence={false}
-        />
+        <div className="space-y-2">
+          <ForecastChart
+            data={demandChartData}
+            title="Station Usage Demand Forecast"
+            unit="swaps"
+            color="#3b82f6"
+            showConfidence={false}
+          />
+          {demandInsight && (
+            <p className="text-xs text-slate-200 bg-white/10 rounded-xl px-4 py-2">
+              Start: {formatNumber(demandInsight.start, 2)} swaps/hour • Daily change: {formatNumber(demandInsight.dailyChange, 2)} swaps/hour • After {Math.round(demandInsight.totalDays)} days: {formatNumber(demandInsight.end, 2)} swaps/hour
+            </p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <ForecastChart
+            data={capacityChartData}
+            title="Capacity Utilization Forecast (%)"
+            unit="%"
+            color="#10b981"
+            showConfidence={false}
+          />
+          {capacityInsight && (
+            <p className="text-xs text-slate-200 bg-white/10 rounded-xl px-4 py-2">
+              Start: {formatNumber(capacityInsight.start, 1)}% • Daily change: {formatNumber(capacityInsight.dailyChange, 1)}% • After {Math.round(capacityInsight.totalDays)} days: {formatNumber(capacityInsight.end, 1)}%
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Capacity Recommendation */}
