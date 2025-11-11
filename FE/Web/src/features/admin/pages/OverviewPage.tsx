@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    Activity,
     TrendingUp,
     Users,
-    Clock,
-    Car,
-    Star,
-    CreditCard,
     UserCheck,
     Battery,
     MapPin,
@@ -18,12 +13,16 @@ import {
     MessageSquareText,
     Brain
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { PageLoadingSpinner } from '@/components/ui/loading-spinner';
-import { AdminService } from '@/services/api/adminService';
+import { AdminService, type FeedbackItem } from '@/services/api/adminService';
 import { StationService } from '@/services/api/stationService';
+import type { Station } from '@/services/api/stationService';
 import { StaffService } from '@/services/api/staffService';
+import type { Staff } from '@/services/api/staffService';
 import { TransactionService } from '@/services/api/transactionService';
+import type { Transaction, TransactionResponse } from '@/services/api/transactionService';
 import { OverviewCharts } from '../components/OverviewCharts';
 
 interface OverviewStats {
@@ -49,6 +48,7 @@ interface DetailedStats {
 export const OverviewPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
     const [stats, setStats] = useState<OverviewStats>({
         totalStations: 0,
         totalStaff: 0,
@@ -73,38 +73,52 @@ export const OverviewPage: React.FC = () => {
         complaints: { labels: ['Complaints'], pending: [0], resolved: [0] }
     });
 
+    const handleNavigateToAIForecast = () => {
+        navigate('/admin/ai-forecast');
+    };
+
     const loadOverviewData = async () => {
         try {
             setIsLoading(true);
             setError(null);
 
             // Fetch data from multiple APIs in parallel
-            const [stations, staff, feedbacks, transactions] = await Promise.all([
-                StationService.getAllStations().catch(() => []),
-                StaffService.getAllStaff().catch(() => []),
-                AdminService.getFeedbacks().catch(() => []),
-                TransactionService.getAllTransactions({}).catch(() => ({ data: [] }))
+            const [stations, staff, feedbacks, transactionsResponse] = await Promise.all([
+                StationService.getAllStations().catch((): Station[] => []),
+                StaffService.getAllStaff().catch((): Staff[] => []),
+                AdminService.getFeedbacks().catch((): FeedbackItem[] => []),
+                TransactionService.getAllTransactions({}).catch(
+                    (): TransactionResponse => ({ success: false, data: [] as Transaction[] })
+                )
             ]);
 
-            // Calculate detailed stats
-            const activeComplaints: any[] = [];
-            const resolvedComplaints: any[] = [];
-            const totalRevenue = transactions.data.reduce((sum: number, t: any) => sum + (t.cost || 0), 0);
-            const averageTransactionCost = transactions.data.length > 0 ? totalRevenue / transactions.data.length : 0;
+            const stationsWithStatus = stations as Array<Station & { status?: string }>;
+            const activeStations = stationsWithStatus.filter((station) => station.status === 'ACTIVE').length;
+            const maintenanceStations = stationsWithStatus.filter((station) => station.status === 'MAINTENANCE').length;
 
-            // Station stats
-            const activeStations = stations.filter((s: any) => s.status === 'ACTIVE').length;
-            const maintenanceStations = stations.filter((s: any) => s.status === 'MAINTENANCE').length;
+            const activeStaffCount = staff.filter((staffMember) => staffMember.status === 'active').length;
+            const suspendedStaffCount = staff.filter((staffMember) => staffMember.status === 'locked').length;
 
-            // Staff stats
-            const activeStaff = staff.filter((s: any) => s.status === 'active').length;
-            const suspendedStaff = staff.filter((s: any) => s.status === 'locked').length;
+            const transactionsData: Transaction[] = transactionsResponse.data ?? [];
+            const totalRevenue = transactionsData.reduce(
+                (sum: number, transaction) => sum + (transaction.cost || 0),
+                0
+            );
+            const averageTransactionCost =
+                transactionsData.length > 0 ? totalRevenue / transactionsData.length : 0;
+
+            const resolvedComplaints = feedbacks.filter(
+                (feedback) => feedback.booking?.status === 'resolved'
+            );
+            const activeComplaints = feedbacks.filter(
+                (feedback) => feedback.booking?.status !== 'resolved'
+            );
 
             setStats({
                 totalStations: stations.length,
                 totalStaff: staff.length,
                 totalDrivers: 0, // Would need driver service
-                totalTransactions: transactions.data.length,
+                totalTransactions: transactionsData.length,
                 totalRevenue,
                 pendingComplaints: activeComplaints.length,
                 activeBatteries: 0 // Would need battery service
@@ -114,8 +128,8 @@ export const OverviewPage: React.FC = () => {
             setDetailedStats({
                 activeStations,
                 maintenanceStations,
-                activeStaff,
-                suspendedStaff,
+                activeStaff: activeStaffCount,
+                suspendedStaff: suspendedStaffCount,
                 totalComplaints: feedbacks.length,
                 resolvedComplaints: resolvedComplaints.length,
                 averageTransactionCost
@@ -130,7 +144,7 @@ export const OverviewPage: React.FC = () => {
                 },
                 staff: {
                     labels: ['Active', 'Suspended'],
-                    data: [activeStaff, suspendedStaff]
+                    data: [activeStaffCount, suspendedStaffCount]
                 },
                 complaints: {
                     labels: ['Complaints'],
@@ -138,8 +152,6 @@ export const OverviewPage: React.FC = () => {
                     resolved: [resolvedComplaints.length]
                 }
             });
-
-            toast.success('Successfully loaded overview data');
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Error loading overview data';
             setError(errorMessage);
@@ -354,7 +366,11 @@ export const OverviewPage: React.FC = () => {
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200">
+                <Card
+                    className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200"
+                    onClick={handleNavigateToAIForecast}
+                    role="button"
+                >
                     <CardHeader>
                         <CardTitle className="text-lg font-semibold text-slate-800 flex items-center">
                             <Brain className="h-6 w-6 mr-2 text-purple-600" />
