@@ -91,9 +91,9 @@ const StationList: React.FC<{
                     onPress: async () => {
                         try {
                             await clearFavorites();
-                            console.log('✅ Favorites cache cleared successfully');
+                            console.log('Favorites cache cleared successfully');
                         } catch (error) {
-                            console.error('❌ Failed to clear favorites cache:', error);
+                            console.error(' Failed to clear favorites cache:', error);
                         }
                     },
                 },
@@ -108,15 +108,6 @@ const StationList: React.FC<{
         ? allStations.filter(station => isFavorite(station.id)) // Use all stations for favorites
         : availableStations; // Use nearby stations for nearby tab
 
-    console.log('🔍 Debug Favorites:', {
-        activeTab,
-        favoriteCount: favoriteStations.length,
-        favoriteIds: favoriteStations,
-        allStationsCount: allStations.length,
-        nearStationsCount: nearStation.length,
-        filteredCount: filteredStations.length,
-        filteredIds: filteredStations.map(s => s.id)
-    });
 
     // Loading skeleton component
     const LoadingSkeleton = () => (
