@@ -14,15 +14,14 @@ export default function BatterySwapSimulation() {
         pillarId?: string;
         vehicleId?: string;
         bookingId?: string;
-        id?: string; // MongoDB ObjectId
+        id?: string;
     }>();
     const pillarGrid = usePillarGrid();
     const loading = usePillarGridLoading();
     const error = usePillarGridError();
-    const vehicles = useVehicles(); // Get vehicles from store
+    const vehicles = useVehicles();
 
     const [selectedSlot, setSelectedSlot] = useState<GridSlot | null>(null);
-    const [swapProgress, setSwapProgress] = useState<'idle' | 'removing' | 'inserting' | 'completed'>('idle');
     const [swapData, setSwapData] = useState<SwapResponse | null>(null);
     const [initiating, setInitiating] = useState(false);
     const [insertingOldBattery, setInsertingOldBattery] = useState(false);
@@ -37,9 +36,8 @@ export default function BatterySwapSimulation() {
 
     // Debug: Log when swapData changes
     useEffect(() => {
-        console.log('🔔 swapData changed:', swapData ? 'HAS DATA' : 'NULL');
         if (swapData) {
-            console.log('📋 swapData details:', {
+            console.log(' swapData details:', {
                 swapId: swapData.swapId,
                 hasInstructions: !!swapData.instructions,
                 hasBookedBattery: !!swapData.bookedBattery,
@@ -54,11 +52,6 @@ export default function BatterySwapSimulation() {
             const vehicle = vehicles.find(v => v.vehicleId === vehicleId);
             if (vehicle) {
                 setVehicleData(vehicle);
-                console.log('✅ Vehicle found in store:', {
-                    vehicleId: vehicle.vehicleId,
-                    carName: vehicle.carName,
-                    batteryModel: vehicle.batteryModel
-                });
             } else {
                 console.warn('⚠️ Vehicle not found in store. Will use defaults.');
             }
@@ -217,8 +210,8 @@ export default function BatterySwapSimulation() {
                 bookingId, // UUID fallback
                 id // MongoDB ObjectId (preferred)
             });
-            console.log('✅ Swap initiated successfully:', data);
-            console.log('📦 Setting swapData state...');
+            console.log(' Swap initiated successfully:', data);
+            console.log(' Setting swapData state...');
 
             // Force new object to ensure React detects change
             setSwapData({ ...data });
@@ -226,9 +219,9 @@ export default function BatterySwapSimulation() {
             console.log('✅ swapData state updated');
 
             // Refetch pillar grid to update slot statuses (empty slot is now reserved)
-            console.log('🔄 Refetching pillar grid to update slot statuses...');
+            console.log(' Refetching pillar grid to update slot statuses...');
             await getPillarGrid(pillarId, 2, 5);
-            console.log('✅ Pillar grid refreshed');
+            console.log(' Pillar grid refreshed');
 
             showSuccessToast(data.message || 'Battery swap initiated successfully');
         } catch (err: any) {
@@ -254,7 +247,7 @@ export default function BatterySwapSimulation() {
         const batteryModel = vehicleData?.batteryModel || 'LiFePO4-48V-100Ah';
         const carInfo = vehicleData ? `${vehicleData.carName} (${vehicleData.licensePlate})` : 'your vehicle';
 
-        // Always prompt for battery serial (vehicle schema doesn't track current battery)
+        // Always prompt for battery serial input
         Alert.prompt(
             'Insert Old Battery',
             `Enter old battery serial from ${carInfo}:\n(Model: ${batteryModel})`,
@@ -367,7 +360,7 @@ export default function BatterySwapSimulation() {
 
                             const result = await completeBatterySwap(swapData.swapId);
 
-                            console.log('✅ Swap completed:', result);
+                            console.log(' Swap completed:', result);
                             setSwapCompleted(true);
 
                             // Refetch grid to see final state
@@ -410,40 +403,6 @@ export default function BatterySwapSimulation() {
                 }
             ]
         );
-    };
-
-    const handleStartSwap = () => {
-        if (!selectedSlot) {
-            showErrorToast('Please select a battery slot');
-            return;
-        }
-
-        // Validate: Must select the correct booked slot
-        if (swapData && selectedSlot.slotNumber !== swapData.bookedBattery.slotNumber) {
-            showErrorToast(`Only slot #${swapData.bookedBattery.slotNumber} (${swapData.bookedBattery.serial}) is allowed`);
-            return;
-        }
-
-        console.log('🔄 Starting battery swap process...');
-        setSwapProgress('removing');
-
-        // Simulate removing old battery and placing in empty slot (2 seconds)
-        setTimeout(() => {
-            console.log('📤 Removing old battery...');
-            setSwapProgress('inserting');
-
-            // Simulate taking new battery (2 seconds)
-            setTimeout(() => {
-                console.log('📥 Taking new battery...');
-                setSwapProgress('completed');
-
-                // Auto navigate back after completion
-                setTimeout(() => {
-                    console.log('✅ Swap completed! Navigating back...');
-                    router.back();
-                }, 2000);
-            }, 2000);
-        }, 2000);
     };
 
     if (loading) {
@@ -662,8 +621,7 @@ export default function BatterySwapSimulation() {
                                         slot.status === 'reserved' &&
                                         slot.slotNumber === swapData.emptySlot.slotNumber;
 
-                                    const isDisabled = !isReservedEmptySlot &&
-                                        (slot.status === 'empty' || swapProgress !== 'idle');
+                                    const isDisabled = !isReservedEmptySlot && slot.status === 'empty';
 
                                     // Check if this is the slot where new battery will come from
                                     const isBookedBatterySlot = swapData &&
@@ -800,25 +758,14 @@ export default function BatterySwapSimulation() {
                 )}
 
                 {/* Swap Progress */}
-                {(swapProgress !== 'idle' || insertingOldBattery || completingSwap) && (
+                {(insertingOldBattery || completingSwap) && (
                     <View style={styles.progressCard}>
                         <ActivityIndicator size="large" color="#6C63FF" />
                         <Text style={styles.progressTitle}>
                             {insertingOldBattery && 'Receiving old battery...'}
                             {completingSwap && 'Completing swap...'}
-                            {swapProgress === 'removing' && 'Removing old battery...'}
-                            {swapProgress === 'inserting' && 'Inserting new battery...'}
-                            {swapProgress === 'completed' && 'Swap completed! ✅'}
                         </Text>
                     </View>
-                )}
-
-                {/* Action Button */}
-                {selectedSlot && swapProgress === 'idle' && (
-                    <TouchableOpacity style={styles.swapButton} onPress={handleStartSwap}>
-                        <Ionicons name="swap-horizontal" size={24} color="#fff" />
-                        <Text style={styles.swapButtonText}>Start Battery Swap</Text>
-                    </TouchableOpacity>
                 )}
             </ScrollView>
         </SafeAreaView>
