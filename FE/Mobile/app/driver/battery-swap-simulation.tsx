@@ -1,12 +1,12 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Animated } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { usePillarGrid, usePillarGridLoading, usePillarGridError, getPillarGrid, clearPillarGrid, GridSlot } from '@/store/pillarGrid';
-import { showErrorToast, showSuccessToast } from '@/utils/toast';
-import { initiateBatterySwap, insertOldBattery, completeBatterySwap, SwapResponse } from '@/features/driver/apis/swap_simulate';
+import { completeBatterySwap, initiateBatterySwap, insertOldBattery, SwapResponse } from '@/features/driver/apis/swap_simulate';
+import { clearPillarGrid, getPillarGrid, GridSlot, usePillarGrid, usePillarGridError, usePillarGridLoading } from '@/store/pillarGrid';
 import { useVehicles, Vehicle } from '@/store/vehicle';
+import { showErrorToast, showSuccessToast } from '@/utils/toast';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function BatterySwapSimulation() {
     const router = useRouter();
@@ -1057,6 +1057,7 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 16,
         marginBottom: 16,
+        
     },
     instructionsHeader: {
         flexDirection: 'row',

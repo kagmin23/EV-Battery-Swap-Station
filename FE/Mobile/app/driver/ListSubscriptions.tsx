@@ -1,10 +1,10 @@
-import { createSubscriptionPaymentApi, getSubscriptionPlansApi, useSubscriptionPlans } from '@/store/subcription';
+import { confirmSubscriptionApi, createSubscriptionPaymentApi, getSubscriptionPlansApi, useSubscriptionPlans } from '@/store/subcription';
 import { Ionicons } from '@expo/vector-icons';
+import * as ExpoLinking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as ExpoLinking from 'expo-linking';
 
 function ListSubscriptions() {
     const router = useRouter();
@@ -113,7 +113,6 @@ function ListSubscriptions() {
             try {
                 // defensive: some API responses may use `id` instead of `_id`
                 const planId = item._id ?? item.id ?? item.planId ?? null;
-                console.log('[create-subscription-payment] item', item);
 
                 if (!planId) {
                     Alert.alert('Payment error', 'Missing plan id for this subscription.');
@@ -121,9 +120,7 @@ function ListSubscriptions() {
                 }
 
                 const payload = { planId, returnUrl };
-                console.log('[create-subscription-payment] payload', payload);
                 const paymentRes = await createSubscriptionPaymentApi(payload);
-                console.log('[create-subscription-payment] response', paymentRes);
 
                 if (!paymentRes) {
                     Alert.alert('Payment error', 'No response from payment API');
@@ -140,6 +137,21 @@ function ListSubscriptions() {
                 if (!paymentData || !paymentData.url) {
                     Alert.alert('Payment error', 'Payment URL not returned');
                     return;
+                }
+
+                // attempt to confirm subscription on the server before redirecting
+                try {
+                    const subscriptionId = paymentData.subscriptionId ?? null;
+                    if (subscriptionId) {
+                        // call confirmSubscriptionApi but do not force a page reload
+                        // confirmSubscriptionApi expects { subscriptionId, planId }
+                        await confirmSubscriptionApi({ subscriptionId, planId });
+                    }
+                } catch (confErr) {
+                    console.warn('Failed to confirm subscription before redirect', confErr);
+                    // show a non-blocking alert so user knows confirmation failed
+                    // but still allow them to proceed to payment
+                    Alert.alert('Warning', 'Could not confirm subscription before payment. You can still proceed to VNPay.');
                 }
 
                 closeModal();

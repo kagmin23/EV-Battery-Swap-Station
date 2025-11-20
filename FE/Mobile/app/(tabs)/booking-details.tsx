@@ -68,7 +68,6 @@ export default function BookingDetailsScreen() {
                         bookingId: selectedBooking.bookingId,
                         ...(selectedBooking.id && { id: selectedBooking.id }) // MongoDB ObjectId (preferred)
                     }).toString();
-                    console.log('Navigation to swap:', selectedBooking)
                     router.push(`/driver/battery-swap-simulation?${queryParams}`);
                 } else {
                     showErrorToast('Pillar information is missing from this booking');

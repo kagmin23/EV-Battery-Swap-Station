@@ -48,6 +48,7 @@ export interface CreateSubscriptionPaymentResponse {
 
 export interface ConfirmSubscriptionRequest {
   subscriptionId: string;
+  planId: string;
 }
 
 export interface ApiResponse<T> {
@@ -79,7 +80,6 @@ export const getSubscriptionPlansApi = async (): Promise<
     const camelData = Array.isArray(response.data)
       ? response.data.map(normalizeSubscriptionPlan)
       : [];
-    console.log(camelData)
     sSubscriptionPlans.set(camelData);
     return { ...response, data: camelData };
   } catch (error) {
@@ -92,7 +92,6 @@ export const purchaseSubscriptionApi = async (
   body: PurchaseSubscriptionRequest
 ): Promise<ApiResponse<PurchasedSubscription>> => {
   try {
-    console.log("[API] POST /users/subscriptions/purchase", body);
     const response = await httpClient.post<ApiResponse<any>>(
       "/users/subscriptions/purchase",
       body
@@ -113,7 +112,6 @@ export const createSubscriptionPaymentApi = async (
   body: CreateSubscriptionPaymentRequest
 ): Promise<ApiResponse<CreateSubscriptionPaymentResponse>> => {
   try {
-    console.log("[API] POST /users/subscriptions/create-payment", body);
     const response = await httpClient.post<ApiResponse<any>>(
       "/users/subscriptions/create-payment",
       body
