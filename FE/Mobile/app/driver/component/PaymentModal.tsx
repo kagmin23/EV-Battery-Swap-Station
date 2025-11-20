@@ -1,6 +1,6 @@
 import { useCreateBooking } from '@/features/driver/apis/booking';
 import { useVnPay } from '@/store/payment';
-import { useSubscriptionPlans } from '@/store/subcription';
+// import { useSubscriptionPlans } from '@/store/subcription'; // Commented out - subscription logic disabled
 import { toCamelCase } from '@/utils/caseConverter';
 import { showErrorToast, showSuccessToast } from '@/utils/toast';
 import { useRouter } from 'expo-router';
@@ -74,17 +74,17 @@ export default function PaymentModal({
     const createBooking = createBookingMutation.mutateAsync;
     const bookingLoading = createBookingMutation.status === 'pending';
     const { createPayment, loading: vnpayLoading } = useVnPay();
-    const subscriptions = useSubscriptionPlans();
+    // const subscriptions = useSubscriptionPlans();
 
-    const hasInUseSubscription = useMemo(() => {
-        try {
-            return (subscriptions || []).some((s: any) =>
-                (s.userSubscription?.status || '').toString().toLowerCase() === 'in-use'
-            );
-        } catch {
-            return false;
-        }
-    }, [subscriptions]);
+    // const hasInUseSubscription = useMemo(() => {
+    //     try {
+    //         return (subscriptions || []).some((s: any) =>
+    //             (s.userSubscription?.status || '').toString().toLowerCase() === 'in-use'
+    //         );
+    //     } catch {
+    //         return false;
+    //     }
+    // }, [subscriptions]);
 
     const scheduled = useMemo(() => new Date(
         date.getFullYear(),
@@ -221,23 +221,25 @@ export default function PaymentModal({
                         </Text>
                     </TouchableOpacity>
 
+                    {/* VNPay payment option - Always visible (subscription check disabled) */}
+                    <TouchableOpacity
+                        style={[styles.actionBtn, { backgroundColor: '#3b82f6' }]}
+                        onPress={handlePayWithVnPay}
+                        disabled={vnpayLoading}
+                    >
+                        <Text style={[styles.actionText, { color: '#fff' }]}>
+                            {vnpayLoading ? 'Processing...' : 'Pay with VNPAY'}
+                        </Text>
+                    </TouchableOpacity>
+
+                    {/* 
+                    OLD CODE - Subscription logic (currently disabled):
                     {!hasInUseSubscription ? (
-                        <TouchableOpacity
-                            style={[styles.actionBtn, { backgroundColor: '#3b82f6' }]}
-                            onPress={handlePayWithVnPay}
-                            disabled={vnpayLoading}
-                        >
-                            <Text style={[styles.actionText, { color: '#fff' }]}>
-                                {vnpayLoading ? 'Processing...' : 'Pay with VNPAY'}
-                            </Text>
-                        </TouchableOpacity>
+                        <TouchableOpacity ... VNPay button ... />
                     ) : (
-                        <View style={[styles.actionBtn, { backgroundColor: 'transparent' }]}>
-                            <Text style={[styles.actionText, { color: '#bfa8ff', textAlign: 'center' }]}>
-                                You have an active subscription
-                            </Text>
-                        </View>
+                        <View ... "You have an active subscription" ... />
                     )}
+                    */}
 
                     <TouchableOpacity
                         style={[styles.actionBtn, { backgroundColor: '#120935' }]}
