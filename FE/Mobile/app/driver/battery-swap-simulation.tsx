@@ -135,7 +135,12 @@ export default function BatterySwapSimulation() {
         return '#6b7280';
     };
 
-    const getBatteryStatusIcon = (status: string) => {
+    const getBatteryStatusIcon = (status: string, soh?: number) => {
+        // If SOH >= 80%, use purple color
+        if (soh !== undefined && soh >= 80) {
+            return { name: 'battery-full' as const, color: '#8b5cf6' }; // Purple for high SOH
+        }
+
         switch (status) {
             case 'full': return { name: 'battery-full' as const, color: '#10b981' };
             case 'charging': return { name: 'battery-charging' as const, color: '#3b82f6' };
@@ -613,7 +618,7 @@ export default function BatterySwapSimulation() {
                         {pillarGrid.grid && Array.isArray(pillarGrid.grid) && pillarGrid.grid.map((row, rowIndex) => (
                             <View key={rowIndex} style={styles.gridRow}>
                                 {Array.isArray(row) && row.map((slot) => {
-                                    const batteryIcon = slot.battery ? getBatteryStatusIcon(slot.battery.status) : null;
+                                    const batteryIcon = slot.battery ? getBatteryStatusIcon(slot.battery.status, slot.battery.soh) : null;
                                     const isSelected = selectedSlot?.id === slot.id;
 
                                     // Allow clicking reserved empty slot (for inserting old battery)
@@ -622,6 +627,11 @@ export default function BatterySwapSimulation() {
                                         slot.slotNumber === swapData.emptySlot.slotNumber;
 
                                     const isDisabled = !isReservedEmptySlot && slot.status === 'empty';
+
+                                    // Check if slot is booked by another user (has reservation but not for current booking)
+                                    const isBookedByOther = slot.reservation &&
+                                        slot.status === 'reserved' &&
+                                        (!bookingId || slot.reservation.booking.bookingId !== bookingId);
 
                                     // Check if this is the slot where new battery will come from
                                     const isBookedBatterySlot = swapData &&
@@ -680,6 +690,12 @@ export default function BatterySwapSimulation() {
                                                 {/* Show "Tap to insert" hint for reserved empty slot */}
                                                 {isReservedEmptySlot && !oldBatteryInserted && (
                                                     <Ionicons name="add-circle" size={16} color="#fff" />
+                                                )}
+                                                {/* Show lock icon for slot booked by another user */}
+                                                {isBookedByOther && (
+                                                    <View style={{ marginTop: -15 }}>
+                                                        <Ionicons name="lock-closed" size={16} color="#fbbf24" />
+                                                    </View>
                                                 )}
                                                 <Text style={styles.slotStatus}>{slot.status}</Text>
                                                 {slot.battery && (
@@ -929,6 +945,23 @@ const styles = StyleSheet.create({
         color: '#a3e635',
         fontSize: 8,
         fontWeight: '600',
+    },
+    bookedByOtherContainer: {
+        position: 'absolute',
+        top: -8,
+        left: '50%',
+        transform: [{ translateX: -12 }],
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(251, 191, 36, 0.9)',
+        paddingHorizontal: 4,
+        paddingVertical: 2,
+        borderRadius: 10,
+    },
+    bookedByOtherText: {
+        fontSize: 6,
+        color: '#fbbf24',
+        fontWeight: '700',
     },
     detailsCard: {
         backgroundColor: '#1a0f3e',
