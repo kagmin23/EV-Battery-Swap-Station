@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { mockStations } from '@/mock/StationData';
 
 // Base URL for API
 const API_BASE_URL = 'http://localhost:8001/api';
@@ -56,6 +57,68 @@ export interface UpdateStationRequest {
     availableBatteries?: number;
 }
 
+const STATION_CACHE_KEY = 'station_cache';
+const STATION_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+interface StationCachePayload {
+    data: Station[];
+    timestamp: number;
+}
+
+const readStationCache = (): StationCachePayload | null => {
+    try {
+        const cached = localStorage.getItem(STATION_CACHE_KEY);
+        return cached ? (JSON.parse(cached) as StationCachePayload) : null;
+    } catch (error) {
+        console.warn('Failed to parse station cache:', error);
+        return null;
+    }
+};
+
+const writeStationCache = (data: Station[]): void => {
+    try {
+        const payload: StationCachePayload = {
+            data,
+            timestamp: Date.now(),
+        };
+        localStorage.setItem(STATION_CACHE_KEY, JSON.stringify(payload));
+    } catch (error) {
+        console.warn('Failed to persist station cache:', error);
+    }
+};
+
+const getMockStationsFallback = (): Station[] => {
+    const now = new Date().toISOString();
+    return mockStations.map((station, index): Station => ({
+        _id: station.station_id,
+        stationName: station.station_name,
+        address: station.location,
+        city: 'Ho Chi Minh City',
+        district: `District ${index + 1}`,
+        location: {
+            type: 'Point',
+            coordinates: [0, 0],
+        },
+        map_url: '',
+        capacity: station.capacity,
+        sohAvg: 0,
+        availableBatteries: Math.floor(station.capacity * 0.6),
+        batteryCounts: {
+            total: station.capacity,
+            available: Math.floor(station.capacity * 0.6),
+            charging: Math.floor(station.capacity * 0.2),
+            inUse: Math.floor(station.capacity * 0.15),
+            faulty: Math.max(0, Math.floor(station.capacity * 0.05)),
+        },
+        createdAt: now,
+        updatedAt: now,
+        __v: 0,
+    }));
+};
+
+const isCacheFresh = (payload: StationCachePayload | null): payload is StationCachePayload =>
+    !!payload && Date.now() - payload.timestamp < STATION_CACHE_TTL;
+
 // Create axios instance
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -99,6 +162,7 @@ export class StationService {
         try {
             const response = await api.get('/admin/stations');
             if (response.data.success) {
+                writeStationCache(response.data.data);
                 return response.data.data;
             }
             throw new Error(response.data.message || 'Failed to fetch stations');
@@ -126,8 +190,14 @@ export class StationService {
                             throw new Error(`Error ${status}: ${message}`);
                     }
                 } else if (error.request) {
-                    // Network error
-                    throw new Error('Network Error: Please check your internet connection');
+                    // Network error - attempt to return cached data or fallback mock data
+                    const cachedStations = readStationCache();
+                    if (isCacheFresh(cachedStations)) {
+                        console.warn('Using cached station data due to network error.');
+                        return cachedStations.data;
+                    }
+                    console.warn('Network error fetching stations. Falling back to mock data.');
+                    return getMockStationsFallback();
                 } else {
                     // Other error
                     throw new Error(`Request Error: ${error.message}`);
