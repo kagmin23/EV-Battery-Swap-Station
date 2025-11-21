@@ -60,7 +60,7 @@ export default function PaymentSuccessScreen() {
                             <Text style={styles.infoValue}>{formattedDate} · {formattedTime}</Text>
                         </View> */}
 
-                        {/* {purchased ? (
+                        {purchased ? (
                             <>
                                 <View style={[styles.infoRow, { marginTop: 8 }]}> 
                                     <Text style={styles.infoLabel}>Subscription Status:</Text>
@@ -69,6 +69,10 @@ export default function PaymentSuccessScreen() {
                                 <View style={styles.infoRow}>
                                     <Text style={styles.infoLabel}>Plan ID:</Text>
                                     <Text style={styles.infoValue}>{purchased.plan ?? '—'}</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoLabel}>Type:</Text>
+                                    <Text style={styles.infoValue}>{purchased.type ?? '—'}</Text>
                                 </View>
                                 <View style={styles.infoRow}>
                                     <Text style={styles.infoLabel}>Start:</Text>
@@ -88,7 +92,7 @@ export default function PaymentSuccessScreen() {
                                 <Text style={styles.infoLabel}>Subscription:</Text>
                                 <Text style={styles.infoValue}>Not available</Text>
                             </View>
-                        )} */}
+                        )}
                     </View>
 
                     <View style={styles.actionsRow}>

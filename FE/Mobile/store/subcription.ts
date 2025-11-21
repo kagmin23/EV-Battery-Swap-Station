@@ -6,6 +6,8 @@ export interface SubscriptionPlan {
   _id: string;
   subscriptionName: string;
   price: number;
+  /** optional type: 'change' | 'periodic' */
+  type?: string | null;
   durations: number;
   description: string;
   countSwap: number | null;
@@ -25,6 +27,8 @@ export interface PurchasedSubscription {
   _id: string;
   user: string;
   plan: string;
+  /** optional type: 'change' | 'periodic' */
+  type?: string | null;
   start_date: string;
   end_date: string;
   remaining_swaps: number | null;
@@ -49,6 +53,12 @@ export interface CreateSubscriptionPaymentResponse {
 export interface ConfirmSubscriptionRequest {
   subscriptionId: string;
   planId: string;
+}
+
+export interface SetMonthlyDayRequest {
+  planId: string;
+  monthly_day: string;
+  station_id: string;
 }
 
 export interface ApiResponse<T> {
@@ -140,6 +150,32 @@ export const confirmSubscriptionApi = async (
     const payload = raw && raw.data ? raw.data : raw;
     const camelData = normalizePurchasedSubscription(payload);
 
+    sPurchasedSubscription.set(camelData);
+    return { ...(response as any), data: camelData };
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Set or change the monthly swap day for the authenticated driver's active subscription.
+ * POST /users/subscriptions/monthly-day
+ * body: { planId, monthly_day, station_id }
+ */
+export const setMonthlySwapDayApi = async (
+  body: SetMonthlyDayRequest
+): Promise<ApiResponse<PurchasedSubscription>> => {
+  try {
+    const response = await httpClient.post<ApiResponse<any>>(
+      "/users/subscriptions/monthly-day",
+      body
+    );
+
+    const raw = (response as any).data;
+    const payload = raw && raw.data ? raw.data : raw;
+    const camelData = normalizePurchasedSubscription(payload);
+
+    // update local purchased subscription store with returned subscription (pending)
     sPurchasedSubscription.set(camelData);
     return { ...(response as any), data: camelData };
   } catch (error) {
