@@ -1,6 +1,5 @@
-import { confirmSubscriptionApi } from '@/store/subcription';
+import { usePurchasedSubscription } from '@/store/subcription';
 import { formatDateVN, formatTimeVN } from '@/utils/dateTime';
-import { showErrorToast, showSuccessToast } from '@/utils/toast';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
@@ -12,6 +11,8 @@ export default function PaymentSuccessScreen() {
 
     // @ts-ignore
     const routeParams = (router as any).params ?? {};
+
+    const purchased = usePurchasedSubscription();
 
     const amountParam = routeParams.amount as string | undefined;
     const transactionId = routeParams.transactionId as string | undefined;
@@ -41,7 +42,7 @@ export default function PaymentSuccessScreen() {
                         Thank you for using our service!
                     </Text>
 
-                    <View style={styles.infoBox}>
+                    {/* <View style={styles.infoBox}>
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>Amount:</Text>
                             <Text style={styles.infoValue}>{displayAmount}</Text>
@@ -58,33 +59,52 @@ export default function PaymentSuccessScreen() {
                             <Text style={styles.infoLabel}>Time:</Text>
                             <Text style={styles.infoValue}>{formattedDate} · {formattedTime}</Text>
                         </View>
-                    </View>
+
+                        {purchased ? (
+                            <>
+                                <View style={[styles.infoRow, { marginTop: 8 }]}> 
+                                    <Text style={styles.infoLabel}>Subscription Status:</Text>
+                                    <Text style={styles.infoValue}>{(purchased.status ?? '—').toString()}</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoLabel}>Plan ID:</Text>
+                                    <Text style={styles.infoValue}>{purchased.plan ?? '—'}</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoLabel}>Type:</Text>
+                                    <Text style={styles.infoValue}>{purchased.type ?? '—'}</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoLabel}>Start:</Text>
+                                    <Text style={styles.infoValue}>{purchased.start_date ? formatDateVN(new Date(purchased.start_date)) : '—'}</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoLabel}>End:</Text>
+                                    <Text style={styles.infoValue}>{purchased.end_date ? formatDateVN(new Date(purchased.end_date)) : '—'}</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoLabel}>Remaining swaps:</Text>
+                                    <Text style={styles.infoValue}>{purchased.remaining_swaps ?? '—'}</Text>
+                                </View>
+                            </>
+                        ) : (
+                            <View style={[styles.infoRow, { marginTop: 8 }]}> 
+                                <Text style={styles.infoLabel}>Subscription:</Text>
+                                <Text style={styles.infoValue}>Not available</Text>
+                            </View>
+                        )}
+                    </View> */}
 
                     <View style={styles.actionsRow}>
                         <TouchableOpacity
                             style={styles.actionBtn}
                             onPress={async () => {
-                                // Try to confirm subscription on backend if subscriptionId is present
-                                const subscriptionId = (routeParams.subscriptionId as string | undefined) ?? (transactionId as string | undefined);
-                                if (subscriptionId) {
-                                    try {
-                                        const res = await confirmSubscriptionApi({ subscriptionId });
-                                        if (res && res.success) {
-                                            showSuccessToast(res.message || 'Subscription confirmed');
-                                        } else {
-                                            showErrorToast(res?.message || 'Failed to confirm subscription');
-                                        }
-                                    } catch (err: any) {
-                                        showErrorToast(err?.message || 'Failed to confirm subscription');
-                                    }
-                                }
-
-                                // Navigate back to ListSubscriptions
+                                // Removed automatic confirm call. This button simply navigates back.
                                 // Cast to any to satisfy the generated route union types
                                 router.push('/driver/ListSubscriptions' as any);
                             }}
                         >
-                            <Text style={styles.actionBtnText}>Confirm</Text>
+                            <Text style={styles.actionBtnText}>View Subciption</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

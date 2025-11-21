@@ -13,10 +13,9 @@ import {
   AlertTriangle,
   LayoutDashboard,
   RefreshCw,
-  FolderOpen,
-  DollarSign,
   MessageSquareText,
-  LifeBuoy
+  LifeBuoy,
+  Brain
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -90,6 +89,13 @@ const menuItems = [
     icon: FileText,
     description: 'Transaction history',
     route: '/transactions'
+  },
+  {
+    id: 'ai-forecast',
+    label: 'Forecast System',
+    icon: Brain,
+    description: 'AI forecast analytics',
+    route: '/admin/ai-forecast'
   },
 
   {

@@ -1,12 +1,13 @@
 import { useCreateBooking } from '@/features/driver/apis/booking';
 import { useVnPay } from '@/store/payment';
+import { getPillarDetailsById } from '@/store/pillars';
 import { useSubscriptionPlans } from '@/store/subcription';
 import { toCamelCase } from '@/utils/caseConverter';
 import { showErrorToast, showSuccessToast } from '@/utils/toast';
+import * as ExpoLinking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useMemo } from 'react';
 import { Linking, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import * as ExpoLinking from 'expo-linking';
 
 interface PaymentModalProps {
     visible: boolean;
@@ -54,6 +55,13 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         textAlign: 'center',
     },
+    subscriptionNotice: {
+        color: '#bfb6ff',
+        textAlign: 'center',
+        marginTop: 8,
+        marginBottom: 6,
+        fontSize: 13,
+    },
 });
 
 export default function PaymentModal({
@@ -86,6 +94,16 @@ export default function PaymentModal({
         }
     }, [subscriptions]);
 
+    // const hasInUseSubscription = useMemo(() => {
+    //     try {
+    //         return (subscriptions || []).some((s: any) =>
+    //             (s.userSubscription?.status || '').toString().toLowerCase() === 'in-use'
+    //         );
+    //     } catch {
+    //         return false;
+    //     }
+    // }, [subscriptions]);
+
     const scheduled = useMemo(() => new Date(
         date.getFullYear(),
         date.getMonth(),
@@ -96,9 +114,11 @@ export default function PaymentModal({
     ), [date, time]);
 
     const handlePayAtStation = useCallback(async () => {
-        const vehicle = vehicles.find(x => x.vehicleId === selectedVehicleId);
-        if (!vehicle) return showErrorToast('Vehicle not found');
-        if (!vehicle.id) return showErrorToast('Vehicle ID missing');
+        // Find vehicle by either `vehicleId` (UUID) or `id` (MongoDB _id)
+        const vehicle = vehicles.find(x => x.vehicleId === selectedVehicleId || (x as any).id === selectedVehicleId);
+        if (!vehicle) return showErrorToast('Vehicle not found. Please select a vehicle.');
+        const vehicleIdForApi = (vehicle as any).id ?? vehicle.vehicleId;
+        if (!vehicleIdForApi) return showErrorToast('Vehicle internal id missing.');
 
         if (checkDuplicateBooking(vehicle.vehicleId!, station.id, scheduled)) {
             return showErrorToast('Duplicate booking within 20 minutes');
@@ -111,9 +131,28 @@ export default function PaymentModal({
         if (!pillarId) return showErrorToast('No pillar available');
 
         try {
-            const res = await createBooking({
+                // Debug info before sending booking
+                console.log('🔎 Booking debug:', {
+                    selectedVehicleId,
+                    vehicle,
+                    vehicleIdForApi,
+                    batteryId,
+                    pillarId,
+                    stationId: station?.id,
+                });
+
+                // Refresh pillar details to ensure latest battery/slot info
+                if (pillarId) {
+                    try {
+                        await getPillarDetailsById(pillarId);
+                    } catch (e) {
+                        console.warn('Failed to refresh pillar details', e);
+                    }
+                }
+
+                const res = await createBooking({
                 stationId: station.id,
-                vehicleId: vehicle.id, // Use MongoDB ObjectId instead of UUID
+                vehicleId: vehicleIdForApi,
                 scheduledTime: scheduled.toISOString(),
                 batteryId,
                 pillarId, // Use pillar ID from selected battery
@@ -132,8 +171,11 @@ export default function PaymentModal({
     }, [vehicles, selectedVehicleId, scheduled, station, getSelectedBatteryId, getSelectedPillarId, checkDuplicateBooking, createBooking, onClose, router]);
 
     const handlePayWithVnPay = useCallback(async () => {
-        const vehicle = vehicles.find(x => x.vehicleId === selectedVehicleId);
-        if (!vehicle) return showErrorToast('Vehicle not found');
+        const vehicle = vehicles.find(x => x.vehicleId === selectedVehicleId || (x as any).id === selectedVehicleId);
+        if (!vehicle) return showErrorToast('Vehicle not found. Please select a vehicle.');
+
+        const vehicleIdForApi = (vehicle as any).id ?? vehicle.vehicleId;
+        if (!vehicleIdForApi) return showErrorToast('Vehicle internal id missing.');
 
         const batteryId = getSelectedBatteryId();
         if (!batteryId) return showErrorToast('No battery available');
@@ -143,9 +185,28 @@ export default function PaymentModal({
 
         try {
             // 1. Create booking first
+            // Debug info before creating booking via VNPay flow
+            console.log('🔎 Booking (VNPay) debug:', {
+                selectedVehicleId,
+                vehicle,
+                vehicleIdForApi,
+                batteryId,
+                pillarId,
+                stationId: station?.id,
+            });
+
+            // Refresh pillar details to ensure latest battery/slot info
+            if (pillarId) {
+                try {
+                    await getPillarDetailsById(pillarId);
+                } catch (e) {
+                    console.warn('Failed to refresh pillar details', e);
+                }
+            }
+
             const bookingRes = await createBooking({
                 stationId: station.id,
-                vehicleId: vehicle.vehicleId!,
+                vehicleId: vehicleIdForApi as string,
                 scheduledTime: scheduled.toISOString(),
                 batteryId,
                 pillarId, // Use pillar ID from selected battery
@@ -200,7 +261,6 @@ export default function PaymentModal({
                 showErrorToast('Cannot open payment URL. Please try again.');
             }
         } catch (err: any) {
-            console.error('❌ VNPAY Error:', err);
             showErrorToast(err?.message || 'Payment failed');
         }
     }, [vehicles, selectedVehicleId, station, scheduled, getSelectedBatteryId, getSelectedPillarId, createBooking, createPayment, onClose, router, batteryPrice]);
@@ -211,33 +271,58 @@ export default function PaymentModal({
                 <View style={styles.modalContent}>
                     <Text style={styles.modalTitle}>Select Payment Method</Text>
 
-                    <TouchableOpacity
-                        style={[styles.actionBtn, { backgroundColor: '#22c55e' }]}
-                        onPress={handlePayAtStation}
-                        disabled={bookingLoading}
-                    >
-                        <Text style={[styles.actionText, { color: '#fff' }]}>
-                            {bookingLoading ? 'Booking...' : 'Pay at Station'}
-                        </Text>
-                    </TouchableOpacity>
+                    {hasInUseSubscription ? (
+                        // When user has an active subscription, show a single Booking Now button
+                        // (uses same logic as Pay at Station but presented as 'Booking Now')
+                        <>
+                            <TouchableOpacity
+                                style={[styles.actionBtn, { backgroundColor: '#22c55e' }]}
+                                onPress={handlePayAtStation}
+                                disabled={bookingLoading}
+                            >
+                                <Text style={[styles.actionText, { color: '#fff' }]}> 
+                                    {bookingLoading ? 'Booking...' : 'Booking Now'}
+                                </Text>
+                            </TouchableOpacity>
 
-                    {!hasInUseSubscription ? (
-                        <TouchableOpacity
-                            style={[styles.actionBtn, { backgroundColor: '#3b82f6' }]}
-                            onPress={handlePayWithVnPay}
-                            disabled={vnpayLoading}
-                        >
-                            <Text style={[styles.actionText, { color: '#fff' }]}>
-                                {vnpayLoading ? 'Processing...' : 'Pay with VNPAY'}
-                            </Text>
-                        </TouchableOpacity>
+                            <Text style={styles.subscriptionNotice}>You have an active subscription — Booking Now!</Text>
+                        </>
                     ) : (
-                        <View style={[styles.actionBtn, { backgroundColor: 'transparent' }]}>
-                            <Text style={[styles.actionText, { color: '#bfa8ff', textAlign: 'center' }]}>
-                                You have an active subscription
-                            </Text>
-                        </View>
+                        // No active subscription: show Pay at Station and VNPay options
+                        <>
+                            <TouchableOpacity
+                                style={[styles.actionBtn, { backgroundColor: '#22c55e' }]}
+                                onPress={handlePayAtStation}
+                                disabled={bookingLoading}
+                            >
+                                <Text style={[styles.actionText, { color: '#fff' }]}>
+                                    {bookingLoading ? 'Booking...' : 'Pay at Station'}
+                                </Text>
+                            </TouchableOpacity>
+
+                            {/* VNPay payment option - hidden when user has an in-use subscription */}
+                            {!hasInUseSubscription && (
+                                <TouchableOpacity
+                                    style={[styles.actionBtn, { backgroundColor: '#3b82f6' }]}
+                                    onPress={handlePayWithVnPay}
+                                    disabled={vnpayLoading}
+                                >
+                                    <Text style={[styles.actionText, { color: '#fff' }]}> 
+                                        {vnpayLoading ? 'Processing...' : 'Pay with VNPAY'}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                        </>
                     )}
+
+                    {/* 
+                    OLD CODE - Subscription logic (currently disabled):
+                    {!hasInUseSubscription ? (
+                        <TouchableOpacity ... VNPay button ... />
+                    ) : (
+                        <View ... "You have an active subscription" ... />
+                    )}
+                    */}
 
                     <TouchableOpacity
                         style={[styles.actionBtn, { backgroundColor: '#120935' }]}

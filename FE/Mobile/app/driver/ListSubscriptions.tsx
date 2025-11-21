@@ -1,14 +1,18 @@
-import { createSubscriptionPaymentApi, getSubscriptionPlansApi, useSubscriptionPlans } from '@/store/subcription';
+import { getAllStationInMap, useStationInMap } from '@/store/station';
+import { confirmSubscriptionApi, createSubscriptionPaymentApi, getSubscriptionPlansApi, sLocalSchedules, useLocalSchedules, useSubscriptionPlans } from '@/store/subcription';
 import { Ionicons } from '@expo/vector-icons';
+import { format } from 'date-fns';
+import * as ExpoLinking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as ExpoLinking from 'expo-linking';
 
 function ListSubscriptions() {
     const router = useRouter();
     const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'expired' | 'cancelled'>('all');
+    const [selectedType, setSelectedType] = useState<'all' | string>('all');
     const [loading, setLoading] = useState(false);
     const subscriptions = useSubscriptionPlans();
 
@@ -32,7 +36,6 @@ function ListSubscriptions() {
 
     const statusOptions = useMemo(
         () => [
-            { key: 'all', label: 'All' },
             { key: 'active', label: 'Active' },
             { key: 'expired', label: 'Expired' },
             { key: 'cancelled', label: 'Cancelled' },
@@ -40,10 +43,27 @@ function ListSubscriptions() {
         []
     );
 
+    const typeOptions = useMemo(() => {
+        const types = new Set<string>();
+        (subscriptions || []).forEach((s) => {
+            if (s?.type) types.add(String(s.type));
+        });
+        return ['all', ...Array.from(types)];
+    }, [subscriptions]);
+
     const filtered = useMemo(() => {
-        if (selectedStatus === 'all') return subscriptions || [];
-        return (subscriptions || []).filter((s) => (s.status || '').toLowerCase() === selectedStatus);
-    }, [selectedStatus, subscriptions]);
+        let list = subscriptions || [];
+
+        if (selectedStatus !== 'all') {
+            list = list.filter((s) => (s.status || '').toString().toLowerCase() === selectedStatus);
+        }
+
+        if (selectedType !== 'all') {
+            list = list.filter((s) => ((s.type ?? '').toString().toLowerCase() === selectedType.toString().toLowerCase()));
+        }
+
+        return list;
+    }, [selectedStatus, selectedType, subscriptions]);
 
     // If the current driver already has a subscription in-use, they cannot purchase
     // another plan until that subscription ends. Compute this once for the list.
@@ -62,6 +82,13 @@ function ListSubscriptions() {
         if (s === 'expired') return '#8b8b8b'; // gray
         if (s === 'cancelled') return '#ff8a00'; // orange
         return '#6d4aff'; // default/purple
+    };
+
+    const getTypeColor = (value?: string) => {
+        const t = (value || '').toString().toLowerCase();
+        if (t === 'periodic') return '#00b894'; // teal/green for periodic
+        if (t === 'change') return '#ffd166'; // amber for change
+        return '#c0b3ff'; // default light purple
     };
 
     const formatDate = (iso?: string) => {
@@ -83,9 +110,20 @@ function ListSubscriptions() {
     const [modalVisible, setModalVisible] = useState(false);
     const [selected, setSelected] = useState<any>(null);
     const [modalLoading, setModalLoading] = useState(false);
+    const [showSchedule, setShowSchedule] = useState(false);
+    const [monthlyDay, setMonthlyDay] = useState('');
+    const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+    const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
+    const [scheduleConfirmed, setScheduleConfirmed] = useState(false);
+    const stationsInMap = useStationInMap();
+    const localSchedules = useLocalSchedules();
 
     const openModal = (item: any) => {
         setSelected(item);
+        setShowSchedule(false);
+        setMonthlyDay('');
+        setSelectedStationId(null);
+        setScheduleConfirmed(false);
         setModalVisible(true);
     };
 
@@ -113,7 +151,6 @@ function ListSubscriptions() {
             try {
                 // defensive: some API responses may use `id` instead of `_id`
                 const planId = item._id ?? item.id ?? item.planId ?? null;
-                console.log('[create-subscription-payment] item', item);
 
                 if (!planId) {
                     Alert.alert('Payment error', 'Missing plan id for this subscription.');
@@ -121,9 +158,7 @@ function ListSubscriptions() {
                 }
 
                 const payload = { planId, returnUrl };
-                console.log('[create-subscription-payment] payload', payload);
                 const paymentRes = await createSubscriptionPaymentApi(payload);
-                console.log('[create-subscription-payment] response', paymentRes);
 
                 if (!paymentRes) {
                     Alert.alert('Payment error', 'No response from payment API');
@@ -140,6 +175,18 @@ function ListSubscriptions() {
                 if (!paymentData || !paymentData.url) {
                     Alert.alert('Payment error', 'Payment URL not returned');
                     return;
+                }
+
+                // attempt to confirm subscription on the server before redirecting
+                try {
+                    const subscriptionId = paymentData.subscriptionId ?? null;
+                    if (subscriptionId) {
+                        // call confirmSubscriptionApi but do not force a page reload
+                        // confirmSubscriptionApi expects { subscriptionId, planId }
+                        await confirmSubscriptionApi({ subscriptionId, planId });
+                    }
+                } catch (confErr) {
+                    console.warn('Failed to confirm subscription before redirect', confErr);
                 }
 
                 closeModal();
@@ -251,6 +298,24 @@ function ListSubscriptions() {
                 <View style={{ width: 36 }} />
             </View>
 
+            {/* Type Filter bar */}
+            <View style={styles.typeFilterBar}>
+                {typeOptions.map((t) => (
+                    <TouchableOpacity
+                        key={t}
+                        onPress={() => setSelectedType(t)}
+                        style={[
+                            styles.filterButton,
+                            selectedType === t && styles.filterButtonActive,
+                        ]}
+                    >
+                        <Text style={[styles.filterLabel, selectedType === t && styles.filterLabelActive]}>
+                            {t === 'all' ? 'All' : capitalize(t)}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+
             {/* Filter bar */}
             <View style={styles.filterBar}>
                 {statusOptions.map((opt) => (
@@ -289,6 +354,11 @@ function ListSubscriptions() {
 
                             <View style={styles.metaColumn}>
                                 <Text style={styles.meta}>Duration: {s.durations} days</Text>
+                                {s.type ? (
+                                    <View style={[styles.typePill, { backgroundColor: getTypeColor(s.type) }]}>
+                                        <Text style={[styles.typePillText, { color: getTypeColor(s.type) === '#ffd166' ? '#2b2b2b' : '#fff' }]}>{capitalize(String(s.type))}</Text>
+                                    </View>
+                                ) : null}
                                 <Text style={styles.meta}>Swaps: {s.countSwap ?? 0}</Text>
                                 <Text style={styles.meta}>Slots: {s.quantitySlot ?? 0}</Text>
                                 <Text style={styles.createdAt}>Created: {formatDate(s.createdAt)}</Text>
@@ -358,25 +428,202 @@ function ListSubscriptions() {
 
                         <View style={styles.modalBody}>
                             <Text style={styles.modalDesc}>{selected.description}</Text>
+                            {selected.type ? (
+                                <View style={[styles.typePill, { marginTop: 5, backgroundColor: getTypeColor(selected.type) }]}>
+                                    <Text style={[styles.typePillText, { color: getTypeColor(selected.type) === '#ffd166' ? '#2b2b2b' : '#fff' }]}>{capitalize(String(selected.type))}</Text>
+                                </View>
+                            ) : null}
                             <Text style={styles.modalLabel}>Price: ₫{selected.price.toLocaleString()}</Text>
                             <Text style={styles.modalLabel}>Duration: {selected.durations} days</Text>
                             <Text style={styles.modalMeta}>Swaps: {selected.countSwap ?? 0} • Slots: {selected.quantitySlot ?? 0}</Text>
                             <Text style={styles.modalDate}>Created: {formatDate(selected.createdAt)}</Text>
+
+                            {showSchedule ? (
+                                <View style={{ marginTop: 20 }}>
+                                    <Text style={{ color: '#bfa8ff', marginBottom: 6 }}>Monthly swap day (YYYY-MM-DD) *</Text>
+                                    <TouchableOpacity
+                                        onPress={() => setDatePickerVisible(true)}
+                                        style={{
+                                            borderWidth: 1,
+                                            borderColor: monthlyDay && /^\d{4}-\d{2}-\d{2}$/.test(monthlyDay) ? '#00b894' : '#2a1f4e',
+                                            paddingVertical: 10,
+                                            paddingHorizontal: 12,
+                                            borderRadius: 8,
+                                        }}
+                                    >
+                                        <Text style={{ color: monthlyDay ? '#fff' : '#bfa8ff' }}>{monthlyDay || 'Select date (YYYY-MM-DD)'}</Text>
+                                    </TouchableOpacity>
+                                    <DateTimePickerModal
+                                        isVisible={isDatePickerVisible}
+                                        mode="date"
+                                        onConfirm={(date: Date) => {
+                                            const iso = (() => {
+                                                try {
+                                                    return format(date, 'yyyy-MM-dd');
+                                                } catch {
+                                                    return date.toISOString().slice(0, 10);
+                                                }
+                                            })();
+                                            setMonthlyDay(iso);
+                                            setDatePickerVisible(false);
+                                        }}
+                                        onCancel={() => setDatePickerVisible(false)}
+                                    />
+
+                                    <Text style={{ color: '#bfa8ff', marginTop: 12, marginBottom: 6 }}>Select station *</Text>
+                                    <View style={{ maxHeight: 160, borderWidth: 1, borderColor: '#2a1f4e', borderRadius: 8, padding: 8 }}>
+                                        {stationsInMap && stationsInMap.length > 0 ? (
+                                            <ScrollView>
+                                                {stationsInMap.map((st: any) => (
+                                                    <TouchableOpacity key={st.id} style={{ paddingVertical: 8 }} onPress={() => setSelectedStationId(st.id)}>
+                                                        <Text style={{ color: selectedStationId === st.id ? '#00b894' : '#fff' }}>{st.stationName}</Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </ScrollView>
+                                        ) : (
+                                            <Text style={{ color: '#8b7bb8' }}>No stations loaded</Text>
+                                        )}
+                                    </View>
+                                </View>
+                            ) : null}
+
+                            {scheduleConfirmed ? (
+                                <View style={{ marginTop: 12, padding: 10, backgroundColor: '#15102b', borderRadius: 8 }}>
+                                    <Text style={{ color: '#bfa8ff', marginBottom: 6 }}>Confirmed schedule</Text>
+                                    <Text style={{ color: '#fff' }}>Date: {monthlyDay}</Text>
+                                    <Text style={{ color: '#fff', marginTop: 4 }}>Station: {stationsInMap?.find((st: any) => st.id === selectedStationId)?.stationName ?? '—'}</Text>
+                                </View>
+                            ) : null}
                         </View>
 
                         <View style={styles.modalFooter}>
                             {selected.status && selected.status.toLowerCase() === 'active' ? (
-                                <TouchableOpacity
-                                    style={[styles.buttonPrimary, modalLoading && { opacity: 0.7 }]}
-                                    onPress={() => onPurchase(selected)}
-                                    disabled={modalLoading}
-                                >
-                                    {modalLoading ? (
-                                        <ActivityIndicator color="white" />
+                                selected.type && selected.type.toString().toLowerCase() === 'periodic' ? (
+                                    showSchedule ? (
+                                        <View style={{ flexDirection: 'row', gap: 12, width: '60%' }}>
+                                            <TouchableOpacity
+                                                style={[styles.scheduleButton]}
+                                                onPress={() => {
+                                                    // cancel scheduling mode
+                                                    setShowSchedule(false);
+                                                    setMonthlyDay('');
+                                                    setSelectedStationId(null);
+                                                }}
+                                            >
+                                                <Text style={styles.scheduleButtonText}>Cancel</Text>
+                                            </TouchableOpacity>
+
+                                            <TouchableOpacity
+                                                style={[styles.buttonPrimary, { flex: 1 }, (!(monthlyDay && /^\d{4}-\d{2}-\d{2}$/.test(monthlyDay) && selectedStationId)) && { opacity: 0.6 }]}
+                                                onPress={() => {
+                                                    // validate then move to review mode (do not call API yet)
+                                                    if (!monthlyDay || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(monthlyDay) || !selectedStationId) return;
+                                                    // save schedule locally on the FE so other screens can read it
+                                                    try {
+                                                        const planId = selected._id ?? selected.id ?? null;
+                                                        if (planId) {
+                                                            sLocalSchedules.set({ ...(localSchedules || {}), [planId]: { monthlyDay, stationId: selectedStationId } });
+                                                        }
+                                                    } catch (e) {
+                                                        console.warn('Failed to save local schedule', e);
+                                                    }
+
+                                                    setScheduleConfirmed(true);
+                                                    setShowSchedule(false);
+                                                }}
+                                                disabled={!(monthlyDay && /^\d{4}-\d{2}-\d{2}$/.test(monthlyDay) && selectedStationId) || modalLoading}
+                                            >
+                                                <Text style={styles.buttonPrimaryText}>Confirm</Text>
+                                            </TouchableOpacity>
+                                        </View>
                                     ) : (
-                                        <Text style={styles.buttonPrimaryText}>Purchase</Text>
-                                    )}
-                                </TouchableOpacity>
+                                        scheduleConfirmed ? (
+                                            <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+                                                <TouchableOpacity
+                                                    style={[styles.scheduleButton]}
+                                                    onPress={() => {
+                                                        // re-open scheduling to edit
+                                                        setShowSchedule(true);
+                                                        setScheduleConfirmed(false);
+                                                    }}
+                                                >
+                                                    <Text style={styles.scheduleButtonText}>Edit Schedule</Text>
+                                                </TouchableOpacity>
+
+                                                <TouchableOpacity
+                                                    style={[styles.buttonPrimary, modalLoading && { opacity: 0.7 }, { flex: 1 }]}
+                                                    onPress={() => {
+                                                        // proceed to purchase flow (user confirmed schedule)
+                                                        onPurchase(selected);
+                                                    }}
+                                                    disabled={modalLoading}
+                                                >
+                                                    {modalLoading ? (
+                                                        <ActivityIndicator color="white" />
+                                                    ) : (
+                                                        <Text style={styles.buttonPrimaryText}>Purchase</Text>
+                                                    )}
+                                                </TouchableOpacity>
+                                            </View>
+                                        ) : (
+                                            <View style={{ flexDirection: 'column', gap: 12, width: '100%' }}>
+                                                {!scheduleConfirmed ? (
+                                                    <Text style={styles.scheduleHelperText}>Please make an appointment before purchasing.</Text>
+                                                ) : null}
+                                                <TouchableOpacity
+                                                    style={[styles.scheduleButton]}
+                                                    onPress={async () => {
+                                                        // show schedule UI and preload stations
+                                                        setShowSchedule(true);
+                                                        try {
+                                                            await getAllStationInMap();
+                                                        } catch (e) {
+                                                            console.warn('Failed to load stations for scheduling', e);
+                                                        }
+                                                        // save an initial local schedule placeholder so FE remembers scheduling intent
+                                                        try {
+                                                            const planId = selected._id ?? selected.id ?? null;
+                                                            if (planId) {
+                                                                sLocalSchedules.set({ ...(localSchedules || {}), [planId]: { monthlyDay: monthlyDay || null, stationId: selectedStationId || null } });
+                                                            }
+                                                        } catch (e) {
+                                                            console.warn('Failed to save initial local schedule', e);
+                                                        }
+                                                    }}
+                                                >
+                                                    <Text style={styles.scheduleButtonText}>Proceed to Schedule</Text>
+                                                </TouchableOpacity>
+
+                                                <View style={{ flex: 1 }}>
+                                                    <TouchableOpacity
+                                                        style={[styles.buttonPrimary, (!scheduleConfirmed || modalLoading) && { opacity: 0.6 }, { flex: 1 }]}
+                                                        onPress={() => onPurchase(selected)}
+                                                        disabled={modalLoading || !scheduleConfirmed}
+                                                    >
+                                                        {modalLoading ? (
+                                                            <ActivityIndicator color="white" />
+                                                        ) : (
+                                                            <Text style={styles.buttonPrimaryText}>Purchase</Text>
+                                                        )}
+                                                    </TouchableOpacity>
+                                                </View>
+                                            </View>
+
+                                        )
+                                    )
+                                ) : (
+                                    <TouchableOpacity
+                                        style={[styles.buttonPrimary, modalLoading && { opacity: 0.7 }]}
+                                        onPress={() => onPurchase(selected)}
+                                        disabled={modalLoading}
+                                    >
+                                        {modalLoading ? (
+                                            <ActivityIndicator color="white" />
+                                        ) : (
+                                            <Text style={styles.buttonPrimaryText}>Purchase</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                )
                             ) : (
                                 <View style={styles.buttonDisabled}>
                                     <Text style={styles.buttonDisabledText}>Not available</Text>
@@ -487,7 +734,7 @@ const styles = StyleSheet.create({
     modalDesc: { color: '#a0a0a0', marginBottom: 20 },
     modalMeta: { color: '#bfa8ff' },
     modalFooter: { marginTop: 14, flexDirection: 'row', justifyContent: 'flex-end' },
-    buttonPrimary: { backgroundColor: '#6d4aff', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 },
+    buttonPrimary: { backgroundColor: '#6d4aff', paddingHorizontal: 16, paddingVertical: 16, marginBottom: 10, alignItems: 'center', borderRadius: 12 },
     buttonPrimaryText: { color: 'white', fontWeight: '700' },
     buttonDisabled: {
         backgroundColor: '#1a0f3e',
@@ -501,6 +748,15 @@ const styles = StyleSheet.create({
     createdAt: { color: '#8b7bb8', fontSize: 12, marginTop: 6 },
     modalDate: { color: '#8b7bb8', marginTop: 8, fontSize: 13 },
     metaColumn: { marginTop: 20, flexDirection: 'column', gap: 15 },
+    typeFilterBar: {
+        flexDirection: 'row',
+        justifyContent: 'flex-start',
+        paddingHorizontal: 16,
+        paddingTop: 8,
+        paddingBottom: 8,
+        gap: 8,
+        flexWrap: 'wrap',
+    },
     priceButton: {
         marginTop: 16,
         backgroundColor: '#6d4aff',
@@ -535,6 +791,27 @@ const styles = StyleSheet.create({
         borderColor: '#2a233d',
     },
     disabledText: { color: '#bfa8ff', fontWeight: '700', textAlign: 'center' },
+    typePill: {
+        backgroundColor: '#ffd166',
+        alignSelf: 'flex-start',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 12,
+        marginBottom: 14
+    },
+    typePillText: { color: '#2b2b2b', fontWeight: '800' },
+    scheduleButton: {
+        borderWidth: 1,
+        borderColor: '#00b894',
+        backgroundColor: 'transparent',
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    scheduleButtonText: { color: '#00b894', fontWeight: '800' },
+    scheduleHelperText: { color: '#ffcccb', marginBottom: 2, marginTop: 12, fontSize: 13 },
 });
 
 export default ListSubscriptions;

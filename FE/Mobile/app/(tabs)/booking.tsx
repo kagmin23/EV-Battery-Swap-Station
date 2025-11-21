@@ -1,6 +1,9 @@
 import { useCreateBooking } from '@/features/driver/apis/booking';
 // import { getAllBatteryByStationId, useBatteriesInStation } from '@/store/baterry'; // No longer needed
+import { PillarCard } from '@/app/driver/component/pillar/PillarCard';
+import { PillarDetailModal } from '@/app/driver/component/pillar/PillarDetailModal';
 import { useBookings } from '@/store/booking';
+import { getPillarDetailsById, getPillarsByStationId, Pillar, usePillars } from '@/store/pillars';
 import { useSelectedStation } from '@/store/station';
 import { getAllVehicle, useVehicles, Vehicle } from '@/store/vehicle';
 import { formatDateVN, formatTimeVN } from '@/utils/dateTime';
@@ -12,9 +15,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PaymentModal from '../driver/component/PaymentModal';
-import { getPillarsByStationId, getPillarDetailsById, usePillars, Pillar } from '@/store/pillars';
-import { PillarCard } from '@/app/driver/component/pillar/PillarCard';
-import { PillarDetailModal } from '@/app/driver/component/pillar/PillarDetailModal';
 
 
 export default function BookingScreen() {
@@ -374,7 +374,7 @@ export default function BookingScreen() {
                                                 const battery = getSelectedBatteryInfo();
                                                 const hasBattery = !!battery;
                                                 return (
-                                                    <>
+                                                    <Text>
                                                         <Text style={[styles.batteryInfo, !hasBattery && { color: '#ff6b6b' }]}>
                                                             Battery: {battery?.model || 'No battery available'}
                                                             {battery?.soh ? ` (SOH: ${battery.soh}%)` : ''}
@@ -384,7 +384,7 @@ export default function BookingScreen() {
                                                                 Price: {battery.price.toLocaleString('vi-VN')} VND
                                                             </Text>
                                                         )}
-                                                    </>
+                                                    </Text>
                                                 );
                                             })()
                                         )}

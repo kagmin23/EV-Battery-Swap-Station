@@ -6,6 +6,8 @@ export interface SubscriptionPlan {
   _id: string;
   subscriptionName: string;
   price: number;
+  /** optional type: 'change' | 'periodic' */
+  type?: string | null;
   durations: number;
   description: string;
   countSwap: number | null;
@@ -25,6 +27,8 @@ export interface PurchasedSubscription {
   _id: string;
   user: string;
   plan: string;
+  /** optional type: 'change' | 'periodic' */
+  type?: string | null;
   start_date: string;
   end_date: string;
   remaining_swaps: number | null;
@@ -48,6 +52,13 @@ export interface CreateSubscriptionPaymentResponse {
 
 export interface ConfirmSubscriptionRequest {
   subscriptionId: string;
+  planId: string;
+}
+
+export interface SetMonthlyDayRequest {
+  planId: string;
+  monthly_day: string;
+  station_id: string;
 }
 
 export interface ApiResponse<T> {
@@ -61,6 +72,14 @@ export const useSubscriptionPlans = () => sSubscriptionPlans.use();
 
 export const sPurchasedSubscription = signify<PurchasedSubscription | null>(null);
 export const usePurchasedSubscription = () => sPurchasedSubscription.use();
+
+// Local-only schedule store for client-side scheduling (saved in memory across app session)
+export type LocalSchedule = { monthlyDay?: string | null; stationId?: string | null };
+export const sLocalSchedules = signify<Record<string, LocalSchedule>>({});
+export const useLocalSchedules = () => sLocalSchedules.use();
+
+// Note: use `useLocalSchedules()` inside React components to read the map,
+// and call `sLocalSchedules.set(...)` to update it from non-hook contexts.
 
 const normalizeSubscriptionPlan = (data: any): SubscriptionPlan =>
   toCamelCase(data) as SubscriptionPlan;
@@ -79,7 +98,6 @@ export const getSubscriptionPlansApi = async (): Promise<
     const camelData = Array.isArray(response.data)
       ? response.data.map(normalizeSubscriptionPlan)
       : [];
-    console.log(camelData)
     sSubscriptionPlans.set(camelData);
     return { ...response, data: camelData };
   } catch (error) {
@@ -92,7 +110,6 @@ export const purchaseSubscriptionApi = async (
   body: PurchaseSubscriptionRequest
 ): Promise<ApiResponse<PurchasedSubscription>> => {
   try {
-    console.log("[API] POST /users/subscriptions/purchase", body);
     const response = await httpClient.post<ApiResponse<any>>(
       "/users/subscriptions/purchase",
       body
@@ -113,7 +130,6 @@ export const createSubscriptionPaymentApi = async (
   body: CreateSubscriptionPaymentRequest
 ): Promise<ApiResponse<CreateSubscriptionPaymentResponse>> => {
   try {
-    console.log("[API] POST /users/subscriptions/create-payment", body);
     const response = await httpClient.post<ApiResponse<any>>(
       "/users/subscriptions/create-payment",
       body
@@ -142,6 +158,32 @@ export const confirmSubscriptionApi = async (
     const payload = raw && raw.data ? raw.data : raw;
     const camelData = normalizePurchasedSubscription(payload);
 
+    sPurchasedSubscription.set(camelData);
+    return { ...(response as any), data: camelData };
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Set or change the monthly swap day for the authenticated driver's active subscription.
+ * POST /users/subscriptions/monthly-day
+ * body: { planId, monthly_day, station_id }
+ */
+export const setMonthlySwapDayApi = async (
+  body: SetMonthlyDayRequest
+): Promise<ApiResponse<PurchasedSubscription>> => {
+  try {
+    const response = await httpClient.post<ApiResponse<any>>(
+      "/users/subscriptions/monthly-day",
+      body
+    );
+
+    const raw = (response as any).data;
+    const payload = raw && raw.data ? raw.data : raw;
+    const camelData = normalizePurchasedSubscription(payload);
+
+    // update local purchased subscription store with returned subscription (pending)
     sPurchasedSubscription.set(camelData);
     return { ...(response as any), data: camelData };
   } catch (error) {

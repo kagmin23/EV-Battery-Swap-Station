@@ -128,7 +128,6 @@ export const getListStationNear = async (payload: Location): Promise<Station[]> 
             isApiError: error.success !== undefined
         });
 
-        // Log the full error object for debugging
         console.error('Full error object:', error);
 
         sStation.set([])

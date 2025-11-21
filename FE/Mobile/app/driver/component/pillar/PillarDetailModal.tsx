@@ -25,140 +25,53 @@ export const PillarDetailModal: React.FC<PillarDetailModalProps> = ({
 
     if (!pillar) return null;
 
+    const getBatteryIcon = (slot: Slot) => {
+        if (!slot.battery) return null;
 
-
-    const getSlotStatusColor = (status: string) => {
-        switch (status) {
-            case 'occupied':
-                return '#10b981';
-            case 'empty':
-                return '#ef4444';
-            case 'reserved':
-                return '#f59e0b';
-            case 'maintenance':
-                return '#6b7280';
-            default:
-                return '#6b7280';
-        }
+        const soh = slot.battery.soh;
+        if (soh >= 80) return { name: 'battery-full' as const, color: '#10b981' };
+        if (soh >= 50) return { name: 'battery-half' as const, color: '#f59e0b' };
+        return { name: 'battery-dead' as const, color: '#ef4444' };
     };
 
-    const getBatteryStatusIcon = (status: string) => {
-        switch (status) {
-            case 'full':
-                return 'battery-full';
-            case 'charging':
-                return 'battery-charging';
-            case 'idle':
-                return 'battery-half';
-            case 'in-use':
-                return 'swap-horizontal';
-            case 'is-booking':
-                return 'time';
-            case 'faulty':
-                return 'battery-dead';
-            default:
-                return 'help-circle-outline';
-        }
-    };
-
-    const getBatteryStatusColor = (status: string) => {
-        switch (status) {
-            case 'full':
-                return '#10b981'; // Green - ready to use
-            case 'charging':
-                return '#3b82f6'; // Blue - charging
-            case 'idle':
-                return '#22c55e'; // Light green - available
-            case 'in-use':
-                return '#f59e0b'; // Orange - currently being used
-            case 'is-booking':
-                return '#a855f7'; // Purple - reserved/booked
-            case 'faulty':
-                return '#ef4444'; // Red - error/broken
-            default:
-                return '#6b7280'; // Gray - unknown
-        }
+    const getSlotColor = (slot: Slot) => {
+        if (slot.status === 'empty') return '#4a4a4a';
+        if (slot.status === 'reserved') return '#8b5cf6';
+        if (slot.status === 'occupied') return '#10b981';
+        if (slot.status === 'maintenance') return '#6b7280';
+        return '#4a4a4a';
     };
 
     const renderSlotCard = (slot: Slot) => {
+        const batteryIcon = getBatteryIcon(slot);
+
         return (
-            <View key={slot.id} style={styles.slotCard}>
-                <View style={styles.slotHeader}>
-                    <View style={styles.slotHeaderLeft}>
-                        <View
-                            style={[
-                                styles.slotNumberBadge,
-                                { backgroundColor: `${getSlotStatusColor(slot.status)}20` },
-                            ]}
-                        >
-                            <Text style={[styles.slotNumber, { color: getSlotStatusColor(slot.status) }]}>
-                                #{slot.slotNumber}
-                            </Text>
-                        </View>
-                        <View>
-                            <Text style={styles.slotCode}>{slot.slotCode}</Text>
-                            <View style={styles.slotStatusContainer}>
-                                <View
-                                    style={[styles.slotStatusDot, { backgroundColor: getSlotStatusColor(slot.status) }]}
-                                />
-                                <Text style={[styles.slotStatusText, { color: getSlotStatusColor(slot.status) }]}>
-                                    {slot.status.charAt(0).toUpperCase() + slot.status.slice(1)}
-                                </Text>
-                            </View>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Battery Info */}
-                {slot.battery ? (
-                    <View style={styles.batteryInfo}>
-                        <View style={styles.batteryHeader}>
-                            <Ionicons
-                                name={getBatteryStatusIcon(slot.battery.status) as any}
-                                size={24}
-                                color={getBatteryStatusColor(slot.battery.status)}
-                            />
-                            <View style={styles.batteryDetails}>
-                                <Text style={styles.batterySerial}>{slot.battery.serial}</Text>
-                                <Text style={styles.batteryModel}>{slot.battery.model}</Text>
-                            </View>
-                        </View>
-                        <View style={styles.batteryStats}>
-                            <View style={styles.batteryStat}>
-                                <Text style={styles.batteryStatLabel}>SOH</Text>
-                                <Text style={[styles.batteryStatValue, { color: slot.battery.soh >= 80 ? '#10b981' : '#f59e0b' }]}>
-                                    {slot.battery.soh}%
-                                </Text>
-                            </View>
-                            <View style={styles.batteryStatDivider} />
-                            <View style={styles.batteryStat}>
-                                <Text style={styles.batteryStatLabel}>Status</Text>
-                                <Text style={[styles.batteryStatValue, { color: getBatteryStatusColor(slot.battery.status) }]}>
-                                    {slot.battery.status}
-                                </Text>
-                            </View>
-                        </View>
-                    </View>
-                ) : (
-                    <View style={styles.emptySlot}>
-                        <Ionicons name="cube-outline" size={24} color="#6b7280" />
-                        <Text style={styles.emptySlotText}>Empty Slot</Text>
-                    </View>
+            <View
+                key={slot.id}
+                style={[
+                    styles.slotCard,
+                    { backgroundColor: getSlotColor(slot) }
+                ]}
+            >
+                <Text style={styles.slotNumber}>{slot.slotNumber}</Text>
+                {batteryIcon && (
+                    <Ionicons name={batteryIcon.name} size={20} color={batteryIcon.color} />
                 )}
-
-                {/* Last Activity */}
-                {slot.lastActivity && (
-                    <View style={styles.lastActivity}>
-                        <Ionicons name="time-outline" size={14} color="#9ca3af" />
-                        <Text style={styles.lastActivityText}>
-                            Last {slot.lastActivity.action}:{' '}
-                            {new Date(slot.lastActivity.timestamp).toLocaleString()}
-                        </Text>
-                    </View>
+                <Text style={styles.slotStatusText}>{slot.status}</Text>
+                {slot.battery && (
+                    <Text style={styles.batterySOH}>SOH: {slot.battery.soh}%</Text>
                 )}
             </View>
         );
     };
+
+    // Group slots into rows of 5
+    const groupedSlots = pillar.slots.reduce((acc: Slot[][], slot, index) => {
+        const rowIndex = Math.floor(index / 5);
+        if (!acc[rowIndex]) acc[rowIndex] = [];
+        acc[rowIndex].push(slot);
+        return acc;
+    }, []);
 
     return (
         <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
@@ -227,10 +140,16 @@ export const PillarDetailModal: React.FC<PillarDetailModalProps> = ({
                         )}
                     </View>
 
-                    {/* Slots List */}
-                    <Text style={styles.slotsTitle}>Slots ({pillar.slots.length})</Text>
+                    {/* Slots Grid */}
+                    <Text style={styles.slotsTitle}>Battery Slots ({pillar.slots.length})</Text>
                     <ScrollView style={styles.slotsList} showsVerticalScrollIndicator={false}>
-                        {pillar.slots.map(renderSlotCard)}
+                        <View style={styles.gridWrapper}>
+                            {groupedSlots.map((row, rowIndex) => (
+                                <View key={rowIndex} style={styles.gridRow}>
+                                    {row.map((slot) => renderSlotCard(slot))}
+                                </View>
+                            ))}
+                        </View>
                         <View style={{ height: 20 }} />
                     </ScrollView>
                 </View>
@@ -359,130 +278,36 @@ const styles = StyleSheet.create({
     slotsList: {
         paddingHorizontal: 20,
     },
-    slotCard: {
-        backgroundColor: '#1e1b2e',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: '#2d2a3f',
-    },
-    slotHeader: {
-        marginBottom: 12,
-    },
-    slotHeaderLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
+    gridWrapper: {
         gap: 12,
     },
-    slotNumberBadge: {
-        width: 44,
-        height: 44,
-        borderRadius: 10,
+    gridRow: {
+        flexDirection: 'row',
+        gap: 12,
         justifyContent: 'center',
+    },
+    slotCard: {
+        width: 75,
+        height: 75,
+        borderRadius: 12,
+        padding: 6,
         alignItems: 'center',
+        justifyContent: 'center',
+        gap: 2,
     },
     slotNumber: {
-        fontSize: 16,
-        fontWeight: '700',
-    },
-    slotCode: {
+        color: '#fff',
         fontSize: 13,
-        color: '#ffffff',
-        fontWeight: '600',
-        marginBottom: 4,
-        fontFamily: 'monospace',
-    },
-    slotStatusContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-    },
-    slotStatusDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
+        fontWeight: '700',
     },
     slotStatusText: {
-        fontSize: 12,
-        fontWeight: '500',
+        color: '#d1d5db',
+        fontSize: 9,
+        textTransform: 'capitalize',
     },
-    batteryInfo: {
-        backgroundColor: '#2d2a3f',
-        borderRadius: 10,
-        padding: 12,
-    },
-    batteryHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        marginBottom: 12,
-    },
-    batteryDetails: {
-        flex: 1,
-    },
-    batterySerial: {
-        fontSize: 15,
+    batterySOH: {
+        color: '#a3e635',
+        fontSize: 8,
         fontWeight: '600',
-        color: '#ffffff',
-        marginBottom: 2,
-    },
-    batteryModel: {
-        fontSize: 12,
-        color: '#9ca3af',
-    },
-    batteryStats: {
-        flexDirection: 'row',
-        backgroundColor: '#1e1b2e',
-        borderRadius: 8,
-        padding: 10,
-    },
-    batteryStat: {
-        flex: 1,
-        alignItems: 'center',
-    },
-    batteryStatDivider: {
-        width: 1,
-        backgroundColor: '#2d2a3f',
-        marginHorizontal: 12,
-    },
-    batteryStatLabel: {
-        fontSize: 11,
-        color: '#9ca3af',
-        marginBottom: 4,
-    },
-    batteryStatValue: {
-        fontSize: 16,
-        fontWeight: '700',
-    },
-    emptySlot: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        paddingVertical: 20,
-        backgroundColor: '#2d2a3f',
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: '#3d3a4f',
-        borderStyle: 'dashed',
-    },
-    emptySlotText: {
-        fontSize: 14,
-        color: '#6b7280',
-        fontWeight: '500',
-    },
-    lastActivity: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        marginTop: 8,
-        paddingTop: 8,
-        borderTopWidth: 1,
-        borderTopColor: '#2d2a3f',
-    },
-    lastActivityText: {
-        fontSize: 11,
-        color: '#9ca3af',
     },
 });
