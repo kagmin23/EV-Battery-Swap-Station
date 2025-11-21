@@ -42,8 +42,8 @@ export default function PaymentSuccessScreen() {
                         Thank you for using our service!
                     </Text>
 
-                    <View style={styles.infoBox}>
-                        {/* <View style={styles.infoRow}>
+                    {/* <View style={styles.infoBox}>
+                        <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>Amount:</Text>
                             <Text style={styles.infoValue}>{displayAmount}</Text>
                         </View>
@@ -58,7 +58,7 @@ export default function PaymentSuccessScreen() {
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>Time:</Text>
                             <Text style={styles.infoValue}>{formattedDate} · {formattedTime}</Text>
-                        </View> */}
+                        </View>
 
                         {purchased ? (
                             <>
@@ -93,7 +93,7 @@ export default function PaymentSuccessScreen() {
                                 <Text style={styles.infoValue}>Not available</Text>
                             </View>
                         )}
-                    </View>
+                    </View> */}
 
                     <View style={styles.actionsRow}>
                         <TouchableOpacity

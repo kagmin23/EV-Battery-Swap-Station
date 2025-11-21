@@ -1,6 +1,7 @@
 import { config } from '@/config/env';
 import { useAuth } from '@/features/auth/context/AuthContext';
-import { getSubscriptionPlansApi, useSubscriptionPlans } from '@/store/subcription';
+import { useStationInMap } from '@/store/station';
+import { getSubscriptionPlansApi, useLocalSchedules, useSubscriptionPlans } from '@/store/subcription';
 import { getAllVehicle, useVehicles } from '@/store/vehicle';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -33,6 +34,8 @@ const ProfileScreen: React.FC = () => {
     const vehicles = useVehicles();
     const { user } = useAuth();
     const subscriptions = useSubscriptionPlans();
+    const localSchedules = useLocalSchedules();
+    const stationsInMap = useStationInMap();
     const [subModalVisible, setSubModalVisible] = useState(false);
     const [selectedSub, setSelectedSub] = useState<any>(null);
 
@@ -41,6 +44,11 @@ const ProfileScreen: React.FC = () => {
         if (/^https?:\/\//i.test(avatar)) return avatar;
         const base = config.API_BASE_URL.replace(/\/?api\/?$/, '');
         return `${base}${avatar.startsWith('/') ? avatar : `/${avatar}`}`;
+    };
+
+    const capitalize = (value?: string) => {
+        if (!value) return '';
+        return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
     };
 
     const avatarUri = React.useMemo(() => resolveAvatarUrl(user?.avatar), [user?.avatar]);
@@ -265,6 +273,27 @@ const ProfileScreen: React.FC = () => {
                                 <Text style={styles.modalLabel}>Duration: {selectedSub.durations} days</Text>
                                 <Text style={styles.modalMeta}>Swaps: {selectedSub.countSwap ?? 0} • Slots: {selectedSub.quantitySlot ?? 0}</Text>
                                 <Text style={styles.modalDate}>Created: {new Date(selectedSub.createdAt).toLocaleString()}</Text>
+                                {selectedSub.type ? (
+                                    <View style={{ marginTop: 10 }}>
+                                        <Text style={{ color: '#bfa8ff', marginBottom: 6 }}>Type</Text>
+                                        <Text style={{ color: '#fff', fontWeight: '700' }}>{capitalize(selectedSub.type)}</Text>
+                                    </View>
+                                ) : null}
+
+                                {/* show locally saved schedule if available */}
+                                {(() => {
+                                    const planId = selectedSub._id ?? selectedSub.id ?? '';
+                                    const sched = localSchedules?.[planId];
+                                    if (!sched) return null;
+                                    const stationName = stationsInMap?.find((st: any) => st.id === sched.stationId)?.stationName ?? '—';
+                                    return (
+                                        <View style={{ marginTop: 12, padding: 10, backgroundColor: '#15102b', borderRadius: 8 }}>
+                                            <Text style={{ color: '#bfa8ff', marginBottom: 6 }}>Saved schedule (front-end)</Text>
+                                            {sched.monthlyDay ? <Text style={{ color: '#fff' }}>Monthly day: {sched.monthlyDay}</Text> : null}
+                                            {sched.stationId ? <Text style={{ color: '#fff', marginTop: 4 }}>Station: {stationName}</Text> : null}
+                                        </View>
+                                    );
+                                })()}
                             </View>
 
                             <View style={styles.modalFooter}>
@@ -316,6 +345,24 @@ const ProfileScreen: React.FC = () => {
                                         <View style={styles.activeIndicator} />
                                         <Text style={styles.statusText}>{(p.userSubscription?.status || 'In use')}</Text>
                                     </View>
+                                    {/* show type and local schedule if present */}
+                                    {p.type ? (
+                                        <Text style={{ color: '#bfa8ff', marginTop: 6 }}>Type: {capitalize(p.type)}</Text>
+                                    ) : null}
+                                    {(() => {
+                                        const sched = localSchedules?.[p._id ?? p.id ?? ''];
+                                        if (!sched) return null;
+                                        const stationName = stationsInMap?.find((st: any) => st.id === sched.stationId)?.stationName ?? '—';
+                                        return (
+                                            <View style={{ marginTop: 8 }}>
+                                                {sched.monthlyDay ? <Text style={{ color: '#fff' }}>Monthly day: {sched.monthlyDay}</Text> : null}
+                                                {sched.stationId ? <Text style={{ color: '#fff', marginTop: 4 }}>Station: {stationName}</Text> : null}
+                                                <TouchableOpacity onPress={() => router.push('/driver/ListSubscriptions')} style={{ marginTop: 8 }}>
+                                                    <Text style={{ color: '#6d4aff', fontWeight: '700' }}>Proceed to Schedule</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        );
+                                    })()}
                                 </View>
                                 <Ionicons name="chevron-forward" size={20} color="white" />
                             </TouchableOpacity>

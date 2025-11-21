@@ -1,10 +1,12 @@
 import { getAllStationInMap, useStationInMap } from '@/store/station';
-import { confirmSubscriptionApi, createSubscriptionPaymentApi, getSubscriptionPlansApi, setMonthlySwapDayApi, useSubscriptionPlans } from '@/store/subcription';
+import { confirmSubscriptionApi, createSubscriptionPaymentApi, getSubscriptionPlansApi, sLocalSchedules, useLocalSchedules, useSubscriptionPlans } from '@/store/subcription';
 import { Ionicons } from '@expo/vector-icons';
+import { format } from 'date-fns';
 import * as ExpoLinking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 function ListSubscriptions() {
@@ -110,14 +112,18 @@ function ListSubscriptions() {
     const [modalLoading, setModalLoading] = useState(false);
     const [showSchedule, setShowSchedule] = useState(false);
     const [monthlyDay, setMonthlyDay] = useState('');
+    const [isDatePickerVisible, setDatePickerVisible] = useState(false);
     const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
+    const [scheduleConfirmed, setScheduleConfirmed] = useState(false);
     const stationsInMap = useStationInMap();
+    const localSchedules = useLocalSchedules();
 
     const openModal = (item: any) => {
         setSelected(item);
         setShowSchedule(false);
         setMonthlyDay('');
         setSelectedStationId(null);
+        setScheduleConfirmed(false);
         setModalVisible(true);
     };
 
@@ -181,9 +187,6 @@ function ListSubscriptions() {
                     }
                 } catch (confErr) {
                     console.warn('Failed to confirm subscription before redirect', confErr);
-                    // show a non-blocking alert so user knows confirmation failed
-                    // but still allow them to proceed to payment
-                    Alert.alert('Warning', 'Could not confirm subscription before payment. You can still proceed to VNPay.');
                 }
 
                 closeModal();
@@ -438,20 +441,33 @@ function ListSubscriptions() {
                             {showSchedule ? (
                                 <View style={{ marginTop: 20 }}>
                                     <Text style={{ color: '#bfa8ff', marginBottom: 6 }}>Monthly swap day (YYYY-MM-DD) *</Text>
-                                    <TextInput
-                                        value={monthlyDay}
-                                        onChangeText={setMonthlyDay}
-                                        placeholder="YYYY-MM-DD"
-                                        placeholderTextColor="#8b7bb8"
+                                    <TouchableOpacity
+                                        onPress={() => setDatePickerVisible(true)}
                                         style={{
                                             borderWidth: 1,
                                             borderColor: monthlyDay && /^\d{4}-\d{2}-\d{2}$/.test(monthlyDay) ? '#00b894' : '#2a1f4e',
                                             paddingVertical: 10,
                                             paddingHorizontal: 12,
                                             borderRadius: 8,
-                                            color: '#fff'
                                         }}
-                                        keyboardType="numbers-and-punctuation"
+                                    >
+                                        <Text style={{ color: monthlyDay ? '#fff' : '#bfa8ff' }}>{monthlyDay || 'Select date (YYYY-MM-DD)'}</Text>
+                                    </TouchableOpacity>
+                                    <DateTimePickerModal
+                                        isVisible={isDatePickerVisible}
+                                        mode="date"
+                                        onConfirm={(date: Date) => {
+                                            const iso = (() => {
+                                                try {
+                                                    return format(date, 'yyyy-MM-dd');
+                                                } catch {
+                                                    return date.toISOString().slice(0, 10);
+                                                }
+                                            })();
+                                            setMonthlyDay(iso);
+                                            setDatePickerVisible(false);
+                                        }}
+                                        onCancel={() => setDatePickerVisible(false)}
                                     />
 
                                     <Text style={{ color: '#bfa8ff', marginTop: 12, marginBottom: 6 }}>Select station *</Text>
@@ -470,13 +486,21 @@ function ListSubscriptions() {
                                     </View>
                                 </View>
                             ) : null}
+
+                            {scheduleConfirmed ? (
+                                <View style={{ marginTop: 12, padding: 10, backgroundColor: '#15102b', borderRadius: 8 }}>
+                                    <Text style={{ color: '#bfa8ff', marginBottom: 6 }}>Confirmed schedule</Text>
+                                    <Text style={{ color: '#fff' }}>Date: {monthlyDay}</Text>
+                                    <Text style={{ color: '#fff', marginTop: 4 }}>Station: {stationsInMap?.find((st: any) => st.id === selectedStationId)?.stationName ?? '—'}</Text>
+                                </View>
+                            ) : null}
                         </View>
 
                         <View style={styles.modalFooter}>
                             {selected.status && selected.status.toLowerCase() === 'active' ? (
                                 selected.type && selected.type.toString().toLowerCase() === 'periodic' ? (
                                     showSchedule ? (
-                                        <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+                                        <View style={{ flexDirection: 'row', gap: 12, width: '60%' }}>
                                             <TouchableOpacity
                                                 style={[styles.scheduleButton]}
                                                 onPress={() => {
@@ -491,65 +515,101 @@ function ListSubscriptions() {
 
                                             <TouchableOpacity
                                                 style={[styles.buttonPrimary, { flex: 1 }, (!(monthlyDay && /^\d{4}-\d{2}-\d{2}$/.test(monthlyDay) && selectedStationId)) && { opacity: 0.6 }]}
-                                                onPress={async () => {
-                                                    // confirm saving monthly day
-                                                    if (!monthlyDay || !/^\d{4}-\d{2}-\d{2}$/.test(monthlyDay) || !selectedStationId) return;
+                                                onPress={() => {
+                                                    // validate then move to review mode (do not call API yet)
+                                                    if (!monthlyDay || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(monthlyDay) || !selectedStationId) return;
+                                                    // save schedule locally on the FE so other screens can read it
                                                     try {
-                                                        setModalLoading(true);
-                                                        const planId = selected._id ?? selected.id ?? selected.planId ?? null;
-                                                        if (!planId) {
-                                                            Alert.alert('Error', 'Missing plan id');
-                                                            return;
+                                                        const planId = selected._id ?? selected.id ?? null;
+                                                        if (planId) {
+                                                            sLocalSchedules.set({ ...(localSchedules || {}), [planId]: { monthlyDay, stationId: selectedStationId } });
                                                         }
-                                                        await setMonthlySwapDayApi({ planId, monthly_day: monthlyDay, station_id: selectedStationId });
-                                                        Alert.alert('Success', 'Monthly swap day saved');
-                                                        // refresh plans and close modal
-                                                        await getSubscriptionPlansApi();
-                                                        setModalVisible(false);
                                                     } catch (e) {
-                                                        console.warn('Failed to save monthly day', e);
-                                                        Alert.alert('Error', 'Failed to save monthly swap day');
-                                                    } finally {
-                                                        setModalLoading(false);
-                                                        setShowSchedule(false);
-                                                        setMonthlyDay('');
-                                                        setSelectedStationId(null);
+                                                        console.warn('Failed to save local schedule', e);
                                                     }
+
+                                                    setScheduleConfirmed(true);
+                                                    setShowSchedule(false);
                                                 }}
                                                 disabled={!(monthlyDay && /^\d{4}-\d{2}-\d{2}$/.test(monthlyDay) && selectedStationId) || modalLoading}
                                             >
-                                                {modalLoading ? <ActivityIndicator color="white" /> : <Text style={styles.buttonPrimaryText}>Confirm</Text>}
+                                                <Text style={styles.buttonPrimaryText}>Confirm</Text>
                                             </TouchableOpacity>
                                         </View>
                                     ) : (
-                                        <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
-                                            <TouchableOpacity
-                                                style={[styles.scheduleButton]}
-                                                onPress={async () => {
-                                                    // show schedule UI and preload stations
-                                                    setShowSchedule(true);
-                                                    try {
-                                                        await getAllStationInMap();
-                                                    } catch (e) {
-                                                        console.warn('Failed to load stations for scheduling', e);
-                                                    }
-                                                }}
-                                            >
-                                                <Text style={styles.scheduleButtonText}>Proceed to Schedule</Text>
-                                            </TouchableOpacity>
+                                        scheduleConfirmed ? (
+                                            <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+                                                <TouchableOpacity
+                                                    style={[styles.scheduleButton]}
+                                                    onPress={() => {
+                                                        // re-open scheduling to edit
+                                                        setShowSchedule(true);
+                                                        setScheduleConfirmed(false);
+                                                    }}
+                                                >
+                                                    <Text style={styles.scheduleButtonText}>Edit Schedule</Text>
+                                                </TouchableOpacity>
 
-                                            <TouchableOpacity
-                                                style={[styles.buttonPrimary, modalLoading && { opacity: 0.7 }, { flex: 1 }]}
-                                                onPress={() => onPurchase(selected)}
-                                                disabled={modalLoading}
-                                            >
-                                                {modalLoading ? (
-                                                    <ActivityIndicator color="white" />
-                                                ) : (
-                                                    <Text style={styles.buttonPrimaryText}>Purchase</Text>
-                                                )}
-                                            </TouchableOpacity>
-                                        </View>
+                                                <TouchableOpacity
+                                                    style={[styles.buttonPrimary, modalLoading && { opacity: 0.7 }, { flex: 1 }]}
+                                                    onPress={() => {
+                                                        // proceed to purchase flow (user confirmed schedule)
+                                                        onPurchase(selected);
+                                                    }}
+                                                    disabled={modalLoading}
+                                                >
+                                                    {modalLoading ? (
+                                                        <ActivityIndicator color="white" />
+                                                    ) : (
+                                                        <Text style={styles.buttonPrimaryText}>Purchase</Text>
+                                                    )}
+                                                </TouchableOpacity>
+                                            </View>
+                                        ) : (
+                                            <View style={{ flexDirection: 'column', gap: 12, width: '100%' }}>
+                                                {!scheduleConfirmed ? (
+                                                    <Text style={styles.scheduleHelperText}>Please make an appointment before purchasing.</Text>
+                                                ) : null}
+                                                <TouchableOpacity
+                                                    style={[styles.scheduleButton]}
+                                                    onPress={async () => {
+                                                        // show schedule UI and preload stations
+                                                        setShowSchedule(true);
+                                                        try {
+                                                            await getAllStationInMap();
+                                                        } catch (e) {
+                                                            console.warn('Failed to load stations for scheduling', e);
+                                                        }
+                                                        // save an initial local schedule placeholder so FE remembers scheduling intent
+                                                        try {
+                                                            const planId = selected._id ?? selected.id ?? null;
+                                                            if (planId) {
+                                                                sLocalSchedules.set({ ...(localSchedules || {}), [planId]: { monthlyDay: monthlyDay || null, stationId: selectedStationId || null } });
+                                                            }
+                                                        } catch (e) {
+                                                            console.warn('Failed to save initial local schedule', e);
+                                                        }
+                                                    }}
+                                                >
+                                                    <Text style={styles.scheduleButtonText}>Proceed to Schedule</Text>
+                                                </TouchableOpacity>
+
+                                                <View style={{ flex: 1 }}>
+                                                    <TouchableOpacity
+                                                        style={[styles.buttonPrimary, (!scheduleConfirmed || modalLoading) && { opacity: 0.6 }, { flex: 1 }]}
+                                                        onPress={() => onPurchase(selected)}
+                                                        disabled={modalLoading || !scheduleConfirmed}
+                                                    >
+                                                        {modalLoading ? (
+                                                            <ActivityIndicator color="white" />
+                                                        ) : (
+                                                            <Text style={styles.buttonPrimaryText}>Purchase</Text>
+                                                        )}
+                                                    </TouchableOpacity>
+                                                </View>
+                                            </View>
+
+                                        )
                                     )
                                 ) : (
                                     <TouchableOpacity
@@ -674,7 +734,7 @@ const styles = StyleSheet.create({
     modalDesc: { color: '#a0a0a0', marginBottom: 20 },
     modalMeta: { color: '#bfa8ff' },
     modalFooter: { marginTop: 14, flexDirection: 'row', justifyContent: 'flex-end' },
-    buttonPrimary: { backgroundColor: '#6d4aff', paddingHorizontal: 16, paddingTop: 10, borderRadius: 12 },
+    buttonPrimary: { backgroundColor: '#6d4aff', paddingHorizontal: 16, paddingVertical: 16, marginBottom: 10, alignItems: 'center', borderRadius: 12 },
     buttonPrimaryText: { color: 'white', fontWeight: '700' },
     buttonDisabled: {
         backgroundColor: '#1a0f3e',
@@ -744,13 +804,14 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#00b894',
         backgroundColor: 'transparent',
-        paddingVertical: 12,
+        paddingVertical: 10,
         paddingHorizontal: 12,
         borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'center',
     },
     scheduleButtonText: { color: '#00b894', fontWeight: '800' },
+    scheduleHelperText: { color: '#ffcccb', marginBottom: 2, marginTop: 12, fontSize: 13 },
 });
 
 export default ListSubscriptions;

@@ -73,6 +73,14 @@ export const useSubscriptionPlans = () => sSubscriptionPlans.use();
 export const sPurchasedSubscription = signify<PurchasedSubscription | null>(null);
 export const usePurchasedSubscription = () => sPurchasedSubscription.use();
 
+// Local-only schedule store for client-side scheduling (saved in memory across app session)
+export type LocalSchedule = { monthlyDay?: string | null; stationId?: string | null };
+export const sLocalSchedules = signify<Record<string, LocalSchedule>>({});
+export const useLocalSchedules = () => sLocalSchedules.use();
+
+// Note: use `useLocalSchedules()` inside React components to read the map,
+// and call `sLocalSchedules.set(...)` to update it from non-hook contexts.
+
 const normalizeSubscriptionPlan = (data: any): SubscriptionPlan =>
   toCamelCase(data) as SubscriptionPlan;
 
