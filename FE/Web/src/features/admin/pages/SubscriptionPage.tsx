@@ -81,7 +81,7 @@ const convertUIToApi = (uiData: Partial<Subscription>): CreateSubscriptionPlanRe
     baseData.count_swap = uiData.count_swap ?? 0;
     baseData.quantity_slot = uiData.quantity_slot ?? 0;
   }
-  // For periodic type, we explicitly don't include these fields
+  // For periodic type, we don't set these fields (they remain undefined and won't be sent to backend)
 
   return baseData;
 };
@@ -93,19 +93,17 @@ const PlanSchema = Yup.object({
   type: Yup.mixed<'change' | 'periodic'>().oneOf(['change', 'periodic']).required('Type is required'),
   count_swap: Yup.number()
     .typeError('Count swap must be a number')
-    .min(0, 'Count swap must be >= 0')
     .when('type', {
       is: 'change',
-      then: (schema) => schema.required('Count swap is required for change type'),
-      otherwise: (schema) => schema.notRequired()
+      then: (schema) => schema.min(0, 'Count swap must be >= 0').required('Count swap is required for change type'),
+      otherwise: (schema) => schema.notRequired().nullable()
     }),
   quantity_slot: Yup.number()
     .typeError('Quantity slot must be a number')
-    .min(1, 'Quantity slot must be at least 1')
     .when('type', {
       is: 'change',
-      then: (schema) => schema.required('Quantity slot is required for change type'),
-      otherwise: (schema) => schema.notRequired()
+      then: (schema) => schema.min(1, 'Quantity slot must be at least 1').required('Quantity slot is required for change type'),
+      otherwise: (schema) => schema.notRequired().nullable()
     }),
   status: Yup.mixed<'active' | 'inactive'>().oneOf(['active', 'inactive']).required('Status is required'),
   description: Yup.string().trim().max(200, 'Description too long')
@@ -182,14 +180,16 @@ export const SubscriptionPage: React.FC = () => {
 
   const handleOpenEditModal = (subscription: Subscription) => {
     setEditingSubscription(subscription);
+    const type = subscription.type || 'change';
     setFormData({
       subscriptionName: subscription.subscriptionName,
       description: subscription.description,
       price: subscription.price,
       durations: subscription.durations,
-      type: subscription.type || 'change',
-      count_swap: subscription.count_swap,
-      quantity_slot: subscription.quantity_slot,
+      type: type,
+      // Only set count_swap and quantity_slot for 'change' type, undefined for 'periodic'
+      count_swap: type === 'change' ? subscription.count_swap : undefined,
+      quantity_slot: type === 'change' ? subscription.quantity_slot : undefined,
       status: subscription.status
     });
     setEditSubmitError(null);
@@ -200,8 +200,16 @@ export const SubscriptionPage: React.FC = () => {
   // removed feature management from forms per requirements
 
   const handleSaveAdd = async () => {
+    // Prepare data for validation - remove undefined values for periodic type
+    const dataToValidate = { ...formData };
+    if (dataToValidate.type === 'periodic') {
+      // Remove count_swap and quantity_slot for periodic type to avoid validation issues
+      delete dataToValidate.count_swap;
+      delete dataToValidate.quantity_slot;
+    }
+    
     try {
-      await PlanSchema.validate(formData, { abortEarly: false });
+      await PlanSchema.validate(dataToValidate, { abortEarly: false });
     } catch (e) {
       if ((e as any).inner) {
         const errs: Record<string, string> = {};
@@ -230,8 +238,16 @@ export const SubscriptionPage: React.FC = () => {
   };
 
   const handleSaveEdit = async () => {
+    // Prepare data for validation - remove undefined values for periodic type
+    const dataToValidate = { ...formData };
+    if (dataToValidate.type === 'periodic') {
+      // Remove count_swap and quantity_slot for periodic type to avoid validation issues
+      delete dataToValidate.count_swap;
+      delete dataToValidate.quantity_slot;
+    }
+    
     try {
-      await PlanSchema.validate(formData, { abortEarly: false });
+      await PlanSchema.validate(dataToValidate, { abortEarly: false });
     } catch (e) {
       if ((e as any).inner) {
         const errs: Record<string, string> = {};
@@ -542,7 +558,7 @@ export const SubscriptionPage: React.FC = () => {
                   <SelectTrigger className="bg-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[102]">
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
@@ -558,8 +574,9 @@ export const SubscriptionPage: React.FC = () => {
                   const newFormData = { ...formData, type: value };
                   // Reset count_swap and quantity_slot when switching to periodic
                   if (value === 'periodic') {
-                    newFormData.count_swap = 0;
-                    newFormData.quantity_slot = 0;
+                    // Set to undefined instead of 0 to avoid validation issues
+                    newFormData.count_swap = undefined;
+                    newFormData.quantity_slot = undefined;
                   } else if (value === 'change') {
                     // Initialize with 0 if not set when switching to change
                     if (newFormData.count_swap === undefined || newFormData.count_swap === null) {
@@ -586,7 +603,7 @@ export const SubscriptionPage: React.FC = () => {
                 <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[102]">
                   <SelectItem value="change">Change</SelectItem>
                   <SelectItem value="periodic">Periodic</SelectItem>
                 </SelectContent>
@@ -641,7 +658,7 @@ export const SubscriptionPage: React.FC = () => {
                     id="qty"
                     type="number"
                     placeholder="0"
-                    value={formData.quantity_slot || ''}
+                    value={formData.quantity_slot !== undefined && formData.quantity_slot !== null ? formData.quantity_slot : ''}
                     onChange={(e) => setFormData({ ...formData, quantity_slot: parseInt(e.target.value) || 0 })}
                     className="bg-white"
                   />
@@ -654,7 +671,7 @@ export const SubscriptionPage: React.FC = () => {
                     id="swapLimit"
                     type="number"
                     placeholder="0"
-                    value={formData.count_swap || ''}
+                    value={formData.count_swap !== undefined && formData.count_swap !== null ? formData.count_swap : ''}
                     onChange={(e) => setFormData({ ...formData, count_swap: parseInt(e.target.value) || 0 })}
                     className="bg-white"
                   />
@@ -734,7 +751,7 @@ export const SubscriptionPage: React.FC = () => {
                   <SelectTrigger className="bg-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[102]">
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
@@ -750,8 +767,9 @@ export const SubscriptionPage: React.FC = () => {
                   const newFormData = { ...formData, type: value };
                   // Reset count_swap and quantity_slot when switching to periodic
                   if (value === 'periodic') {
-                    newFormData.count_swap = 0;
-                    newFormData.quantity_slot = 0;
+                    // Set to undefined instead of 0 to avoid validation issues
+                    newFormData.count_swap = undefined;
+                    newFormData.quantity_slot = undefined;
                   } else if (value === 'change') {
                     // Initialize with 0 if not set when switching to change
                     if (newFormData.count_swap === undefined || newFormData.count_swap === null) {
@@ -778,7 +796,7 @@ export const SubscriptionPage: React.FC = () => {
                 <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[102]">
                   <SelectItem value="change">Change</SelectItem>
                   <SelectItem value="periodic">Periodic</SelectItem>
                 </SelectContent>
@@ -831,7 +849,7 @@ export const SubscriptionPage: React.FC = () => {
                     id="edit-qty"
                     type="number"
                     placeholder="0"
-                    value={formData.quantity_slot}
+                    value={formData.quantity_slot !== undefined && formData.quantity_slot !== null ? formData.quantity_slot : ''}
                     onChange={(e) => setFormData({ ...formData, quantity_slot: parseInt(e.target.value) || 0 })}
                     className="bg-white"
                   />
@@ -844,7 +862,7 @@ export const SubscriptionPage: React.FC = () => {
                     id="edit-swapLimit"
                     type="number"
                     placeholder="0"
-                    value={formData.count_swap}
+                    value={formData.count_swap !== undefined && formData.count_swap !== null ? formData.count_swap : ''}
                     onChange={(e) => setFormData({ ...formData, count_swap: parseInt(e.target.value) || 0 })}
                     className="bg-white"
                   />
