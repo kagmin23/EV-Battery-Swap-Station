@@ -44,6 +44,7 @@ interface Subscription {
   description: string;
   price: number;
   durations: number;
+  type?: 'change' | 'periodic';
   count_swap: number;
   quantity_slot: number;
   status: 'active' | 'inactive';
@@ -56,28 +57,56 @@ const convertApiToUI = (apiPlan: SubscriptionPlan): Subscription => ({
   description: apiPlan.description,
   price: apiPlan.price,
   durations: apiPlan.durations,
+  type: apiPlan.type || 'change', // Default to 'change' for backward compatibility
   count_swap: apiPlan.count_swap,
   quantity_slot: apiPlan.quantity_slot,
   status: apiPlan.status,
 });
 
 // Helper: convert UI to backend DTO
-const convertUIToApi = (uiData: Partial<Subscription>): CreateSubscriptionPlanRequest | UpdateSubscriptionPlanRequest => ({
-  subscriptionName: uiData.subscriptionName || '',
-  price: uiData.price || 0,
-  durations: uiData.durations || 1,
-  count_swap: uiData.count_swap || 0,
-  quantity_slot: uiData.quantity_slot || 0,
-  description: uiData.description || '',
-  status: (uiData.status || 'active') as 'active' | 'inactive',
-});
+const convertUIToApi = (uiData: Partial<Subscription>): CreateSubscriptionPlanRequest | UpdateSubscriptionPlanRequest => {
+  const type = (uiData.type || 'change') as 'change' | 'periodic';
+  const baseData: any = {
+    subscriptionName: uiData.subscriptionName || '',
+    price: uiData.price || 0,
+    durations: uiData.durations || 1,
+    type: type,
+    description: uiData.description || '',
+    status: (uiData.status || 'active') as 'active' | 'inactive',
+  };
+
+  // Only include count_swap and quantity_slot for 'change' type
+  // For 'periodic' type, these fields are not included in the request
+  if (type === 'change') {
+    baseData.count_swap = uiData.count_swap ?? 0;
+    baseData.quantity_slot = uiData.quantity_slot ?? 0;
+  }
+  // For periodic type, we explicitly don't include these fields
+
+  return baseData;
+};
 
 const PlanSchema = Yup.object({
   subscriptionName: Yup.string().trim().required('Plan name is required'),
   price: Yup.number().typeError('Price must be a number').min(0, 'Price cannot be negative').required('Price is required'),
   durations: Yup.number().typeError('Durations must be a number').min(1, 'Durations must be at least 1').required('Durations is required'),
-  count_swap: Yup.number().typeError('Count swap must be a number').min(0, 'Count swap must be >= 0'),
-  quantity_slot: Yup.number().typeError('Quantity slot must be a number').min(0, 'Quantity slot must be >= 0'),
+  type: Yup.mixed<'change' | 'periodic'>().oneOf(['change', 'periodic']).required('Type is required'),
+  count_swap: Yup.number()
+    .typeError('Count swap must be a number')
+    .min(0, 'Count swap must be >= 0')
+    .when('type', {
+      is: 'change',
+      then: (schema) => schema.required('Count swap is required for change type'),
+      otherwise: (schema) => schema.notRequired()
+    }),
+  quantity_slot: Yup.number()
+    .typeError('Quantity slot must be a number')
+    .min(1, 'Quantity slot must be at least 1')
+    .when('type', {
+      is: 'change',
+      then: (schema) => schema.required('Quantity slot is required for change type'),
+      otherwise: (schema) => schema.notRequired()
+    }),
   status: Yup.mixed<'active' | 'inactive'>().oneOf(['active', 'inactive']).required('Status is required'),
   description: Yup.string().trim().max(200, 'Description too long')
 });
@@ -92,6 +121,7 @@ export const SubscriptionPage: React.FC = () => {
     description: '',
     price: 0,
     durations: 1,
+    type: 'change',
     count_swap: 0,
     quantity_slot: 0,
     status: 'active'
@@ -144,7 +174,7 @@ export const SubscriptionPage: React.FC = () => {
   // no-op legacy validator removed; using Yup instead
 
   const handleOpenAddModal = () => {
-    setFormData({ subscriptionName: '', description: '', price: 0, durations: 1, count_swap: 0, quantity_slot: 0, status: 'active' });
+    setFormData({ subscriptionName: '', description: '', price: 0, durations: 1, type: 'change', count_swap: 0, quantity_slot: 0, status: 'active' });
     setSubmitError(null);
     setFieldErrors({});
     setIsAddModalOpen(true);
@@ -157,6 +187,7 @@ export const SubscriptionPage: React.FC = () => {
       description: subscription.description,
       price: subscription.price,
       durations: subscription.durations,
+      type: subscription.type || 'change',
       count_swap: subscription.count_swap,
       quantity_slot: subscription.quantity_slot,
       status: subscription.status
@@ -413,18 +444,32 @@ export const SubscriptionPage: React.FC = () => {
               {/* Swap summary removed per request */}
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 pt-2">
-              <div className="text-center">
-                <Users className="h-3 w-3 sm:h-4 sm:w-4 mx-auto mb-1 text-slate-500" />
-                <p className="text-xs text-slate-500">Slots</p>
-                <p className="font-bold text-sm sm:text-base text-slate-800">{subscription.quantity_slot}</p>
+            {/* Stats - Only show for 'change' type */}
+            {subscription.type === 'change' && (
+              <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 pt-2">
+                <div className="text-center">
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4 mx-auto mb-1 text-slate-500" />
+                  <p className="text-xs text-slate-500">Slots</p>
+                  <p className="font-bold text-sm sm:text-base text-slate-800">{subscription.quantity_slot}</p>
+                </div>
+                <div className="text-center">
+                  <Zap className="h-3 w-3 sm:h-4 sm:w-4 mx-auto mb-1 text-slate-500" />
+                  <p className="text-xs text-slate-500">Swaps</p>
+                  <p className="font-bold text-sm sm:text-base text-slate-800">{subscription.count_swap}</p>
+                </div>
               </div>
-              <div className="text-center">
-                <Zap className="h-3 w-3 sm:h-4 sm:w-4 mx-auto mb-1 text-slate-500" />
-                <p className="text-xs text-slate-500">Swaps</p>
-                <p className="font-bold text-sm sm:text-base text-slate-800">{subscription.count_swap}</p>
-              </div>
+            )}
+            
+            {/* Type badge */}
+            <div className="mb-4 flex justify-center">
+              <Badge
+                variant="outline"
+                className={subscription.type === 'change' 
+                  ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                  : 'bg-purple-50 text-purple-700 border-purple-200'}
+              >
+                {subscription.type === 'change' ? 'Change' : 'Periodic'}
+              </Badge>
             </div>
 
             {/* Actions - This will be pushed to the bottom */}
@@ -506,6 +551,50 @@ export const SubscriptionPage: React.FC = () => {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="type" className="after:ml-1 after:text-red-500 after:content-['*']">Type</Label>
+              <Select
+                value={formData.type}
+                onValueChange={(value: 'change' | 'periodic') => {
+                  const newFormData = { ...formData, type: value };
+                  // Reset count_swap and quantity_slot when switching to periodic
+                  if (value === 'periodic') {
+                    newFormData.count_swap = 0;
+                    newFormData.quantity_slot = 0;
+                  } else if (value === 'change') {
+                    // Initialize with 0 if not set when switching to change
+                    if (newFormData.count_swap === undefined || newFormData.count_swap === null) {
+                      newFormData.count_swap = 0;
+                    }
+                    if (newFormData.quantity_slot === undefined || newFormData.quantity_slot === null) {
+                      newFormData.quantity_slot = 0;
+                    }
+                  }
+                  // Clear field errors for count_swap and quantity_slot when type changes
+                  const newFieldErrors = { ...fieldErrors };
+                  if (value === 'periodic') {
+                    delete newFieldErrors.count_swap;
+                    delete newFieldErrors.quantity_slot;
+                  } else if (value === 'change') {
+                    // Clear errors when switching to change to allow fresh validation
+                    delete newFieldErrors.count_swap;
+                    delete newFieldErrors.quantity_slot;
+                  }
+                  setFieldErrors(newFieldErrors);
+                  setFormData(newFormData);
+                }}
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="change">Change</SelectItem>
+                  <SelectItem value="periodic">Periodic</SelectItem>
+                </SelectContent>
+              </Select>
+              {fieldErrors.type && (<div className="text-sm text-red-600">{fieldErrors.type}</div>)}
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="description" className="after:ml-1 after:text-red-500 after:content-['*']">Description</Label>
               <Input
                 id="description"
@@ -544,33 +633,35 @@ export const SubscriptionPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="qty" className="after:ml-1 after:text-red-500 after:content-['*']">Quantity slot</Label>
-                <Input
-                  id="qty"
-                  type="number"
-                  placeholder="0"
-                  value={formData.quantity_slot || ''}
-                  onChange={(e) => setFormData({ ...formData, quantity_slot: parseInt(e.target.value) || 0 })}
-                  className="bg-white"
-                />
-                {fieldErrors.quantity_slot && (<div className="text-sm text-red-600">{fieldErrors.quantity_slot}</div>)}
-              </div>
+            {formData.type === 'change' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="qty" className="after:ml-1 after:text-red-500 after:content-['*']">Quantity slot</Label>
+                  <Input
+                    id="qty"
+                    type="number"
+                    placeholder="0"
+                    value={formData.quantity_slot || ''}
+                    onChange={(e) => setFormData({ ...formData, quantity_slot: parseInt(e.target.value) || 0 })}
+                    className="bg-white"
+                  />
+                  {fieldErrors.quantity_slot && (<div className="text-sm text-red-600">{fieldErrors.quantity_slot}</div>)}
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="swapLimit" className="after:ml-1 after:text-red-500 after:content-['*']">Count swap</Label>
-                <Input
-                  id="swapLimit"
-                  type="number"
-                  placeholder="0"
-                  value={formData.count_swap || ''}
-                  onChange={(e) => setFormData({ ...formData, count_swap: parseInt(e.target.value) || 0 })}
-                  className="bg-white"
-                />
-                {fieldErrors.count_swap && (<div className="text-sm text-red-600">{fieldErrors.count_swap}</div>)}
+                <div className="space-y-2">
+                  <Label htmlFor="swapLimit" className="after:ml-1 after:text-red-500 after:content-['*']">Count swap</Label>
+                  <Input
+                    id="swapLimit"
+                    type="number"
+                    placeholder="0"
+                    value={formData.count_swap || ''}
+                    onChange={(e) => setFormData({ ...formData, count_swap: parseInt(e.target.value) || 0 })}
+                    className="bg-white"
+                  />
+                  {fieldErrors.count_swap && (<div className="text-sm text-red-600">{fieldErrors.count_swap}</div>)}
+                </div>
               </div>
-            </div>
+            )}
 
             {fieldErrors.description && (<div className="text-sm text-red-600">{fieldErrors.description}</div>)}
 
@@ -652,6 +743,50 @@ export const SubscriptionPage: React.FC = () => {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="edit-type" className="after:ml-1 after:text-red-500 after:content-['*']">Type</Label>
+              <Select
+                value={formData.type}
+                onValueChange={(value: 'change' | 'periodic') => {
+                  const newFormData = { ...formData, type: value };
+                  // Reset count_swap and quantity_slot when switching to periodic
+                  if (value === 'periodic') {
+                    newFormData.count_swap = 0;
+                    newFormData.quantity_slot = 0;
+                  } else if (value === 'change') {
+                    // Initialize with 0 if not set when switching to change
+                    if (newFormData.count_swap === undefined || newFormData.count_swap === null) {
+                      newFormData.count_swap = 0;
+                    }
+                    if (newFormData.quantity_slot === undefined || newFormData.quantity_slot === null) {
+                      newFormData.quantity_slot = 0;
+                    }
+                  }
+                  // Clear field errors for count_swap and quantity_slot when type changes
+                  const newFieldErrors = { ...fieldErrors };
+                  if (value === 'periodic') {
+                    delete newFieldErrors.count_swap;
+                    delete newFieldErrors.quantity_slot;
+                  } else if (value === 'change') {
+                    // Clear errors when switching to change to allow fresh validation
+                    delete newFieldErrors.count_swap;
+                    delete newFieldErrors.quantity_slot;
+                  }
+                  setFieldErrors(newFieldErrors);
+                  setFormData(newFormData);
+                }}
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="change">Change</SelectItem>
+                  <SelectItem value="periodic">Periodic</SelectItem>
+                </SelectContent>
+              </Select>
+              {fieldErrors.type && (<div className="text-sm text-red-600">{fieldErrors.type}</div>)}
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="edit-description" className="after:ml-1 after:text-red-500 after:content-['*']">Description</Label>
               <Input
                 id="edit-description"
@@ -688,31 +823,35 @@ export const SubscriptionPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-qty" className="after:ml-1 after:text-red-500 after:content-['*']">Quantity slot</Label>
-                <Input
-                  id="edit-qty"
-                  type="number"
-                  placeholder="0"
-                  value={formData.quantity_slot}
-                  onChange={(e) => setFormData({ ...formData, quantity_slot: parseInt(e.target.value) || 0 })}
-                  className="bg-white"
-                />
-              </div>
+            {formData.type === 'change' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-qty" className="after:ml-1 after:text-red-500 after:content-['*']">Quantity slot</Label>
+                  <Input
+                    id="edit-qty"
+                    type="number"
+                    placeholder="0"
+                    value={formData.quantity_slot}
+                    onChange={(e) => setFormData({ ...formData, quantity_slot: parseInt(e.target.value) || 0 })}
+                    className="bg-white"
+                  />
+                  {fieldErrors.quantity_slot && (<div className="text-sm text-red-600">{fieldErrors.quantity_slot}</div>)}
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="edit-swapLimit" className="after:ml-1 after:text-red-500 after:content-['*']">Count swap</Label>
-                <Input
-                  id="edit-swapLimit"
-                  type="number"
-                  placeholder="0"
-                  value={formData.count_swap}
-                  onChange={(e) => setFormData({ ...formData, count_swap: parseInt(e.target.value) || 0 })}
-                  className="bg-white"
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="edit-swapLimit" className="after:ml-1 after:text-red-500 after:content-['*']">Count swap</Label>
+                  <Input
+                    id="edit-swapLimit"
+                    type="number"
+                    placeholder="0"
+                    value={formData.count_swap}
+                    onChange={(e) => setFormData({ ...formData, count_swap: parseInt(e.target.value) || 0 })}
+                    className="bg-white"
+                  />
+                  {fieldErrors.count_swap && (<div className="text-sm text-red-600">{fieldErrors.count_swap}</div>)}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Features removed per requirement */}
             {editSubmitError && (

@@ -9,6 +9,7 @@ export interface SubscriptionPlan {
     subscriptionName: string;
     price: number;
     durations: number;
+    type?: 'change' | 'periodic';
     count_swap: number;
     quantity_slot: number;
     description: string;
@@ -18,13 +19,14 @@ export interface SubscriptionPlan {
     __v: number;
 }
 
-// DTO based on backend swagger (price, durations, count_swap, quantity_slot, description, status)
+// DTO based on backend swagger (price, durations, count_swap, quantity_slot, description, status, type)
 export interface CreateSubscriptionPlanRequest {
     subscriptionName: string;
     price: number;
     durations: number; // unit defined by backend (e.g., months)
-    count_swap: number;
-    quantity_slot: number;
+    type: 'change' | 'periodic';
+    count_swap?: number;
+    quantity_slot?: number;
     description: string;
     status: 'active' | 'inactive';
 }
@@ -33,6 +35,7 @@ export interface UpdateSubscriptionPlanRequest {
     subscriptionName?: string;
     price?: number;
     durations?: number;
+    type?: 'change' | 'periodic';
     count_swap?: number;
     quantity_slot?: number;
     description?: string;
