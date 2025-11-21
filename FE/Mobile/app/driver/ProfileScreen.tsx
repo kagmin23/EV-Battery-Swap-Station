@@ -1,7 +1,7 @@
 import { config } from '@/config/env';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useStationInMap } from '@/store/station';
-import { getSubscriptionPlansApi, useLocalSchedules, useSubscriptionPlans } from '@/store/subcription';
+import { getSubscriptionPlansApi, loadLocalSchedulesFromStorage, useLocalSchedules, useSubscriptionPlans } from '@/store/subcription';
 import { getAllVehicle, useVehicles } from '@/store/vehicle';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -60,6 +60,17 @@ const ProfileScreen: React.FC = () => {
             getSubscriptionPlansApi().catch(() => { });
         }, [])
     )
+
+    useEffect(() => {
+        // load persisted local schedules when profile mounts
+        (async () => {
+            try {
+                await loadLocalSchedulesFromStorage();
+            } catch (e) {
+                console.warn('Failed to load persisted schedules', e);
+            }
+        })();
+    }, []);
     const openSheet = () => {
         setIsAddEvOpen(true);
         sheetY.setValue(height);
@@ -288,7 +299,7 @@ const ProfileScreen: React.FC = () => {
                                     const stationName = stationsInMap?.find((st: any) => st.id === sched.stationId)?.stationName ?? '—';
                                     return (
                                         <View style={{ marginTop: 12, padding: 10, backgroundColor: '#15102b', borderRadius: 8 }}>
-                                            <Text style={{ color: '#bfa8ff', marginBottom: 6 }}>Saved schedule (front-end)</Text>
+                                            <Text style={{ color: '#bfa8ff', marginBottom: 6 }}>Saved schedule</Text>
                                             {sched.monthlyDay ? <Text style={{ color: '#fff' }}>Monthly day: {sched.monthlyDay}</Text> : null}
                                             {sched.stationId ? <Text style={{ color: '#fff', marginTop: 4 }}>Station: {stationName}</Text> : null}
                                         </View>

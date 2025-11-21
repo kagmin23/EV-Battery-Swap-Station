@@ -1,5 +1,6 @@
 import httpClient from "@/services/rootAPI";
 import { toCamelCase } from "@/utils/caseConverter";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signify } from "react-signify";
 
 export interface SubscriptionPlan {
@@ -80,6 +81,32 @@ export const useLocalSchedules = () => sLocalSchedules.use();
 
 // Note: use `useLocalSchedules()` inside React components to read the map,
 // and call `sLocalSchedules.set(...)` to update it from non-hook contexts.
+
+const STORAGE_KEY = 'evsb_local_schedules_v1';
+
+export const saveLocalSchedulesToStorage = async (map: Record<string, LocalSchedule>) => {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(map || {}));
+  } catch (e) {
+    console.warn('Failed to persist local schedules to storage', e);
+  }
+};
+
+export const loadLocalSchedulesFromStorage = async (): Promise<Record<string, LocalSchedule>> => {
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw || '{}');
+    if (parsed && typeof parsed === 'object') {
+      sLocalSchedules.set(parsed);
+      return parsed as Record<string, LocalSchedule>;
+    }
+    return {};
+  } catch (e) {
+    console.warn('Failed to load local schedules from storage', e);
+    return {};
+  }
+};
 
 const normalizeSubscriptionPlan = (data: any): SubscriptionPlan =>
   toCamelCase(data) as SubscriptionPlan;

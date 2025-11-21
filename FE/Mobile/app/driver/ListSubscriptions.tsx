@@ -1,7 +1,7 @@
 import { getAllStationInMap, useStationInMap } from '@/store/station';
-import { confirmSubscriptionApi, createSubscriptionPaymentApi, getSubscriptionPlansApi, sLocalSchedules, useLocalSchedules, useSubscriptionPlans } from '@/store/subcription';
+import { confirmSubscriptionApi, createSubscriptionPaymentApi, getSubscriptionPlansApi, saveLocalSchedulesToStorage, sLocalSchedules, useLocalSchedules, useSubscriptionPlans } from '@/store/subcription';
 import { Ionicons } from '@expo/vector-icons';
-import { format } from 'date-fns';
+import { addDays, format, startOfDay } from 'date-fns';
 import * as ExpoLinking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -117,6 +117,7 @@ function ListSubscriptions() {
     const [scheduleConfirmed, setScheduleConfirmed] = useState(false);
     const stationsInMap = useStationInMap();
     const localSchedules = useLocalSchedules();
+    const minSelectableDate = React.useMemo(() => startOfDay(addDays(new Date(), 1)), []);
 
     const openModal = (item: any) => {
         setSelected(item);
@@ -456,15 +457,20 @@ function ListSubscriptions() {
                                     <DateTimePickerModal
                                         isVisible={isDatePickerVisible}
                                         mode="date"
+                                        minimumDate={minSelectableDate}
                                         onConfirm={(date: Date) => {
-                                            const iso = (() => {
-                                                try {
-                                                    return format(date, 'yyyy-MM-dd');
-                                                } catch {
-                                                    return date.toISOString().slice(0, 10);
+                                            try {
+                                                const selStart = startOfDay(date);
+                                                if (selStart < minSelectableDate) {
+                                                    Alert.alert('Invalid date', 'Please select a future date.');
+                                                    setDatePickerVisible(false);
+                                                    return;
                                                 }
-                                            })();
-                                            setMonthlyDay(iso);
+                                                const iso = format(date, 'yyyy-MM-dd');
+                                                setMonthlyDay(iso);
+                                            } catch {
+                                                setMonthlyDay(date.toISOString().slice(0, 10));
+                                            }
                                             setDatePickerVisible(false);
                                         }}
                                         onCancel={() => setDatePickerVisible(false)}
@@ -518,15 +524,28 @@ function ListSubscriptions() {
                                                 onPress={() => {
                                                     // validate then move to review mode (do not call API yet)
                                                     if (!monthlyDay || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(monthlyDay) || !selectedStationId) return;
-                                                    // save schedule locally on the FE so other screens can read it
-                                                    try {
-                                                        const planId = selected._id ?? selected.id ?? null;
-                                                        if (planId) {
-                                                            sLocalSchedules.set({ ...(localSchedules || {}), [planId]: { monthlyDay, stationId: selectedStationId } });
+                                                        // ensure the selected date is in the allowed future range
+                                                        try {
+                                                            const selDate = new Date(monthlyDay + 'T00:00:00');
+                                                            if (selDate < minSelectableDate) {
+                                                                Alert.alert('Invalid date', 'Please choose a future date.');
+                                                                return;
+                                                            }
+                                                        } catch {
+                                                            // fall through to existing validation if parse fails
+                                                            return;
                                                         }
-                                                    } catch (e) {
-                                                        console.warn('Failed to save local schedule', e);
-                                                    }
+                                                        // save schedule locally on the FE so other screens can read it
+                                                        try {
+                                                            const planId = selected._id ?? selected.id ?? null;
+                                                            if (planId) {
+                                                                const newMap = { ...(localSchedules || {}), [planId]: { monthlyDay, stationId: selectedStationId } };
+                                                                sLocalSchedules.set(newMap);
+                                                                saveLocalSchedulesToStorage(newMap).catch(() => { });
+                                                            }
+                                                        } catch (e) {
+                                                            console.warn('Failed to save local schedule', e);
+                                                        }
 
                                                     setScheduleConfirmed(true);
                                                     setShowSchedule(false);
@@ -584,7 +603,9 @@ function ListSubscriptions() {
                                                         try {
                                                             const planId = selected._id ?? selected.id ?? null;
                                                             if (planId) {
-                                                                sLocalSchedules.set({ ...(localSchedules || {}), [planId]: { monthlyDay: monthlyDay || null, stationId: selectedStationId || null } });
+                                                                const newMap = { ...(localSchedules || {}), [planId]: { monthlyDay: monthlyDay || null, stationId: selectedStationId || null } };
+                                                                sLocalSchedules.set(newMap);
+                                                                saveLocalSchedulesToStorage(newMap).catch(() => { });
                                                             }
                                                         } catch (e) {
                                                             console.warn('Failed to save initial local schedule', e);
