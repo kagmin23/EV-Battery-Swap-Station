@@ -9,6 +9,7 @@ import { getStationBatteries, updateBattery } from "../apis/DashboardApi";
 import type { Battery as OrigBattery, UpdateBatteryRequest } from "../apis/DashboardApi";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import type { FilterValues } from "../components/FilterModal";
+import { getStationById } from "../apis/BatteryLogApi";
 
 type Battery = OrigBattery & { status: string };
 
@@ -23,11 +24,40 @@ export default function Dashboard() {
   const [filters, setFilters] = useState<FilterValues>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [stationName, setStationName] = useState<string>("");
   const itemsPerPage = 10;
 
-  // Fetch batteries on component mount
+  // Get station name from localStorage cache or API
+  const getStationName = async (stationId: string): Promise<string> => {
+    try {
+      // First, try to get from station_cache in localStorage
+      const stationCacheStr = localStorage.getItem('station_cache');
+      if (stationCacheStr) {
+        try {
+          const cache = JSON.parse(stationCacheStr);
+          if (cache.data && Array.isArray(cache.data)) {
+            const cachedStation = cache.data.find((s: { _id: string }) => s._id === stationId);
+            if (cachedStation && cachedStation.stationName) {
+              return cachedStation.stationName;
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to parse station cache:', e);
+        }
+      }
+
+      // If not in cache, fetch from staff API endpoint
+      const stationData = await getStationById(stationId);
+      return stationData.stationName;
+    } catch (err) {
+      console.error('Error fetching station name:', err);
+      return 'Unknown Station';
+    }
+  };
+
+  // Fetch batteries and station info on component mount
   useEffect(() => {
-    const fetchBatteries = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
         setError(null);
@@ -45,20 +75,26 @@ export default function Dashboard() {
           throw new Error('No station assigned to this staff member.');
         }
         
-        const data = await getStationBatteries(stationId);
-        setBatteries(data as Battery[]);
-        setFilteredBatteries(data as Battery[]);
+        // Fetch station name and batteries in parallel
+        const [stationNameResult, batteryData] = await Promise.all([
+          getStationName(stationId),
+          getStationBatteries(stationId)
+        ]);
+        
+        setStationName(stationNameResult);
+        setBatteries(batteryData as Battery[]);
+        setFilteredBatteries(batteryData as Battery[]);
       } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : 'Failed to fetch batteries';
+        const errorMsg = err instanceof Error ? err.message : 'Failed to fetch data';
         setError(errorMsg);
         toast.error(errorMsg);
-        console.error('Error fetching batteries:', err);
+        console.error('Error fetching data:', err);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchBatteries();
+    fetchData();
   }, []);
 
   // Derive available models from batteries
@@ -204,6 +240,14 @@ export default function Dashboard() {
     <>
     <div className="flex flex-col items-center py-8 min-h-screen">
       <div className="w-full max-w-7xl px-4">
+        {/* Station Name Display */}
+        {stationName && (
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+              {stationName}
+            </h1>
+          </div>
+        )}
         <div className="flex justify-between items-center mb-6">
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} setFilters={setFilters} models={availableModels} />
         </div>
