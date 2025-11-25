@@ -1,4 +1,5 @@
 import { completeBatterySwap, initiateBatterySwap, insertOldBattery, SwapResponse } from '@/features/driver/apis/swap_simulate';
+import { getBatteryById, useBatteries } from '@/store/baterry';
 import { clearPillarGrid, getPillarGrid, GridSlot, usePillarGrid, usePillarGridError, usePillarGridLoading } from '@/store/pillarGrid';
 import { useVehicles, Vehicle } from '@/store/vehicle';
 import { showErrorToast, showSuccessToast } from '@/utils/toast';
@@ -20,6 +21,7 @@ export default function BatterySwapSimulation() {
     const loading = usePillarGridLoading();
     const error = usePillarGridError();
     const vehicles = useVehicles();
+    const batteries = useBatteries();
 
     const [selectedSlot, setSelectedSlot] = useState<GridSlot | null>(null);
     const [swapData, setSwapData] = useState<SwapResponse | null>(null);
@@ -50,8 +52,10 @@ export default function BatterySwapSimulation() {
     useEffect(() => {
         if (vehicleId && vehicles && vehicles.length > 0) {
             const vehicle = vehicles.find(v => v.vehicleId === vehicleId);
+            console.log('vehicleid', vehicleId)
             if (vehicle) {
                 setVehicleData(vehicle);
+                console.log("vehicle found", vehicle)
             } else {
                 console.warn('⚠️ Vehicle not found in store. Will use defaults.');
             }
@@ -221,7 +225,6 @@ export default function BatterySwapSimulation() {
             // Force new object to ensure React detects change
             setSwapData({ ...data });
 
-            console.log('✅ swapData state updated');
 
             // Refetch pillar grid to update slot statuses (empty slot is now reserved)
             console.log(' Refetching pillar grid to update slot statuses...');
@@ -249,27 +252,24 @@ export default function BatterySwapSimulation() {
         }
 
         // ✅ Get battery model from vehicle (for defaults)
-        const batteryModel = vehicleData?.batteryModel || 'LiFePO4-48V-100Ah';
-        const carInfo = vehicleData ? `${vehicleData.carName} (${vehicleData.licensePlate})` : 'your vehicle';
+        const batteryModel = getBatteryById(batteries, vehicleData?.batteryId ?? '')?.model || 'LiFePO4-48V-100Ah';
+        // const carInfo = vehicleData ? `${vehicleData.carName} (${vehicleData.licensePlate})` : 'your vehicle';
 
-        // Always prompt for battery serial input
-        Alert.prompt(
+        // Auto-fill: use vehicle's current battery serial; no manual input required
+        const defaultSerial = getBatteryById(batteries, vehicleData?.batteryId ?? '')?.serial || vehicleData?.battery?.serial?.trim() || '';
+
+        if (!defaultSerial) {
+            showErrorToast('Battery serial not available for this vehicle');
+            return;
+        }
+
+        Alert.alert(
             'Insert Old Battery',
-            `Enter old battery serial from ${carInfo}:\n(Model: ${batteryModel})`,
+            `Insert old battery with serial ${defaultSerial}?\n(Model: ${batteryModel})`,
             [
                 { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Confirm',
-                    onPress: async (inputSerial?: string) => {
-                        if (!inputSerial || inputSerial.trim() === '') {
-                            showErrorToast('Please enter battery serial number');
-                            return;
-                        }
-                        await performInsertOldBattery(slot, inputSerial.trim(), batteryModel);
-                    }
-                }
-            ],
-            'plain-text'
+                { text: 'Confirm', onPress: () => performInsertOldBattery(slot, defaultSerial, batteryModel) }
+            ]
         );
     };
 
@@ -293,7 +293,7 @@ export default function BatterySwapSimulation() {
                 slotId: slot.id,
                 oldBatterySerial: oldBatterySerial,
                 // Include battery info (will be used if battery doesn't exist)
-                model: batteryModel || vehicleData?.batteryModel,
+                model: batteryModel || 'LiFePO4-48V-100Ah',
                 manufacturer: 'Unknown',
                 capacity_kWh: 48,
                 voltage: 48,
@@ -1057,7 +1057,7 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 16,
         marginBottom: 16,
-        
+
     },
     instructionsHeader: {
         flexDirection: 'row',
