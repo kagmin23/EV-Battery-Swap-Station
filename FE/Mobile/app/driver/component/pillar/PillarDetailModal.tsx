@@ -1,4 +1,4 @@
-import { Pillar, Slot, getPillarDetailsById } from '@/store/pillars';
+import { Pillar, Slot, getPillarDetailsById, useSelectedPillar } from '@/store/pillars';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -23,7 +23,21 @@ export const PillarDetailModal: React.FC<PillarDetailModalProps> = ({
         }
     }, [visible, pillar?.id]);
 
-    if (!pillar) return null;
+    const selectedPillar = useSelectedPillar();
+    const activePillar = selectedPillar ?? pillar;
+
+    // Defensive: if neither prop nor store provide a pillar, render nothing
+    if (!activePillar) return null;
+
+    // Provide safe defaults so UI won't crash if slotStats or slots are missing
+    const stats = activePillar.slotStats ?? { total: 0, occupied: 0, empty: 0, reserved: 0 };
+    const slots = activePillar.slots ?? [];
+
+    // Coerce displayed values to strings to avoid accidentally rendering raw string nodes
+    const pillarName = String(activePillar.pillarName ?? '');
+    const pillarCode = String(activePillar.pillarCode ?? '');
+    const stationName = String(activePillar.station?.stationName ?? '');
+    const stationAddress = String(activePillar.station?.address ?? '');
 
     const getBatteryIcon = (slot: Slot) => {
         if (!slot.battery) return null;
@@ -44,7 +58,12 @@ export const PillarDetailModal: React.FC<PillarDetailModalProps> = ({
 
     const renderSlotCard = (slot: Slot) => {
         const batteryIcon = getBatteryIcon(slot);
-
+        // Defensive: coerce all values to string
+        const slotNumber = typeof slot.slotNumber === 'string' || typeof slot.slotNumber === 'number'
+            ? String(slot.slotNumber)
+            : '';
+        const slotStatus = typeof slot.status === 'string' ? slot.status : '';
+        const soh = slot.battery && typeof slot.battery.soh === 'number' ? String(slot.battery.soh) : '';
         return (
             <View
                 key={slot.id}
@@ -53,20 +72,20 @@ export const PillarDetailModal: React.FC<PillarDetailModalProps> = ({
                     { backgroundColor: getSlotColor(slot) }
                 ]}
             >
-                <Text style={styles.slotNumber}>{slot.slotNumber}</Text>
+                <Text style={styles.slotNumber}>{slotNumber}</Text>
                 {batteryIcon && (
                     <Ionicons name={batteryIcon.name} size={20} color={batteryIcon.color} />
                 )}
-                <Text style={styles.slotStatusText}>{slot.status}</Text>
+                <Text style={styles.slotStatusText}>{slotStatus}</Text>
                 {slot.battery && (
-                    <Text style={styles.batterySOH}>SOH: {slot.battery.soh}%</Text>
+                    <Text style={styles.batterySOH}>SOH: {soh}%</Text>
                 )}
             </View>
         );
     };
 
     // Group slots into rows of 5
-    const groupedSlots = pillar.slots.reduce((acc: Slot[][], slot, index) => {
+    const groupedSlots = slots.reduce((acc: Slot[][], slot, index) => {
         const rowIndex = Math.floor(index / 5);
         if (!acc[rowIndex]) acc[rowIndex] = [];
         acc[rowIndex].push(slot);
@@ -82,8 +101,8 @@ export const PillarDetailModal: React.FC<PillarDetailModalProps> = ({
                         <View style={styles.modalHeaderLeft}>
                             <Ionicons name="battery-charging" size={28} color="#a78bfa" />
                             <View>
-                                <Text style={styles.modalTitle}>{pillar.pillarName}</Text>
-                                <Text style={styles.modalSubtitle}>{pillar.pillarCode}</Text>
+                                <Text style={styles.modalTitle}>{pillarName}</Text>
+                                <Text style={styles.modalSubtitle}>{pillarCode}</Text>
                             </View>
                         </View>
                         <View style={styles.modalHeaderRight}>
@@ -102,37 +121,37 @@ export const PillarDetailModal: React.FC<PillarDetailModalProps> = ({
                     <View style={styles.stationInfo}>
                         <Ionicons name="location" size={20} color="#a78bfa" />
                         <View style={styles.stationDetails}>
-                            <Text style={styles.stationName}>{pillar.station.stationName}</Text>
-                            <Text style={styles.stationAddress}>{pillar.station.address}</Text>
+                            <Text style={styles.stationName}>{stationName}</Text>
+                            <Text style={styles.stationAddress}>{stationAddress}</Text>
                         </View>
                     </View>
 
                     {/* Summary Stats */}
                     <View style={styles.summaryStats}>
                         <View style={styles.summaryStatItem}>
-                            <Text style={styles.summaryStatValue}>{pillar.slotStats.total}</Text>
+                            <Text style={styles.summaryStatValue}>{stats.total}</Text>
                             <Text style={styles.summaryStatLabel}>Total</Text>
                         </View>
                         <View style={styles.summaryStatDivider} />
                         <View style={styles.summaryStatItem}>
                             <Text style={[styles.summaryStatValue, { color: '#ef4444' }]}>
-                                {pillar.slotStats.empty}
+                                {stats.empty}
                             </Text>
                             <Text style={styles.summaryStatLabel}>Empty</Text>
                         </View>
                         <View style={styles.summaryStatDivider} />
                         <View style={styles.summaryStatItem}>
                             <Text style={[styles.summaryStatValue, { color: '#10b981' }]}>
-                                {pillar.slotStats.occupied}
+                                {stats.occupied}
                             </Text>
                             <Text style={styles.summaryStatLabel}>Available</Text>
                         </View>
-                        {pillar.slotStats.reserved > 0 && (
+                        {pillar?.slotStats?.reserved && pillar.slotStats.reserved > 0 && (
                             <>
                                 <View style={styles.summaryStatDivider} />
                                 <View style={styles.summaryStatItem}>
                                     <Text style={[styles.summaryStatValue, { color: '#f59e0b' }]}>
-                                        {pillar.slotStats.reserved}
+                                        {stats.reserved}
                                     </Text>
                                     <Text style={styles.summaryStatLabel}>Reserved</Text>
                                 </View>
@@ -141,7 +160,7 @@ export const PillarDetailModal: React.FC<PillarDetailModalProps> = ({
                     </View>
 
                     {/* Slots Grid */}
-                    <Text style={styles.slotsTitle}>Battery Slots ({pillar.slots.length})</Text>
+                    <Text style={styles.slotsTitle}>Battery Slots ({slots.length})</Text>
                     <ScrollView style={styles.slotsList} showsVerticalScrollIndicator={false}>
                         <View style={styles.gridWrapper}>
                             {groupedSlots.map((row, rowIndex) => (
