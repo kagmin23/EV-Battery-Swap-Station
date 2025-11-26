@@ -17,6 +17,14 @@ export interface SubscriptionPlan {
   createdAt: string;
   updatedAt: string;
   __v: number;
+  availableSlots?: number;
+  userSubscription?: {
+    id: string;
+    status: string;
+    remainingSwaps?: number | null;
+    startDate?: string;
+    endDate?: string;
+  } | null;
 }
 
 export interface PurchaseSubscriptionRequest {
@@ -30,9 +38,9 @@ export interface PurchasedSubscription {
   plan: string;
   /** optional type: 'change' | 'periodic' */
   type?: string | null;
-  start_date: string;
-  end_date: string;
-  remaining_swaps: number | null;
+  startDate: string;
+  endDate: string;
+  remainingSwaps: number | null;
   status: string;
   createdAt: string;
   updatedAt: string;
