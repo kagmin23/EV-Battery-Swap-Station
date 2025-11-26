@@ -346,7 +346,8 @@ const RequestSupportScreen = () => {
 
             <FlatList
                 data={requests}
-                keyExtractor={(item, index) => item._id ?? item.booking?.bookingId ?? String(index)}
+                // ensure keys are unique even if server IDs collide by appending the index
+                keyExtractor={(item, index) => `${item._id ?? item.booking?.bookingId ?? String(index)}-${index}`}
                 renderItem={renderRequest}
                 ListHeaderComponent={showForm ? renderForm() : null}
                 contentContainerStyle={{ padding: 16, paddingBottom: 100 }}

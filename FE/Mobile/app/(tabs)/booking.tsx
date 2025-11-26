@@ -15,6 +15,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PaymentModal from '../driver/component/PaymentModal';
+import { getAllBattery, getBatteryById, useBatteries } from '@/store/baterry';
 
 
 export default function BookingScreen() {
@@ -23,12 +24,22 @@ export default function BookingScreen() {
     const station = useSelectedStation();
     const createBookingMutation = useCreateBooking();
     const bookings = useBookings();
+    const batteries = useBatteries();
     // const batteriesInStation = useBatteriesInStation(); // No longer needed - using pillars instead
     const pillars = usePillars();
+
+    // Log pillars when they change
+    useEffect(() => {
+        getAllBattery()
+    }, [pillars]);
+
     const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>(undefined);
     const [selectedPillarId, setSelectedPillarId] = useState<string | null>(null);
     const [selectedPillarForBooking, setSelectedPillarForBooking] = useState<string | null>(null);
+    const [selectedBatteryId, setSelectedBatteryId] = useState<string | null>(null);
     const [showPillarDetail, setShowPillarDetail] = useState(false);
+    const [showBatterySelection, setShowBatterySelection] = useState(false);
+    const [showGlobalBatterySelection, setShowGlobalBatterySelection] = useState(false);
     // console.log(pillars);
 
     // Get the current pillar data based on selectedPillarId
@@ -48,6 +59,21 @@ export default function BookingScreen() {
         setSelectedPillarId(null);
     };
 
+    // Handler for selecting pillar for booking
+    const handleSelectPillarForBooking = (pillar: Pillar) => {
+        // Only allow selecting compatible pillars
+        if (isPillarCompatible(pillar)) {
+            const compatibleBatteries = getCompatibleBatteriesForPillar(pillar);
+            if (compatibleBatteries.length === 1) {
+                setSelectedBatteryId(compatibleBatteries[0].id);
+                setSelectedPillarForBooking(pillar.id);
+            } else if (compatibleBatteries.length > 1) {
+                setSelectedPillarForBooking(pillar.id);
+                setShowBatterySelection(true);
+            }
+        }
+    };
+
     // Handler for refreshing pillar details
     const handleRefreshPillarDetails = async () => {
         if (selectedPillarId) {
@@ -56,43 +82,12 @@ export default function BookingScreen() {
     };
 
     // Handler for selecting pillar for booking
-    const handleSelectPillarForBooking = (pillar: Pillar) => {
-        // Only allow selecting compatible pillars
-        if (isPillarCompatible(pillar)) {
-            setSelectedPillarForBooking(pillar.id);
-        }
-    };
-
-    // Check if pillar has compatible battery for selected vehicle
-    const isPillarCompatible = useCallback((pillar: Pillar): boolean => {
-        if (!selectedVehicleId || !vehicles.length) return false;
-
-        const selectedVehicle = vehicles.find(v => v.vehicleId === selectedVehicleId);
-        if (!selectedVehicle) return false;
-
-        // Check if any slot in this pillar has:
-        // 1. A battery (slot.battery exists)
-        // 2. Slot status is 'occupied' (battery is ready in the slot)
-        // 3. Battery model matches vehicle's battery model
-        return pillar.slots.some(slot =>
-            slot.battery &&
-            slot.status === 'occupied' &&
-            slot.battery.model === selectedVehicle.batteryModel
-        );
-    }, [selectedVehicleId, vehicles]);
-
-
-
-    // Get compatible pillars for selected vehicle
-    const compatiblePillars = useMemo(() => {
-        if (!selectedVehicleId || !pillars.length) return [];
-        return pillars.filter(pillar => isPillarCompatible(pillar));
-    }, [pillars, selectedVehicleId, isPillarCompatible]);
 
 
     // Get available battery models from pillars' slots (only occupied slots)
     const availableBatteryModels = useMemo(() => {
         if (!pillars || pillars.length === 0) return [];
+
 
         const batteryModels = new Set<string>();
 
@@ -106,17 +101,131 @@ export default function BookingScreen() {
             });
         });
 
-        return Array.from(batteryModels);
+        const models = Array.from(batteryModels);
+        return models;
     }, [pillars]);
 
+    // Get available battery voltages from pillars' slots (only occupied slots)
+    const availableBatteryVoltages = useMemo(() => {
+        if (!pillars || pillars.length === 0) return [];
 
+        const batteryVoltages = new Set<number>();
+        pillars.forEach(pillar => {
+            pillar.slots.forEach(slot => {
+
+                if (slot.status === 'occupied' && slot.battery && getBatteryById(batteries, slot.battery.id)?.voltage !== undefined) {
+                    const voltage = getBatteryById(batteries, slot.battery.id)?.voltage;
+                    batteryVoltages.add(voltage!);
+                    // console.log('see', getBatteryById(batteries, slot.battery.id)?.voltage)
+
+                }
+            });
+        });
+        // Loop through all pillars and their slots
+        // pillars.forEach(pillar => {
+        //     pillar.slots.forEach(slot => {
+        //         // Only consider occupied slots with batteries
+        //         if (slot.status === 'occupied' && slot.battery && slot.battery.voltage !== undefined) {
+        //             batteryVoltages.add(slot.battery.voltage);
+        //         }
+        //     });
+        // });
+
+        const voltages = Array.from(batteryVoltages);
+        console.log('availableBatteryVoltages:', voltages);
+        return voltages;
+    }, [pillars, batteries]);
+
+
+    // Helper to get vehicle's battery model via batteryId
+    const getVehicleBatteryModel = useCallback((vehicle: Vehicle) => {
+        if (!vehicle) return '';
+        const model = getBatteryById(batteries, vehicle.batteryId ?? '')?.model ?? '';
+        return model;
+    }, [batteries]);
+
+    // Get all compatible batteries for the selected vehicle across all pillars
+    const allCompatibleBatteries = useMemo(() => {
+        if (!selectedVehicleId || !pillars.length) return [];
+
+        const selectedVehicle = vehicles.find(v => v.vehicleId === selectedVehicleId);
+        if (!selectedVehicle) return [];
+
+        const vehicleModel = getVehicleBatteryModel(selectedVehicle);
+        const vehicleVoltage = getBatteryById(batteries, selectedVehicle.batteryId ?? '')?.voltage;
+
+        const compatibleBatteries: any[] = [];
+        pillars.forEach(pillar => {
+            pillar.slots.forEach(slot => {
+                if (slot.battery && slot.status === 'occupied' && slot.battery.status !== 'is-booking' &&
+                    (slot.battery.model === vehicleModel || getBatteryById(batteries, slot.battery.id)?.voltage === vehicleVoltage)) {
+                    compatibleBatteries.push(slot.battery);
+                }
+            });
+        });
+
+        return compatibleBatteries;
+    }, [selectedVehicleId, pillars, vehicles, batteries, getVehicleBatteryModel]);
     // Check if vehicle is compatible with batteries in pillar slots
     const isVehicleCompatible = useCallback((vehicle: Vehicle) => {
-        return availableBatteryModels.includes(vehicle.batteryModel);
-    }, [availableBatteryModels]);
+        const model = getVehicleBatteryModel(vehicle);
+        const voltage = getBatteryById(batteries, vehicle.batteryId ?? '')?.voltage;
+        const isCompatible = (model && availableBatteryModels.includes(model)) || (voltage !== undefined && availableBatteryVoltages.includes(voltage));
+        return isCompatible;
+    }, [availableBatteryModels, availableBatteryVoltages, getVehicleBatteryModel, batteries]);
 
+    // Get compatible batteries for a pillar
+    const getCompatibleBatteriesForPillar = useCallback((pillar: Pillar) => {
+        if (!selectedVehicleId || !vehicles.length) return [];
+
+        const selectedVehicle = vehicles.find(v => v.vehicleId === selectedVehicleId);
+        if (!selectedVehicle) return [];
+
+        const vehicleModel = getVehicleBatteryModel(selectedVehicle);
+        const vehicleVoltage = getBatteryById(batteries, selectedVehicle.batteryId ?? '')?.voltage;
+
+        return pillar.slots
+            .filter(slot =>
+                slot.battery &&
+                slot.status === 'occupied' &&
+                slot.battery.status !== 'is-booking' &&
+                (slot.battery.model === vehicleModel || getBatteryById(batteries, slot.battery.id)?.voltage === vehicleVoltage)
+            )
+            .map(slot => slot.battery!);
+    }, [selectedVehicleId, vehicles, batteries, getVehicleBatteryModel]);
+
+    // Check if pillar has compatible battery for selected vehicle
+    const isPillarCompatible = useCallback((pillar: Pillar): boolean => {
+        if (!selectedVehicleId || !vehicles.length) return false;
+
+        const selectedVehicle = vehicles.find(v => v.vehicleId === selectedVehicleId);
+        if (!selectedVehicle) return false;
+
+        // Check if any slot in this pillar has:
+        // 1. A battery (slot.battery exists)
+        // 2. Slot status is 'occupied' (battery is ready in the slot)
+        // 3. Battery model matches vehicle's battery model OR voltage matches
+        // 4. Battery status is not 'is-booking' (not already reserved)
+
+
+        return pillar.slots.some(slot =>
+            slot.battery &&
+            slot.status === 'occupied' &&
+            slot.battery.status !== 'is-booking' &&
+            (selectedVehicle.batteryId !== undefined) &&
+            (slot.battery.model === getBatteryById(batteries, selectedVehicle.batteryId)?.model ||
+                getBatteryById(batteries, slot.battery.id)?.voltage === getBatteryById(batteries, selectedVehicle.batteryId)?.voltage)
+        );
+    }, [selectedVehicleId, vehicles, batteries]);
+
+    // Get compatible pillars for selected vehicle
+    const compatiblePillars = useMemo(() => {
+        if (!selectedVehicleId || !pillars.length) return [];
+        return pillars.filter(pillar => isPillarCompatible(pillar));
+    }, [pillars, selectedVehicleId, isPillarCompatible]);
     // Get selected battery ID for the selected vehicle from pillar slots
     const getSelectedBatteryId = useCallback(() => {
+        if (selectedBatteryId) return selectedBatteryId;
         if (!selectedVehicleId || !pillars || pillars.length === 0) return null;
 
         const selectedVehicle = vehicles.find(v => v.vehicleId === selectedVehicleId);
@@ -124,10 +233,13 @@ export default function BookingScreen() {
 
         // Find the first occupied slot with matching battery model in any pillar
         for (const pillar of pillars) {
+            const vehicleModel = getVehicleBatteryModel(selectedVehicle);
+            const vehicleVoltage = getBatteryById(batteries, selectedVehicle.batteryId ?? '')?.voltage;
             const matchingSlot = pillar.slots.find(slot =>
                 slot.status === 'occupied' &&
                 slot.battery &&
-                slot.battery.model === selectedVehicle.batteryModel
+                slot.battery.status !== 'is-booking' &&
+                (slot.battery.model === vehicleModel || getBatteryById(batteries, slot.battery.id)?.voltage === vehicleVoltage)
             );
 
             if (matchingSlot?.battery) {
@@ -136,7 +248,7 @@ export default function BookingScreen() {
         }
 
         return null;
-    }, [selectedVehicleId, pillars, vehicles]);
+    }, [selectedBatteryId, selectedVehicleId, pillars, vehicles, batteries, getVehicleBatteryModel]);
 
     // Get pillar ID for the selected battery
     const getSelectedPillarId = useCallback(() => {
@@ -147,10 +259,13 @@ export default function BookingScreen() {
 
         // Find the pillar containing matching battery
         for (const pillar of pillars) {
+            const vehicleModel = getVehicleBatteryModel(selectedVehicle);
+            const vehicleVoltage = getBatteryById(batteries, selectedVehicle.batteryId ?? '')?.voltage;
             const matchingSlot = pillar.slots.find(slot =>
                 slot.status === 'occupied' &&
                 slot.battery &&
-                slot.battery.model === selectedVehicle.batteryModel
+                slot.battery.status !== 'is-booking' &&
+                (slot.battery.model === vehicleModel || getBatteryById(batteries, slot.battery.id)?.voltage === vehicleVoltage)
             );
 
             if (matchingSlot?.battery) {
@@ -159,8 +274,7 @@ export default function BookingScreen() {
         }
 
         return null;
-    }, [selectedVehicleId, pillars, vehicles]);
-
+    }, [selectedVehicleId, pillars, vehicles, batteries, getVehicleBatteryModel]);
     // Get selected battery info for display from pillar slots
     const getSelectedBatteryInfo = useCallback(() => {
         if (!selectedVehicleId || !pillars || pillars.length === 0) {
@@ -174,10 +288,13 @@ export default function BookingScreen() {
 
         // Find the first occupied slot with matching battery model in any pillar
         for (const pillar of pillars) {
+            const vehicleModel = getVehicleBatteryModel(selectedVehicle);
+            const vehicleVoltage = getBatteryById(batteries, selectedVehicle.batteryId ?? '')?.voltage;
             const matchingSlot = pillar.slots.find(slot =>
                 slot.status === 'occupied' &&
                 slot.battery &&
-                slot.battery.model === selectedVehicle.batteryModel
+                slot.battery.status !== 'is-booking' &&
+                (slot.battery.model === vehicleModel || getBatteryById(batteries, slot.battery.id)?.voltage === vehicleVoltage)
             );
 
             if (matchingSlot?.battery) {
@@ -186,7 +303,7 @@ export default function BookingScreen() {
         }
 
         return null;
-    }, [selectedVehicleId, pillars, vehicles]);
+    }, [selectedVehicleId, pillars, vehicles, batteries, getVehicleBatteryModel]);
 
     // Auto-select first compatible vehicle
     useEffect(() => {
@@ -198,29 +315,41 @@ export default function BookingScreen() {
         }
     }, [vehicles, availableBatteryModels, selectedVehicleId, isVehicleCompatible]);
 
-    // Auto-select first compatible pillar when vehicle changes
+    // Auto-select battery or pillar when vehicle changes
     useEffect(() => {
-        if (selectedVehicleId && compatiblePillars.length > 0) {
-            // Check if current selected pillar is still compatible
-            const currentPillarStillCompatible = selectedPillarForBooking &&
-                compatiblePillars.some(p => p.id === selectedPillarForBooking);
-
-            if (!currentPillarStillCompatible) {
-                // Auto-select first compatible pillar
-                setSelectedPillarForBooking(compatiblePillars[0].id);
+        if (selectedVehicleId) {
+            if (allCompatibleBatteries.length > 1) {
+                // Multiple batteries available, show selection modal
+                setShowGlobalBatterySelection(true);
+            } else if (allCompatibleBatteries.length === 1) {
+                // Only one battery, auto-select it and its pillar
+                const battery = allCompatibleBatteries[0];
+                setSelectedBatteryId(battery.id);
+                // Find the pillar containing this battery
+                const pillarWithBattery = pillars.find(pillar =>
+                    pillar.slots.some(slot => slot.battery?.id === battery.id)
+                );
+                if (pillarWithBattery) {
+                    setSelectedPillarForBooking(pillarWithBattery.id);
+                }
+            } else {
+                // No compatible batteries
+                setSelectedBatteryId(null);
+                setSelectedPillarForBooking(null);
             }
         } else {
-            // Clear selection if no compatible pillars
+            setSelectedBatteryId(null);
             setSelectedPillarForBooking(null);
+            setShowGlobalBatterySelection(false);
         }
-    }, [selectedVehicleId, compatiblePillars, selectedPillarForBooking]);
+    }, [selectedVehicleId, allCompatibleBatteries, pillars]);
 
     // Fetch data when station changes
     useEffect(() => {
         if (station?.id) {
             getPillarsByStationId(station.id);
         }
-    }, [station?.id]);
+    }, [station?.id, station?.stationName]);
 
     useFocusEffect(
         useCallback(() => {
@@ -319,14 +448,21 @@ export default function BookingScreen() {
                             </View>
                             {availableBatteryModels.length > 0 && (
                                 <Text style={styles.compatibilityInfo}>
-                                    <Text style={{ color: '#fff' }}>Compatible Models:</Text> {availableBatteryModels.join(', ')}
+                                    <Text style={{ color: '#fff' }}>Compatible Models: </Text>
+                                    <Text style={{ color: '#bfb6ff' }}>{availableBatteryModels.join(', ')}</Text>
+                                    {availableBatteryVoltages.length > 0 && (
+                                        <>
+                                            <Text style={{ color: '#fff' }}> | Voltages: </Text>
+                                            <Text style={{ color: '#bfb6ff' }}>{availableBatteryVoltages.join(', ')}V</Text>
+                                        </>
+                                    )}
                                 </Text>
                             )}
                         </View>
                     </View>
                     <View style={{ gap: 10 }}>
                         {vehicles.map(v => {
-                            const isCompatible = availableBatteryModels.includes(v.batteryModel);
+                            const isCompatible = isVehicleCompatible(v);
                             const isDisabled = !isCompatible;
 
                             return (
@@ -427,7 +563,7 @@ export default function BookingScreen() {
                             <View style={styles.noPillarsMessage}>
                                 <Ionicons name="alert-circle-outline" size={24} color="#f59e0b" />
                                 <Text style={styles.noPillarsText}>
-                                    No pillars available with occupied batteries matching your vehicle&apos;s battery model ({vehicles.find(v => v.vehicleId === selectedVehicleId)?.batteryModel}).
+                                    No pillars available with occupied batteries matching your vehicle&apos;s battery model ({getBatteryById(batteries, vehicles.find(v => v.vehicleId === selectedVehicleId)?.batteryId ?? '')?.model || 'N/A'}).
                                 </Text>
                             </View>
                         )}
@@ -647,6 +783,90 @@ export default function BookingScreen() {
                     onClose={handleClosePillarDetail}
                     onRefresh={handleRefreshPillarDetails}
                 />
+
+                {/* Global Battery Selection Modal */}
+                <Modal visible={showGlobalBatterySelection} animationType="slide" transparent={true} onRequestClose={() => setShowGlobalBatterySelection(false)}>
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContainer}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Select Battery ({allCompatibleBatteries.length} available)</Text>
+                                <TouchableOpacity onPress={() => setShowGlobalBatterySelection(false)} style={styles.closeButton}>
+                                    <Ionicons name="close" size={28} color="#9ca3af" />
+                                </TouchableOpacity>
+                            </View>
+                            <ScrollView style={styles.batteryList}>
+                                {allCompatibleBatteries.map(battery => (
+                                    <TouchableOpacity
+                                        key={battery.id}
+                                        style={[styles.batteryItem, selectedBatteryId === battery.id && styles.selectedBatteryItem]}
+                                        onPress={() => {
+                                            setSelectedBatteryId(battery.id);
+                                            // Find the pillar containing this battery
+                                            const pillarWithBattery = pillars.find(pillar =>
+                                                pillar.slots.some(slot => slot.battery?.id === battery.id)
+                                            );
+                                            if (pillarWithBattery) {
+                                                setSelectedPillarForBooking(pillarWithBattery.id);
+                                            }
+                                            setShowGlobalBatterySelection(false);
+                                        }}
+                                    >
+                                        <View style={styles.batteryItemInfo}>
+                                            <Text style={styles.batteryModel}>{battery.model}</Text>
+                                            <Text style={styles.batterySerial}>{battery.serial}</Text>
+                                            <Text style={styles.batteryDetails}>SOH: {String(battery.soh)}% | Voltage: {String(getBatteryById(batteries, battery.id)?.voltage)}V</Text>
+                                        </View>
+                                        {selectedBatteryId === battery.id && (
+                                            <Ionicons name="checkmark-circle" size={24} color="#10b981" />
+                                        )}
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    </View>
+                </Modal>
+
+                {/* Battery Selection Modal for Pillar */}
+                <Modal visible={showBatterySelection} animationType="slide" transparent={true} onRequestClose={() => setShowBatterySelection(false)}>
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContainer}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Select Battery ({(() => {
+                                    const selectedPillar = pillars.find(p => p.id === selectedPillarForBooking);
+                                    return selectedPillar ? getCompatibleBatteriesForPillar(selectedPillar).length : 0;
+                                })()} available)</Text>
+                                <TouchableOpacity onPress={() => setShowBatterySelection(false)} style={styles.closeButton}>
+                                    <Ionicons name="close" size={28} color="#9ca3af" />
+                                </TouchableOpacity>
+                            </View>
+                            <ScrollView style={styles.batteryList}>
+                                {(() => {
+                                    const selectedPillar = pillars.find(p => p.id === selectedPillarForBooking);
+                                    const compatibleBatteries = selectedPillar ? getCompatibleBatteriesForPillar(selectedPillar) : [];
+                                    return compatibleBatteries.map(battery => (
+                                        <TouchableOpacity
+                                            key={battery.id}
+                                            style={[styles.batteryItem, selectedBatteryId === battery.id && styles.selectedBatteryItem]}
+                                            onPress={() => {
+                                                setSelectedBatteryId(battery.id);
+                                                setShowBatterySelection(false);
+                                            }}
+                                        >
+                                            <View style={styles.batteryItemInfo}>
+                                                <Text style={styles.batteryModel}>{battery.model}</Text>
+                                                <Text style={styles.batterySerial}>{battery.serial}</Text>
+                                                <Text style={styles.batteryDetails}>SOH: {String(battery.soh)}% | Voltage: {String(battery.voltage)}V</Text>
+                                            </View>
+                                            {selectedBatteryId === battery.id && (
+                                                <Ionicons name="checkmark-circle" size={24} color="#10b981" />
+                                            )}
+                                        </TouchableOpacity>
+                                    ));
+                                })()}
+                            </ScrollView>
+                        </View>
+                    </View>
+                </Modal>
             </ScrollView>
         </SafeAreaView>
     );
@@ -836,6 +1056,67 @@ const styles = StyleSheet.create({
         color: '#f59e0b',
         fontSize: 13,
         lineHeight: 18,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        justifyContent: 'flex-end',
+    },
+    modalContainer: {
+        backgroundColor: '#0a0520',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        maxHeight: '70%',
+        paddingBottom: 20,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: '#2d2a3f',
+    },
+    closeButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#1e1b2e',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    batteryList: {
+        padding: 20,
+    },
+    batteryItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1e1b2e',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 12,
+    },
+    selectedBatteryItem: {
+        borderWidth: 2,
+        borderColor: '#10b981',
+    },
+    batteryItemInfo: {
+        flex: 1,
+    },
+    batteryModel: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#ffffff',
+        marginBottom: 4,
+    },
+    batterySerial: {
+        fontSize: 14,
+        color: '#9ca3af',
+        marginBottom: 4,
+    },
+    batteryDetails: {
+        fontSize: 12,
+        color: '#bfb6ff',
     },
 });
 

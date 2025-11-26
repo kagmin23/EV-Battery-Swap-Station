@@ -9,7 +9,6 @@ import { DriverService, type Driver } from '../../../services/api/driverService'
 import { TransactionService } from '@/services/api/transactionService';
 import { UserService } from '@/services/api/userService';
 import { StationService } from '@/services/api/stationService';
-import { ReportsApi } from '../apis/reportsApi';
 import { KPISkeletonGroup, CardSkeleton } from '@/components/ui/table-skeleton';
 
 export default function Dashboard() {
@@ -26,8 +25,6 @@ export default function Dashboard() {
     transaction_time: string;
     cost: number;
   }>>([]);
-  const [overviewReport, setOverviewReport] = useState<{ revenue: number; swaps: number } | null>(null);
-  const [usageReport, setUsageReport] = useState<{ frequency: number[]; peakHours: number[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch data on component mount
@@ -160,23 +157,6 @@ export default function Dashboard() {
           setRecentTransactions([]);
         }
 
-        // Fetch overview report
-        try {
-          const overviewData = await ReportsApi.getOverviewReport();
-          setOverviewReport(overviewData.data);
-        } catch (err) {
-          console.error('Error fetching overview report:', err);
-          setOverviewReport(null);
-        }
-
-        // Fetch usage report
-        try {
-          const usageData = await ReportsApi.getUsageReport();
-          setUsageReport(usageData.data);
-        } catch (err) {
-          console.error('Error fetching usage report:', err);
-          setUsageReport(null);
-        }
         
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
@@ -254,12 +234,6 @@ export default function Dashboard() {
         {/* Recent Transactions Skeleton */}
         <div className="mb-8">
           <CardSkeleton className="h-64" />
-        </div>
-
-        {/* Reports Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <CardSkeleton />
-          <CardSkeleton />
         </div>
       </div>
     );
@@ -361,78 +335,6 @@ export default function Dashboard() {
       {/* Recent Transactions */}
       <div className="mb-8">
         <RecentTransactionsTable transactions={recentTransactions} />
-      </div>
-
-      {/* Revenue & Usage Reports */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Revenue Overview Report */}
-        {overviewReport && (
-          <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
-            <h2 className="text-xl font-bold text-slate-900 mb-4">Revenue Overview</h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
-                <div>
-                  <p className="text-sm text-slate-600 mb-1">Total Revenue</p>
-                  <p className="text-2xl font-bold text-green-600">{formatCurrency(overviewReport.revenue)}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
-                  <span className="text-2xl">💰</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg">
-                <div>
-                  <p className="text-sm text-slate-600 mb-1">Total Battery Swaps</p>
-                  <p className="text-2xl font-bold text-blue-600">{overviewReport.swaps.toLocaleString()}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center">
-                  <span className="text-2xl">🔄</span>
-                </div>
-              </div>
-              {overviewReport.swaps > 0 && (
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg">
-                  <div>
-                    <p className="text-sm text-slate-600 mb-1">Average Revenue per Swap</p>
-                    <p className="text-2xl font-bold text-purple-600">
-                      {formatCurrency(overviewReport.revenue / overviewReport.swaps)}
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center">
-                    <span className="text-2xl">📊</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Usage Report */}
-        {usageReport && (
-          <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
-            <h2 className="text-xl font-bold text-slate-900 mb-4">Usage Report Summary</h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg">
-                <div className="flex-1">
-                  <p className="text-sm text-slate-600 mb-1">Usage Frequency Data Points</p>
-                  <p className="text-2xl font-bold text-orange-600">{usageReport.frequency.length}</p>
-                  <p className="text-xs text-slate-500 mt-1">Recorded frequency measurements</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center">
-                  <span className="text-2xl">📈</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-rose-50 to-pink-50 rounded-lg">
-                <div className="flex-1">
-                  <p className="text-sm text-slate-600 mb-1">Peak Hours Data Points</p>
-                  <p className="text-2xl font-bold text-rose-600">{usageReport.peakHours.length}</p>
-                  <p className="text-xs text-slate-500 mt-1">High-traffic time periods</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-rose-500 flex items-center justify-center">
-                  <span className="text-2xl">⏰</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
