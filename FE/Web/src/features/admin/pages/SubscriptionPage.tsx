@@ -32,7 +32,12 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { SubscriptionService } from '@/services/api/subscriptionService';
-import type { SubscriptionPlan, CreateSubscriptionPlanRequest, UpdateSubscriptionPlanRequest } from '@/services/api/subscriptionService';
+import type {
+  SubscriptionPlan,
+  CreateSubscriptionPlanRequest,
+  UpdateSubscriptionPlanRequest,
+  SubscriptionSubscriber
+} from '@/services/api/subscriptionService';
 import * as Yup from 'yup';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { toast } from 'sonner';
@@ -45,9 +50,11 @@ interface Subscription {
   price: number;
   durations: number;
   type?: 'change' | 'periodic';
-  count_swap: number;
-  quantity_slot: number;
+  count_swap: number | null;
+  quantity_slot: number | null;
   status: 'active' | 'inactive';
+  subscribers?: SubscriptionSubscriber[];
+  subscriberCount?: number;
 }
 
 // Helper function to convert API data to UI format
@@ -61,12 +68,16 @@ const convertApiToUI = (apiPlan: SubscriptionPlan): Subscription => ({
   count_swap: apiPlan.count_swap,
   quantity_slot: apiPlan.quantity_slot,
   status: apiPlan.status,
+  subscribers: apiPlan.subscribers ?? [],
+  subscriberCount: apiPlan.subscriberCount ?? (apiPlan.subscribers ? apiPlan.subscribers.length : 0),
 });
 
 // Helper: convert UI to backend DTO
-const convertUIToApi = (uiData: Partial<Subscription>): CreateSubscriptionPlanRequest | UpdateSubscriptionPlanRequest => {
+const convertUIToApi = (
+  uiData: Partial<Subscription>
+): CreateSubscriptionPlanRequest | UpdateSubscriptionPlanRequest => {
   const type = (uiData.type || 'change') as 'change' | 'periodic';
-  const baseData: any = {
+  const baseData: Partial<CreateSubscriptionPlanRequest & UpdateSubscriptionPlanRequest> = {
     subscriptionName: uiData.subscriptionName || '',
     price: uiData.price || 0,
     durations: uiData.durations || 1,
@@ -134,6 +145,8 @@ export const SubscriptionPage: React.FC = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [editSubmitError, setEditSubmitError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [isSubscribersModalOpen, setIsSubscribersModalOpen] = useState(false);
+  const [selectedSubscriptionForSubscribers, setSelectedSubscriptionForSubscribers] = useState<Subscription | null>(null);
 
   const filteredSubscriptions = subscriptions;
 
@@ -210,10 +223,12 @@ export const SubscriptionPage: React.FC = () => {
     
     try {
       await PlanSchema.validate(dataToValidate, { abortEarly: false });
-    } catch (e) {
-      if ((e as any).inner) {
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'inner' in e && Array.isArray((e as { inner?: unknown }).inner)) {
         const errs: Record<string, string> = {};
-        (e as any).inner.forEach((item: any) => { if (item.path && !errs[item.path]) errs[item.path] = item.message; });
+        (e as { inner?: { path?: string; message: string }[] }).inner?.forEach((item) => {
+          if (item.path && !errs[item.path]) errs[item.path] = item.message;
+        });
         setFieldErrors(errs);
       }
       setSubmitError(null);
@@ -248,10 +263,12 @@ export const SubscriptionPage: React.FC = () => {
     
     try {
       await PlanSchema.validate(dataToValidate, { abortEarly: false });
-    } catch (e) {
-      if ((e as any).inner) {
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'inner' in e && Array.isArray((e as { inner?: unknown }).inner)) {
         const errs: Record<string, string> = {};
-        (e as any).inner.forEach((item: any) => { if (item.path && !errs[item.path]) errs[item.path] = item.message; });
+        (e as { inner?: { path?: string; message: string }[] }).inner?.forEach((item) => {
+          if (item.path && !errs[item.path]) errs[item.path] = item.message;
+        });
         setFieldErrors(errs);
       }
       setEditSubmitError(null);
@@ -283,6 +300,16 @@ export const SubscriptionPage: React.FC = () => {
     setIsConfirmationModalOpen(true);
   };
 
+  const handleOpenSubscribersModal = (subscription: Subscription) => {
+    setSelectedSubscriptionForSubscribers(subscription);
+    setIsSubscribersModalOpen(true);
+  };
+
+  const handleCloseSubscribersModal = () => {
+    setSelectedSubscriptionForSubscribers(null);
+    setIsSubscribersModalOpen(false);
+  };
+
   const handleConfirmDelete = async () => {
     if (!deletingSubscription) return;
     setSubmitError(null);
@@ -294,8 +321,11 @@ export const SubscriptionPage: React.FC = () => {
       setIsConfirmationModalOpen(false);
       setDeletingSubscription(null);
       toast.success('Successfully deleted subscription plan');
-    } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || 'Unable to delete subscription plan';
+    } catch (err: unknown) {
+      const errorMessage =
+        (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
+        (err as { message?: string }).message ||
+        'Unable to delete subscription plan';
 
       // Check if the error indicates the plan is in use
       if (errorMessage.toLowerCase().includes('in use') ||
@@ -422,7 +452,7 @@ export const SubscriptionPage: React.FC = () => {
 
 
       {/* Subscription Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 xl:gap-8">
         {filteredSubscriptions.map((subscription) => (
           <Card
             key={subscription.id}
@@ -439,9 +469,19 @@ export const SubscriptionPage: React.FC = () => {
             </div>
 
             {/* Header */}
-            <div className="mb-4">
-              <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-2 break-words">{subscription.subscriptionName}</h3>
-              <p className="inline-block text-xs sm:text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-100 rounded-md px-2 py-1 break-words">{subscription.description}</p>
+            <div className="mb-4 space-y-2">
+              <h3 className="text-lg sm:text-xl font-bold text-slate-800 break-words">{subscription.subscriptionName}</h3>
+              <p className="inline-block text-xs sm:text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-100 rounded-md px-2 py-1 break-words">
+                {subscription.description}
+              </p>
+              <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
+                <span>
+                  Subscribers:&nbsp;
+                  <span className="font-semibold text-slate-700">
+                    {subscription.subscriberCount ?? (subscription.subscribers ? subscription.subscribers.length : 0)}
+                  </span>
+                </span>
+              </div>
             </div>
 
             {/* Price */}
@@ -489,13 +529,22 @@ export const SubscriptionPage: React.FC = () => {
             </div>
 
             {/* Actions - This will be pushed to the bottom */}
-            <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-auto">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleOpenSubscribersModal(subscription)}
+                disabled={actionLoading || (subscription.subscriberCount ?? 0) === 0}
+                className="px-3 sm:px-4 py-2 text-[11px] sm:text-xs bg-white text-slate-800 border-slate-200 hover:bg-slate-50 rounded-md col-span-3 sm:col-span-1"
+              >
+                View subscribers
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleOpenEditModal(subscription)}
                 disabled={actionLoading}
-                className="px-3 sm:px-5 py-2 text-xs sm:text-sm bg-white text-slate-800 border-slate-200 hover:bg-slate-50 rounded-md"
+                className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-white text-slate-800 border-slate-200 hover:bg-slate-50 rounded-md"
               >
                 Edit
               </Button>
@@ -504,7 +553,7 @@ export const SubscriptionPage: React.FC = () => {
                 size="sm"
                 onClick={() => handleDelete(subscription)}
                 disabled={actionLoading}
-                className="px-3 sm:px-5 py-2 text-xs sm:text-sm bg-white text-red-600 border-red-200 hover:bg-red-50 rounded-md"
+                className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-white text-red-600 border-red-200 hover:bg-red-50 rounded-md"
               >
                 Delete
               </Button>
@@ -957,6 +1006,71 @@ export const SubscriptionPage: React.FC = () => {
         isLoading={false}
         showWarning={false}
       />
+
+      {/* Subscribers list modal */}
+      <Dialog open={isSubscribersModalOpen} onOpenChange={(open) => {
+        if (!open) {
+          handleCloseSubscribersModal();
+        } else if (selectedSubscriptionForSubscribers) {
+          setIsSubscribersModalOpen(true);
+        }
+      }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-slate-800">
+              Subscribers for {selectedSubscriptionForSubscribers?.subscriptionName}
+            </DialogTitle>
+            <DialogDescription>
+              List of users currently registered to this subscription plan.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {(selectedSubscriptionForSubscribers?.subscribers?.length ?? 0) === 0 && (
+              <div className="text-center py-6 text-slate-600">
+                No subscribers for this plan yet.
+              </div>
+            )}
+
+            {selectedSubscriptionForSubscribers?.subscribers && selectedSubscriptionForSubscribers.subscribers.length > 0 && (
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <div className="grid grid-cols-6 gap-2 px-4 py-2 bg-slate-50 text-xs font-semibold text-slate-700">
+                  <span>User name</span>
+                  <span>Email</span>
+                  <span>Phone</span>
+                  <span>Start date</span>
+                  <span>End date</span>
+                  <span>Remaining / Status</span>
+                </div>
+                <div className="divide-y divide-slate-200">
+                  {selectedSubscriptionForSubscribers.subscribers.map((sub) => (
+                    <div key={sub.id} className="grid grid-cols-6 gap-2 px-4 py-2 text-xs text-slate-700">
+                      <span className="truncate" title={sub.user.fullName}>{sub.user.fullName}</span>
+                      <span className="truncate" title={sub.user.email}>{sub.user.email}</span>
+                      <span className="truncate" title={sub.user.phoneNumber}>{sub.user.phoneNumber}</span>
+                      <span>
+                        {new Date(sub.start_date).toLocaleDateString('vi-VN')}
+                      </span>
+                      <span>
+                        {new Date(sub.end_date).toLocaleDateString('vi-VN')}
+                      </span>
+                      <span className="truncate">
+                        {sub.remaining_swaps} swaps • {sub.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseSubscribersModal}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
