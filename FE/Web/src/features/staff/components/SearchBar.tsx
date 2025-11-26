@@ -1,12 +1,14 @@
-import { Search, SlidersHorizontal } from "lucide-react";
-import { useState } from "react";
-import FilterModal from "./FilterModal";
-import type { FilterValues } from "./FilterModal";
+import { useState, type Dispatch, type SetStateAction } from 'react';
+import { Search, SlidersHorizontal } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import FilterModal from './FilterModal';
+import type { FilterValues } from './FilterModal';
 
 interface SearchBarProps {
   searchQuery: string;
-  setSearchQuery: (query: string) => void;
-  setFilters: (filters: FilterValues) => void;
+  setSearchQuery: Dispatch<SetStateAction<string>>;
+  setFilters: Dispatch<SetStateAction<FilterValues>>;
   models: string[];
 }
 
@@ -23,35 +25,34 @@ export default function SearchBar({ searchQuery, setSearchQuery, setFilters, mod
 
   return (
     <>
-    <FilterModal
-      isOpen={isFilterModalOpen}
-      onClose={() => setIsFilterModalOpen(false)}
-      onApply={handleApplyFilters}
-      onReset={handleResetFilters}
-      models={models}
-    />
-    <div className="flex gap-3 items-center flex-1">
-      <div className="relative w-full max-w-lg">
-        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-          <Search className="w-5 h-5 text-text-primary " />
+      <FilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        onApply={handleApplyFilters}
+        onReset={handleResetFilters}
+        models={models}
+      />
+      <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="relative w-full flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            type="text"
+            className="h-12 w-full rounded-xl border-slate-200 bg-white/80 pl-10 text-slate-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            placeholder="Search batteries by ID, model, or status..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
-        <input
-          type="text"
-          className="py-3 px-4 pl-11 block w-full border border-black-500 rounded-lg text-sm text-text-primary"
-          placeholder="Search batteries by ID, model, or status..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        <Button
+          type="button"
+          size="lg"
+          className="h-12 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-5 font-semibold text-white shadow-lg shadow-indigo-200 hover:from-indigo-600 hover:to-violet-600"
+          onClick={() => setIsFilterModalOpen(true)}
+        >
+          <SlidersHorizontal className="mr-2 h-4 w-4" />
+          Filter
+        </Button>
       </div>
-      <button
-        type="button"
-        className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-button-secondary text-text-primary hover:bg-button-secondary-hover active:bg-button-secondary-hover disabled:opacity-50 disabled:pointer-events-none dark:hover:bg-button-secondary-hover dark:focus:bg-button-secondary-hover"
-        onClick={() => setIsFilterModalOpen(true)}
-      >
-        Filter
-        <SlidersHorizontal className="w-5 h-5 text-text-primary" />
-      </button>
-    </div>
     </>
   );
 }
