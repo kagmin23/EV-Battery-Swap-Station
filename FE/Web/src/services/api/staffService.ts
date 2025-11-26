@@ -185,7 +185,9 @@ export class StaffService {
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 if (error.response?.status === 400) {
-                    throw new Error('Invalid input: Please check your data');
+                    // ✅ Show detailed message from backend (e.g., validation errors about bookings)
+                    const backendMessage = error.response?.data?.message;
+                    throw new Error(backendMessage || 'Invalid input: Please check your data');
                 } else if (error.response?.status === 401) {
                     throw new Error('Unauthorized: Please login again');
                 } else if (error.response?.status === 403) {
