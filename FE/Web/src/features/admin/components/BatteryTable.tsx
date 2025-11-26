@@ -74,6 +74,7 @@ export const BatteryTable: React.FC<BatteryTableProps> = ({
                         <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Capacity (kWh)</th>
                         <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Voltage (V)</th>
                         <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Manufacturer</th>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Price</th>
                         <th className="px-6 py-4 text-left text-sm font-medium text-slate-700">Actions</th>
                     </tr>
                 </thead>
@@ -106,6 +107,9 @@ export const BatteryTable: React.FC<BatteryTableProps> = ({
                             <td className="px-6 py-4 text-sm text-slate-800">{battery.capacity_kWh || 'N/A'}</td>
                             <td className="px-6 py-4 text-sm text-slate-800">{battery.voltage || 'N/A'}</td>
                             <td className="px-6 py-4 text-sm text-slate-800">{battery.manufacturer || 'N/A'}</td>
+                            <td className="px-6 py-4 text-sm text-slate-800">
+                                {battery.price ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(battery.price) : 'N/A'}
+                            </td>
                             <td className="px-6 py-4">
                                 <div className="flex space-x-2">
                                     {onLogs && (

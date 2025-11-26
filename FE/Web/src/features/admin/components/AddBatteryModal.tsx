@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Battery as BatteryIcon, X, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { ButtonLoadingSpinner } from '@/components/ui/loading-spinner';
-import { BatteryService } from '@/services/api/batteryService';
+import { BatteryService, type CreateBatteryRequest } from '@/services/api/batteryService';
 import { StationService, type Station as ApiStation } from '@/services/api/stationService';
 
 interface AddBatteryModalProps {
@@ -108,8 +108,8 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
             newErrors.voltage = 'Voltage must be greater than 0';
         }
 
-        if (formData.price === undefined || formData.price === null || formData.price < 0) {
-            newErrors.price = 'Price is required and must be greater than or equal to 0';
+        if (formData.price === undefined || formData.price === null || formData.price < 1000) {
+            newErrors.price = 'Price is required and must be at least 1,000 VND';
         }
 
         setErrors(newErrors);
@@ -393,6 +393,30 @@ export const AddBatteryModal: React.FC<AddBatteryModalProps> = ({
                             />
                             {errors.voltage && (
                                 <p className="text-sm text-red-500">{errors.voltage}</p>
+                            )}
+                        </div>
+
+                        {/* Price */}
+                        <div className="space-y-2">
+                            <Label htmlFor="price" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                Price (VND)
+                            </Label>
+                            <Input
+                                id="price"
+                                type="text"
+                                value={formData.price === 0 ? '' : formData.price}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value === '' || /^\d+$/.test(value)) {
+                                        handleInputChange('price', value === '' ? 0 : parseInt(value) || 0);
+                                    }
+                                }}
+                                placeholder="Enter price (min 1,000 VND)"
+                                className={`h-12 bg-white/90 border-slate-200 focus:border-green-300 focus:ring-2 focus:ring-green-200 rounded-xl text-slate-700 ${errors.price ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
+                                    }`}
+                            />
+                            {errors.price && (
+                                <p className="text-sm text-red-500">{errors.price}</p>
                             )}
                         </div>
                     </div>

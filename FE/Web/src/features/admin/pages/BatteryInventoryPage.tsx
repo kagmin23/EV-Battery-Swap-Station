@@ -125,7 +125,7 @@ export const BatteryInventoryPage: React.FC = () => {
                 sohMax: sohMax ? Number(sohMax) : undefined,
                 page: currentPage,
                 limit: limit ? Number(limit) : 20,
-                sort: 'soh',
+                sort: 'createdAt', // Sort by createdAt to show newest batteries first
                 order: 'desc'
             };
 
@@ -197,13 +197,28 @@ export const BatteryInventoryPage: React.FC = () => {
         loadData();
     }, []);
 
-    // Reload batteries when filters change
+    // Reload batteries when filters change (excluding currentPage)
     useEffect(() => {
         if (stations.length > 0) {
             setCurrentPage(1); // Reset to first page when filters change
             loadBatteries();
         }
-    }, [selectedStation, statusFilter, sohMin, sohMax, limit, stations, currentPage]);
+    }, [selectedStation, statusFilter, sohMin, sohMax, limit, stations]);
+
+    // Reload batteries when page changes
+    useEffect(() => {
+        if (stations.length > 0 && currentPage > 0) {
+            loadBatteries();
+        }
+    }, [currentPage]);
+
+    // Reset to page 1 when search term changes
+    useEffect(() => {
+        if (stations.length > 0) {
+            setCurrentPage(1);
+            // Note: searchTerm is handled client-side, so we don't reload from backend
+        }
+    }, [searchTerm]);
 
     const getStatusBadge = (status: BatteryStatus) => {
         switch (status) {
@@ -248,6 +263,10 @@ export const BatteryInventoryPage: React.FC = () => {
 
     // Handle successful operations
     const handleBatteryOperationSuccess = () => {
+        setCurrentPage(1); // Reset to first page to see the newly added/edited battery
+        setSearchTerm(''); // Clear search to ensure new battery is visible
+        // Temporarily change sort to createdAt desc to show newest battery first
+        // Note: This will be reset when filters change, but ensures new battery is visible
         loadBatteries();
     };
 
@@ -333,7 +352,7 @@ export const BatteryInventoryPage: React.FC = () => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 <StatsCard
                     title="Total Batteries"
-                    value={batteries.length}
+                    value={total}
                     icon={BatteryIcon}
                     gradientFrom="from-blue-50"
                     gradientTo="to-blue-100/50"
@@ -659,6 +678,12 @@ export const BatteryInventoryPage: React.FC = () => {
                                                     {battery.cycleCount}
                                                 </span>
                                             </div>
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-600">Price:</span>
+                                                <span className="font-medium text-green-600">
+                                                    {battery.price ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(battery.price) : 'N/A'}
+                                                </span>
+                                            </div>
                                         </div>
 
                                         {/* Action Buttons */}
@@ -721,8 +746,8 @@ export const BatteryInventoryPage: React.FC = () => {
                 </CardContent>
             </Card>
 
-            {/* Pagination */}
-            {!isLoading && filteredBatteries.length > 0 && totalPages > 1 && (
+            {/* Pagination - only show when not searching (client-side search doesn't work with server-side pagination) */}
+            {!isLoading && !searchTerm.trim() && filteredBatteries.length > 0 && totalPages > 1 && (
                 <div className="flex flex-col items-center py-4 gap-3">
                     <nav className="flex items-center -space-x-px" aria-label="Pagination">
                         <button

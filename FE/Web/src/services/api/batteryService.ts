@@ -18,6 +18,7 @@ export interface Battery {
     manufacturer?: string;
     capacity_kWh?: number;
     voltage?: number;
+    price?: number;
     createdAt: string;
     updatedAt: string;
     __v: number;
@@ -197,10 +198,16 @@ export class BatteryService {
 
             const response = await api.get(`/batteries?${params.toString()}`);
             if (response.data.success) {
+                // Handle both 'meta' and 'pagination' response formats from different endpoints
+                const paginationData = response.data.meta || response.data.pagination;
                 return {
                     success: response.data.success,
                     data: response.data.data || [],
-                    meta: response.data.meta || {
+                    meta: paginationData ? {
+                        page: paginationData.page || 1,
+                        limit: paginationData.limit || 20,
+                        total: paginationData.total || 0
+                    } : {
                         page: 1,
                         limit: 20,
                         total: response.data.data?.length || 0
@@ -444,7 +451,17 @@ export class BatteryService {
             if (axios.isAxiosError(error)) {
                 if (error.response) {
                     const status = error.response.status;
-                    const message = error.response.data?.message || 'Server error';
+                    let message = error.response.data?.message || 'Server error';
+
+                    // Handle ZodError array response from backend
+                    if (Array.isArray(message)) {
+                        message = message.map((err: any) =>
+                            `${err.path?.join('.') || 'field'}: ${err.message || 'Invalid value'}`
+                        ).join(', ');
+                    } else if (typeof message === 'object' && message !== null) {
+                        // If message is an object, try to stringify it
+                        message = JSON.stringify(message);
+                    }
 
                     switch (status) {
                         case 400:
@@ -480,7 +497,17 @@ export class BatteryService {
             if (axios.isAxiosError(error)) {
                 if (error.response) {
                     const status = error.response.status;
-                    const message = error.response.data?.message || 'Server error';
+                    let message = error.response.data?.message || 'Server error';
+
+                    // Handle ZodError array response from backend
+                    if (Array.isArray(message)) {
+                        message = message.map((err: any) =>
+                            `${err.path?.join('.') || 'field'}: ${err.message || 'Invalid value'}`
+                        ).join(', ');
+                    } else if (typeof message === 'object' && message !== null) {
+                        // If message is an object, try to stringify it
+                        message = JSON.stringify(message);
+                    }
 
                     switch (status) {
                         case 400:
