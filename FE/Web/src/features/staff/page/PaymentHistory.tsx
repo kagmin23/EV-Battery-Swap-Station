@@ -130,12 +130,17 @@ export default function PaymentHistory() {
   }, []);
 
   // Filter transactions
-  const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = 
-      transaction.transaction_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (transaction.user_name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
-      transaction.user_id.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+  const filteredTransactions = transactions.filter((transaction) => {
+    const query = searchQuery.toLowerCase();
+    const transactionId = (transaction.transaction_id ?? '').toLowerCase();
+    const userName = (transaction.user_name ?? '').toLowerCase();
+    const userId = (transaction.user_id ?? '').toLowerCase();
+
+    return (
+      transactionId.includes(query) ||
+      userName.includes(query) ||
+      userId.includes(query)
+    );
   });
 
   // Calculate statistics

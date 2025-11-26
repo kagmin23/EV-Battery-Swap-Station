@@ -115,11 +115,17 @@ export default function Dashboard() {
     // Apply search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(battery => 
-        battery.serial.toLowerCase().includes(query) ||
-        battery.model?.toLowerCase().includes(query) ||
-        battery.status.toLowerCase().includes(query)
-      );
+      filtered = filtered.filter((battery) => {
+        const serial = (battery.serial ?? '').toLowerCase();
+        const model = (battery.model ?? '').toLowerCase();
+        const status = (battery.status ?? '').toLowerCase();
+
+        return (
+          serial.includes(query) ||
+          model.includes(query) ||
+          status.includes(query)
+        );
+      });
     }
 
     // Apply filters

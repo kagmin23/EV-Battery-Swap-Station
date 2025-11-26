@@ -48,7 +48,8 @@ export default function IdleBatteries() {
     const query = searchQuery.trim().toLowerCase();
     return batteries.filter((battery) => {
       const model = battery.model?.toLowerCase() ?? '';
-      return battery.serial.toLowerCase().includes(query) || model.includes(query);
+      const serial = (battery.serial ?? '').toLowerCase();
+      return serial.includes(query) || model.includes(query);
     });
   }, [batteries, searchQuery]);
 

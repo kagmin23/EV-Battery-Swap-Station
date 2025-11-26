@@ -42,12 +42,20 @@ export default function SupportRequests() {
   const filtered = useMemo(() => {
     if (!searchQuery) return requests;
     const q = searchQuery.toLowerCase();
-    return requests.filter(r =>
-      r.title.toLowerCase().includes(q) ||
-      r.description.toLowerCase().includes(q) ||
-      new Date(r.booking.scheduledTime).toLocaleString().toLowerCase().includes(q) ||
-      r.booking.battery.serial.toLowerCase().includes(q)
-    );
+    return requests.filter((r) => {
+      const booking = r.booking;
+      const battery = booking?.battery;
+      const bookingTime = booking?.scheduledTime
+        ? new Date(booking.scheduledTime).toLocaleString().toLowerCase()
+        : '';
+
+      return (
+        r.title.toLowerCase().includes(q) ||
+        r.description.toLowerCase().includes(q) ||
+        (bookingTime && bookingTime.includes(q)) ||
+        (battery?.serial?.toLowerCase?.().includes(q) ?? false)
+      );
+    });
   }, [requests, searchQuery]);
 
   const totalItems = filtered.length;
@@ -227,10 +235,18 @@ export default function SupportRequests() {
                   current.map((r) => (
                     <tr key={r._id} className="transition hover:bg-slate-50/60">
                       <td className="px-6 py-4 font-semibold text-slate-900">{r.title}</td>
-                      <td className="px-6 py-4">{new Date(r.booking.scheduledTime).toLocaleString()}</td>
                       <td className="px-6 py-4">
-                        <div className="font-medium text-slate-900">{r.booking.battery.serial}</div>
-                        <div className="text-xs text-slate-500">{r.booking.battery.model}</div>
+                        {r.booking?.scheduledTime
+                          ? new Date(r.booking.scheduledTime).toLocaleString()
+                          : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-slate-900">
+                          {r.booking?.battery?.serial ?? 'Unknown'}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {r.booking?.battery?.model ?? 'Unknown model'}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <Badge className={`rounded-full px-3 py-1 text-xs font-medium ${statusClasses[r.status] || 'bg-slate-100 text-slate-600'}`}>
