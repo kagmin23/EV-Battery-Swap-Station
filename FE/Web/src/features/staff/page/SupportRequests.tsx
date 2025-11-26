@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Search, Inbox, ShieldCheck, CheckCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { SupportApi, type SupportRequest } from '../apis/SupportApi';
 import Pagination from '../components/Pagination';
@@ -38,12 +42,20 @@ export default function SupportRequests() {
   const filtered = useMemo(() => {
     if (!searchQuery) return requests;
     const q = searchQuery.toLowerCase();
-    return requests.filter(r =>
-      r.title.toLowerCase().includes(q) ||
-      r.description.toLowerCase().includes(q) ||
-      new Date(r.booking.scheduledTime).toLocaleString().toLowerCase().includes(q) ||
-      r.booking.battery.serial.toLowerCase().includes(q)
-    );
+    return requests.filter((r) => {
+      const booking = r.booking;
+      const battery = booking?.battery;
+      const bookingTime = booking?.scheduledTime
+        ? new Date(booking.scheduledTime).toLocaleString().toLowerCase()
+        : '';
+
+      return (
+        r.title.toLowerCase().includes(q) ||
+        r.description.toLowerCase().includes(q) ||
+        (bookingTime && bookingTime.includes(q)) ||
+        (battery?.serial?.toLowerCase?.().includes(q) ?? false)
+      );
+    });
   }, [requests, searchQuery]);
 
   const totalItems = filtered.length;
@@ -56,17 +68,20 @@ export default function SupportRequests() {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
-  const getStatusBadge = (status: string) => {
-    const map: Record<string, string> = {
-      'in-progress': 'bg-yellow-100 text-yellow-800',
-      'resolved': 'bg-blue-100 text-blue-800',
-      'completed': 'bg-green-100 text-green-800',
-      'closed': 'bg-gray-100 text-gray-800',
-    };
-    const classes = map[status] || 'bg-gray-100 text-gray-800';
-    const label = status === 'in-progress' ? 'In Progress' : status.charAt(0).toUpperCase() + status.slice(1);
-    return <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap inline-flex ${classes}`}>{label}</span>;
+  const statusClasses: Record<string, string> = {
+    'in-progress': 'bg-amber-50 text-amber-700',
+    resolved: 'bg-blue-50 text-blue-700',
+    completed: 'bg-emerald-50 text-emerald-700',
+    closed: 'bg-slate-100 text-slate-600',
   };
+
+  const statusCards = useMemo(() => {
+    const total = requests.length;
+    const active = requests.filter(r => r.status === 'in-progress').length;
+    const completed = requests.filter(r => r.status === 'completed' || r.status === 'closed').length;
+    const resolved = requests.filter(r => r.status === 'resolved').length;
+    return { total, active, completed, resolved };
+  }, [requests]);
 
   const handleClose = async (id: string) => {
     const note = window.prompt('Enter close note (required):');
@@ -95,22 +110,11 @@ export default function SupportRequests() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center py-8 min-h-screen">
-        <div className="w-full max-w-7xl px-4">
-          {/* Header Skeleton */}
-          <div className="mb-6 flex items-center justify-between">
-            <div className="space-y-2">
-              <div className="h-8 bg-gray-200 rounded w-64 animate-pulse"></div>
-              <div className="h-4 bg-gray-200 rounded w-96 animate-pulse"></div>
-            </div>
-            <div className="w-80 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-          </div>
-
-          {/* Table Skeleton */}
-          <div className="overflow-x-auto">
-            <div className="border border-black-500 rounded-lg shadow-xs">
-              <TableSkeleton rows={10} columns={5} />
-            </div>
+      <div className="min-h-screen p-6">
+        <div className="space-y-4">
+          <div className="h-10 w-64 animate-pulse rounded bg-slate-200" />
+          <div className="rounded-2xl bg-white p-6 shadow-lg">
+            <TableSkeleton rows={10} columns={5} />
           </div>
         </div>
       </div>
@@ -119,76 +123,146 @@ export default function SupportRequests() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="text-red-600 mb-4">
-            <svg className="inline-block w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <p className="text-text-primary font-semibold mb-2">Data Loading Error</p>
-          <p className="text-text-secondary">{error}</p>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#f4f5ff] via-white to-white p-6">
+        <Card className="max-w-lg border-0 bg-white shadow-lg">
+          <CardContent className="p-8 text-center">
+            <p className="text-xl font-semibold text-slate-900">Data Loading Error</p>
+            <p className="mt-2 text-slate-600">{error}</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center py-8 min-h-screen">
-      <div className="w-full max-w-7xl px-4">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-text-primary">Support Requests</h1>
-            <p className="text-text-secondary">List of support requests at your station</p>
-          </div>
-          <div className="w-80">
-            <input
-              type="text"
-              placeholder="Search by title, booking date, battery..."
+    <div className="min-h-screen  p-6 space-y-6">
+      <div className="space-y-2">
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Support operations</p>
+        <h1 className="text-3xl font-bold text-slate-900">Support Requests</h1>
+        <p className="text-slate-600">Monitor customer support tickets for your station.</p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-0 bg-white shadow-lg">
+          <CardContent className="flex items-center gap-4 p-5">
+            <div className="rounded-2xl bg-indigo-100 p-3 text-indigo-600">
+              <Inbox className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs uppercase text-slate-500">Total requests</p>
+              <p className="text-2xl font-bold text-slate-900">{statusCards.total}</p>
+              <p className="text-xs text-slate-500">Overall tickets</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 bg-white shadow-lg">
+          <CardContent className="flex items-center gap-4 p-5">
+            <div className="rounded-2xl bg-amber-100 p-3 text-amber-600">
+              <ShieldCheck className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs uppercase text-slate-500">Active</p>
+              <p className="text-2xl font-bold text-slate-900">{statusCards.active}</p>
+              <p className="text-xs text-slate-500">In progress</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 bg-white shadow-lg">
+          <CardContent className="flex items-center gap-4 p-5">
+            <div className="rounded-2xl bg-blue-100 p-3 text-blue-600">
+              <ShieldCheck className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs uppercase text-slate-500">Resolved</p>
+              <p className="text-2xl font-bold text-slate-900">{statusCards.resolved}</p>
+              <p className="text-xs text-slate-500">Awaiting confirmation</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 bg-white shadow-lg">
+          <CardContent className="flex items-center gap-4 p-5">
+            <div className="rounded-2xl bg-emerald-100 p-3 text-emerald-600">
+              <CheckCircle className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs uppercase text-slate-500">Closed</p>
+              <p className="text-2xl font-bold text-slate-900">{statusCards.completed}</p>
+              <p className="text-xs text-slate-500">Completed or closed</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="border-0 bg-white shadow-lg">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold text-slate-800">Search requests</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              placeholder="Search by title, booking date, battery serial..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="h-12 rounded-xl border-slate-200 pl-10 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500"
             />
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="overflow-x-auto">
-          <div className="border border-black-500 rounded-lg shadow-xs dark:border-border dark:shadow-gray-900">
-            <table className="min-w-full divide-y divide-border dark:divide-border">
-              <thead className="bg-button-primary dark:bg-button-secondary">
+      <Card className="border-0 bg-white shadow-lg">
+        <CardHeader className="border-b border-slate-100 pb-4">
+          <CardTitle className="text-xl text-slate-900">Tickets list</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase">Title</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase">Booking Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase">Battery</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase">Status</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-text-primary uppercase">Actions</th>
+                  <th className="px-6 py-4">Title</th>
+                  <th className="px-6 py-4">Booking Date</th>
+                  <th className="px-6 py-4">Battery</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-table-row divide-y divide-border dark:divide-border">
+              <tbody className="divide-y divide-slate-100 text-sm text-slate-600">
                 {current.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-text-secondary">No support requests found</td>
+                    <td colSpan={5} className="py-10 text-center text-slate-400">No support requests found</td>
                   </tr>
                 ) : (
                   current.map((r) => (
-                    <tr key={r._id} className="hover:bg-table-row-hover transition-colors">
-                      <td className="px-6 py-4 text-sm text-text-secondary">{r.title}</td>
-                      <td className="px-6 py-4 text-sm text-text-secondary">{new Date(r.booking.scheduledTime).toLocaleString()}</td>
-                      <td className="px-6 py-4 text-sm text-text-secondary">
-                        <div>{r.booking.battery.serial}</div>
-                        <div className="text-xs text-slate-500">{r.booking.battery.model}</div>
+                    <tr key={r._id} className="transition hover:bg-slate-50/60">
+                      <td className="px-6 py-4 font-semibold text-slate-900">{r.title}</td>
+                      <td className="px-6 py-4">
+                        {r.booking?.scheduledTime
+                          ? new Date(r.booking.scheduledTime).toLocaleString()
+                          : 'N/A'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-text-secondary">{getStatusBadge(r.status)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-slate-900">
+                          {r.booking?.battery?.serial ?? 'Unknown'}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {r.booking?.battery?.model ?? 'Unknown model'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Badge className={`rounded-full px-3 py-1 text-xs font-medium ${statusClasses[r.status] || 'bg-slate-100 text-slate-600'}`}>
+                          {r.status === 'in-progress' ? 'In Progress' : r.status.charAt(0).toUpperCase() + r.status.slice(1)}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 text-right">
                         {r.status === 'completed' ? (
                           <button
-                            className="px-3 py-1 text-sm rounded-md bg-blue-600 hover:bg-blue-700 text-white"
+                            className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700"
                             onClick={() => handleClose(r._id)}
                           >
                             Close
                           </button>
                         ) : (
-                          <span className="text-xs text-slate-500">No actions</span>
+                          <span className="text-xs text-slate-400">No actions</span>
                         )}
                       </td>
                     </tr>
@@ -197,15 +271,17 @@ export default function SupportRequests() {
               </tbody>
             </table>
           </div>
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-            totalItems={totalItems}
-            itemsPerPage={itemsPerPage}
-          />
-        </div>
-      </div>
+          <div className="border-t border-slate-100 p-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+            />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
