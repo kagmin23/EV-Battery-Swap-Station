@@ -5,12 +5,14 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import LinkVehicleSheet from './component/LinkVehicleSheet';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getAllVehicle, useVehicles } from '@/store/vehicle';
+import { getBatteryById, useBatteries } from '@/store/baterry';
 
 
 
 export default function EVs() {
     const router = useRouter();
     const vehicles = useVehicles();
+    const batteries = useBatteries()
     // console.log(vehicles)
     const [isAddEvOpen, setIsAddEvOpen] = useState(false);
 
@@ -60,7 +62,9 @@ export default function EVs() {
                                 </View>
                                 <View style={styles.metaChip}>
                                     <Ionicons name="battery-charging-outline" size={14} color="#6d4aff" />
-                                    <Text style={styles.metaText}>{v.batteryModel}</Text>
+                                    <Text style={styles.metaText}>
+                                        {v.batteryId ? getBatteryById(batteries, v.batteryId)?.model : ''}
+                                    </Text>
                                 </View>
                                 {!!v.vin && (
                                     <View style={[styles.metaChip, { backgroundColor: '#0b0624', borderColor: '#2a1f4e' }]}>
@@ -78,7 +82,7 @@ export default function EVs() {
                                 <Text style={styles.sectionTitle}>Vehicle</Text>
                             </View>
                             <View style={styles.rowBetween}><Text style={styles.key}>Brand</Text><Text style={styles.val}>{v.brand}</Text></View>
-                            <View style={styles.rowBetween}><Text style={styles.key}>Battery model</Text><Text style={styles.val}>{v.batteryModel}</Text></View>
+                            <View style={styles.rowBetween}><Text style={styles.key}>Battery model</Text><Text style={styles.val}>{getBatteryById(batteries, v.batteryId ?? '')?.model ?? ''}</Text></View>
                             <View style={styles.rowBetween}><Text style={styles.key}>VIN</Text><Text style={styles.val}>{v.vin}</Text></View>
                         </View>
 

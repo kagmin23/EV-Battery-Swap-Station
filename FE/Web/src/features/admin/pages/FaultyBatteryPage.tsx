@@ -115,6 +115,12 @@ const FaultyBatteryCard: React.FC<FaultyBatteryCardProps> = ({ battery, onClick,
                         <span className="text-slate-600">Manufacturer:</span>
                         <span className="font-medium">{battery.manufacturer || 'N/A'}</span>
                     </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-600">Price:</span>
+                        <span className="font-medium text-green-600">
+                            {(battery as any).price ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((battery as any).price) : 'N/A'}
+                        </span>
+                    </div>
                     <div className="mt-3 pt-2 border-t border-red-100">
                         <div className="flex items-center space-x-2">
                             <AlertCircle className="h-4 w-4 text-red-500" />
@@ -280,6 +286,12 @@ const FaultyBatteryDetailModal: React.FC<{
                                     <p className="text-sm text-slate-500 mb-1">Manufacturer</p>
                                     <p className="font-medium text-slate-800">
                                         {battery.manufacturer || 'N/A'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-slate-500 mb-1">Price</p>
+                                    <p className="font-medium text-green-600">
+                                        {(battery as any).price ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((battery as any).price) : 'N/A'}
                                     </p>
                                 </div>
                             </div>

@@ -145,6 +145,10 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
             newErrors.voltage = 'Voltage must be greater than 0';
         }
 
+        if (formData.price === undefined || formData.price === null || formData.price < 1000) {
+            newErrors.price = 'Price is required and must be at least 1,000 VND';
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -224,14 +228,14 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                         {/* Model */}
                         <div className="space-y-2">
                             <Label htmlFor="model" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
-                                Model pin
+                                Battery Model
                             </Label>
                             <Input
                                 id="model"
                                 type="text"
                                 value={formData.model}
                                 onChange={(e) => handleInputChange('model', e.target.value)}
-                                placeholder="Nhập model pin"
+                                placeholder="Enter battery model"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 ${errors.model ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
@@ -308,7 +312,7 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                         {/* Station */}
                         <div className="space-y-2">
                             <Label htmlFor="stationId" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
-                                Trạm
+                                Station
                             </Label>
                             <Select
                                 value={formData.stationId}
@@ -316,7 +320,7 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                             >
                                 <SelectTrigger className={`h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 ${errors.stationId ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}>
-                                    <SelectValue placeholder="Chọn trạm" />
+                                    <SelectValue placeholder="Select station" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-slate-200 shadow-2xl bg-white/95 backdrop-blur-sm z-[9999] max-h-[300px] overflow-y-auto">
                                     {stations.map(station => (
@@ -338,14 +342,14 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                         {/* Manufacturer */}
                         <div className="space-y-2">
                             <Label htmlFor="manufacturer" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
-                                Nhà sản xuất
+                                Manufacturer
                             </Label>
                             <Input
                                 id="manufacturer"
                                 type="text"
                                 value={formData.manufacturer}
                                 onChange={(e) => handleInputChange('manufacturer', e.target.value)}
-                                placeholder="Nhập nhà sản xuất"
+                                placeholder="Enter manufacturer"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 ${errors.manufacturer ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
@@ -357,7 +361,7 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                         {/* Capacity */}
                         <div className="space-y-2">
                             <Label htmlFor="capacity_kWh" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
-                                Dung lượng (kWh)
+                                Capacity (kWh)
                             </Label>
                             <Input
                                 id="capacity_kWh"
@@ -369,7 +373,7 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                                         handleInputChange('capacity_kWh', value === '' ? 0 : parseFloat(value) || 0);
                                     }
                                 }}
-                                placeholder="Nhập dung lượng (VD: 50.5)"
+                                placeholder="Enter capacity (e.g., 50.5)"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 ${errors.capacity_kWh ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
@@ -381,7 +385,7 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                         {/* Voltage */}
                         <div className="space-y-2">
                             <Label htmlFor="voltage" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
-                                Điện áp (V)
+                                Voltage (V)
                             </Label>
                             <Input
                                 id="voltage"
@@ -393,12 +397,36 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                                         handleInputChange('voltage', value === '' ? 0 : parseFloat(value) || 0);
                                     }
                                 }}
-                                placeholder="Nhập điện áp (VD: 400.5)"
+                                placeholder="Enter voltage (e.g., 400.5)"
                                 className={`h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 ${errors.voltage ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
                                     }`}
                             />
                             {errors.voltage && (
                                 <p className="text-sm text-red-500">{errors.voltage}</p>
+                            )}
+                        </div>
+
+                        {/* Price */}
+                        <div className="space-y-2">
+                            <Label htmlFor="price" className="text-sm font-medium text-slate-700 after:ml-1 after:text-red-500 after:content-['*']">
+                                Price (VND)
+                            </Label>
+                            <Input
+                                id="price"
+                                type="text"
+                                value={formData.price === 0 ? '' : formData.price}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value === '' || /^\d+$/.test(value)) {
+                                        handleInputChange('price', value === '' ? 0 : parseInt(value) || 0);
+                                    }
+                                }}
+                                placeholder="Enter price (min 1,000 VND)"
+                                className={`h-12 bg-white/90 border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 rounded-xl text-slate-700 ${errors.price ? 'border-red-300 focus:border-red-300 focus:ring-red-200' : ''
+                                    }`}
+                            />
+                            {errors.price && (
+                                <p className="text-sm text-red-500">{errors.price}</p>
                             )}
                         </div>
                     </div>
@@ -410,7 +438,7 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                             onClick={handleClose}
                             className="px-6 py-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-lg transition-all duration-200"
                         >
-                            Hủy
+                            Cancel
                         </Button>
                         <Button
                             type="submit"
@@ -418,9 +446,9 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed border border-blue-600 hover:border-blue-700"
                         >
                             {isLoading ? (
-                                <ButtonLoadingSpinner size="sm" variant="white" text="Đang cập nhật..." />
+                                <ButtonLoadingSpinner size="sm" variant="white" text="Updating..." />
                             ) : (
-                                'Cập nhật pin'
+                                'Update Battery'
                             )}
                         </Button>
                     </DialogFooter>
@@ -432,12 +460,12 @@ export const EditBatteryModal: React.FC<EditBatteryModalProps> = ({
                 isOpen={isConfirmationModalOpen}
                 onClose={() => { setIsConfirmationModalOpen(false); setSubmitError(null); }}
                 onConfirm={handleConfirmUpdate}
-                title={`Xác nhận cập nhật pin ${battery?.batteryId}`}
-                message={<div>Bạn có chắc chắn muốn cập nhật thông tin pin <span className="font-bold text-slate-800">{battery?.batteryId}</span>?</div>}
-                confirmText="Cập nhật"
+                title={`Confirm update battery ${battery?.batteryId}`}
+                message={<div>Are you sure you want to update battery <span className="font-bold text-slate-800">{battery?.batteryId}</span>?</div>}
+                confirmText="Update"
                 type="edit"
                 isLoading={isLoading}
-                submitError={submitError} // <-- truyền error xuống để show ngay trong modal
+                submitError={submitError}
             />
         </Dialog>
     );
