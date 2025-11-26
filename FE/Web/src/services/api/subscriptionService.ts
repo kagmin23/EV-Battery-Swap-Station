@@ -4,19 +4,38 @@ import axios from 'axios';
 const API_BASE_URL = 'http://localhost:8001/api';
 
 // Types for subscription management
+export interface SubscriptionSubscriberUser {
+    id: string;
+    fullName: string;
+    email: string;
+    phoneNumber: string;
+}
+
+export interface SubscriptionSubscriber {
+    id: string;
+    user: SubscriptionSubscriberUser;
+    start_date: string;
+    end_date: string;
+    remaining_swaps: number;
+    status: string;
+}
+
 export interface SubscriptionPlan {
     _id: string;
     subscriptionName: string;
     price: number;
     durations: number;
     type?: 'change' | 'periodic';
-    count_swap: number;
-    quantity_slot: number;
+    count_swap: number | null;
+    quantity_slot: number | null;
     description: string;
     status: 'active' | 'inactive';
     createdAt: string;
     updatedAt: string;
     __v: number;
+    // New fields from backend: list of subscribers and total count
+    subscribers?: SubscriptionSubscriber[];
+    subscriberCount?: number;
 }
 
 // DTO based on backend swagger (price, durations, count_swap, quantity_slot, description, status, type)
