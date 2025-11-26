@@ -70,15 +70,21 @@ export default function BatteryChanges() {
   };
 
   // Apply client-side filtering
-  const filteredSwapHistory = swapHistory.filter(swap => {
+  const filteredSwapHistory = swapHistory.filter((swap) => {
     // Filter by user name
-    if (clientFilters.userName && !swap.user.email.toLowerCase().includes(clientFilters.userName.toLowerCase())) {
-      return false;
+    if (clientFilters.userName) {
+      const email = (swap.user?.email ?? '').toLowerCase();
+      if (!email.includes(clientFilters.userName.toLowerCase())) {
+        return false;
+      }
     }
 
     // Filter by station name
-    if (clientFilters.stationName && !swap.station.stationName.toLowerCase().includes(clientFilters.stationName.toLowerCase())) {
-      return false;
+    if (clientFilters.stationName) {
+      const stationName = (swap.station?.stationName ?? '').toLowerCase();
+      if (!stationName.includes(clientFilters.stationName.toLowerCase())) {
+        return false;
+      }
     }
 
     // Filter by start date
@@ -111,15 +117,15 @@ export default function BatteryChanges() {
       'Status'
     ];
 
-    const csvData = filteredSwapHistory.map(swap => [
+    const csvData = filteredSwapHistory.map((swap) => [
       swap.swapId,
       new Date(swap.swapTime).toLocaleString(),
       swap.user.email,
       swap.station.stationName,
       swap.pillar.pillarName,
-      swap.oldBattery?.battery.serial || 'N/A',
-      swap.newBattery?.battery.serial || 'N/A',
-      swap.status
+      swap.oldBattery?.battery?.serial ?? 'N/A',
+      swap.newBattery?.battery?.serial ?? 'N/A',
+      swap.status,
     ]);
 
     const csv = [headers, ...csvData].map(row => row.join(',')).join('\n');
@@ -326,18 +332,26 @@ export default function BatteryChanges() {
                     </td>
                     <td className="p-4">
                       <div className="space-y-1">
-                        {swap.oldBattery && (
+                        {swap.oldBattery && swap.oldBattery.battery && (
                           <div className="flex items-center gap-2 text-sm">
                             <span className="text-red-600">Out:</span>
-                            <span className="font-medium">{swap.oldBattery.battery.serial}</span>
-                            <span className="text-xs text-gray-500">({swap.oldBattery.soh}%)</span>
+                            <span className="font-medium">
+                              {swap.oldBattery.battery?.serial ?? 'N/A'}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              ({swap.oldBattery.soh ?? 0}%)
+                            </span>
                           </div>
                         )}
-                        {swap.newBattery && (
+                        {swap.newBattery && swap.newBattery.battery && (
                           <div className="flex items-center gap-2 text-sm">
                             <span className="text-green-600">In:</span>
-                            <span className="font-medium">{swap.newBattery.battery.serial}</span>
-                            <span className="text-xs text-gray-500">({swap.newBattery.soh}%)</span>
+                            <span className="font-medium">
+                              {swap.newBattery.battery?.serial ?? 'N/A'}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              ({swap.newBattery.soh ?? 0}%)
+                            </span>
                           </div>
                         )}
                       </div>

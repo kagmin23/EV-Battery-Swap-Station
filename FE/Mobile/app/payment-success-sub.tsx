@@ -76,15 +76,15 @@ export default function PaymentSuccessScreen() {
                                 </View>
                                 <View style={styles.infoRow}>
                                     <Text style={styles.infoLabel}>Start:</Text>
-                                    <Text style={styles.infoValue}>{purchased.start_date ? formatDateVN(new Date(purchased.start_date)) : '—'}</Text>
+                                    <Text style={styles.infoValue}>{purchased.startDate ? formatDateVN(new Date(purchased.startDate)) : '—'}</Text>
                                 </View>
                                 <View style={styles.infoRow}>
                                     <Text style={styles.infoLabel}>End:</Text>
-                                    <Text style={styles.infoValue}>{purchased.end_date ? formatDateVN(new Date(purchased.end_date)) : '—'}</Text>
+                                    <Text style={styles.infoValue}>{purchased.endDate ? formatDateVN(new Date(purchased.endDate)) : '—'}</Text>
                                 </View>
                                 <View style={styles.infoRow}>
                                     <Text style={styles.infoLabel}>Remaining swaps:</Text>
-                                    <Text style={styles.infoValue}>{purchased.remaining_swaps ?? '—'}</Text>
+                                    <Text style={styles.infoValue}>{purchased.remainingSwaps ?? '—'}</Text>
                                 </View>
                             </>
                         ) : (

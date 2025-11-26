@@ -360,7 +360,9 @@ function ListSubscriptions() {
                                         <Text style={[styles.typePillText, { color: getTypeColor(s.type) === '#ffd166' ? '#2b2b2b' : '#fff' }]}>{capitalize(String(s.type))}</Text>
                                     </View>
                                 ) : null}
-                                <Text style={styles.meta}>Swaps: {s.countSwap ?? 0}</Text>
+                                <Text style={styles.meta}>
+                                    Swaps: {s.userSubscription?.remainingSwaps != null ? `${s.userSubscription.remainingSwaps} / ${s.countSwap ?? 0}` : (s.countSwap ?? 0)}
+                                </Text>
                                 <Text style={styles.meta}>Slots: {s.quantitySlot ?? 0}</Text>
                                 <Text style={styles.createdAt}>Created: {formatDate(s.createdAt)}</Text>
                             </View>
@@ -436,7 +438,7 @@ function ListSubscriptions() {
                             ) : null}
                             <Text style={styles.modalLabel}>Price: ₫{selected.price.toLocaleString()}</Text>
                             <Text style={styles.modalLabel}>Duration: {selected.durations} days</Text>
-                            <Text style={styles.modalMeta}>Swaps: {selected.countSwap ?? 0} • Slots: {selected.quantitySlot ?? 0}</Text>
+                            <Text style={styles.modalMeta}>Swaps: {selected.userSubscription?.remainingSwaps != null ? `${selected.userSubscription.remainingSwaps} / ${selected.countSwap ?? 0}` : (selected.countSwap ?? 0)} • Slots: {selected.quantitySlot ?? 0}</Text>
                             <Text style={styles.modalDate}>Created: {formatDate(selected.createdAt)}</Text>
 
                             {showSchedule ? (

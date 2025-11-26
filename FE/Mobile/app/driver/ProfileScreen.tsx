@@ -282,7 +282,7 @@ const ProfileScreen: React.FC = () => {
                                 <Text style={styles.modalDesc}>{selectedSub.description}</Text>
                                 <Text style={styles.modalLabel}>Price: ₫{(selectedSub.price ?? 0).toLocaleString()}</Text>
                                 <Text style={styles.modalLabel}>Duration: {selectedSub.durations} days</Text>
-                                <Text style={styles.modalMeta}>Swaps: {selectedSub.countSwap ?? 0} • Slots: {selectedSub.quantitySlot ?? 0}</Text>
+                                <Text style={styles.modalMeta}>Swaps: {selectedSub.userSubscription?.remainingSwaps != null ? `${selectedSub.userSubscription.remainingSwaps} / ${selectedSub.countSwap ?? 0}` : (selectedSub.countSwap ?? 0)}</Text>
                                 <Text style={styles.modalDate}>Created: {new Date(selectedSub.createdAt).toLocaleString()}</Text>
                                 {selectedSub.type ? (
                                     <View style={{ marginTop: 10 }}>
@@ -352,6 +352,7 @@ const ProfileScreen: React.FC = () => {
                                     <Text style={styles.subscriptionTitle}>{p.subscriptionName}</Text>
                                     <Text style={styles.subscriptionSubtitle}>{p.description}</Text>
                                     <Text style={styles.subscriptionPrice}>₫{(p.price ?? 0).toLocaleString()}</Text>
+                                    <Text style={{ color: '#bfa8ff', marginTop: 6 }}>Swaps: {p.userSubscription?.remainingSwaps != null ? `${p.userSubscription.remainingSwaps} / ${p.countSwap ?? 0}` : (p.countSwap ?? 0)}</Text>
                                     <View style={styles.subscriptionStatus}>
                                         <View style={styles.activeIndicator} />
                                         <Text style={styles.statusText}>{(p.userSubscription?.status || 'In use')}</Text>
@@ -879,7 +880,7 @@ const styles = StyleSheet.create({
     modalBody: { marginTop: 12 },
     modalLabel: { color: '#bfa8ff', fontWeight: '700', marginBottom: 6 },
     modalDesc: { color: '#a0a0a0', marginBottom: 20 },
-    modalMeta: { color: '#bfa8ff' },
+    modalMeta: { color: '#bfa8ff', marginVertical: 6 },
     modalFooter: { marginTop: 14, flexDirection: 'row', justifyContent: 'flex-end' },
     modalDate: { color: '#8b7bb8', marginTop: 8, fontSize: 13 },
 });

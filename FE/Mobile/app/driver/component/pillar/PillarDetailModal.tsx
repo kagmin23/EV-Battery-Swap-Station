@@ -129,38 +129,34 @@ export const PillarDetailModal: React.FC<PillarDetailModalProps> = ({
                     {/* Summary Stats */}
                     <View style={styles.summaryStats}>
                         <View style={styles.summaryStatItem}>
-                            <Text style={styles.summaryStatValue}>{stats.total}</Text>
+                            <Text style={styles.summaryStatValue}>{String(stats.total)}</Text>
                             <Text style={styles.summaryStatLabel}>Total</Text>
                         </View>
                         <View style={styles.summaryStatDivider} />
                         <View style={styles.summaryStatItem}>
-                            <Text style={[styles.summaryStatValue, { color: '#ef4444' }]}>
-                                {stats.empty}
-                            </Text>
+                            <Text style={[styles.summaryStatValue, { color: '#ef4444' }]}>{String(stats.empty)}</Text>
                             <Text style={styles.summaryStatLabel}>Empty</Text>
                         </View>
                         <View style={styles.summaryStatDivider} />
                         <View style={styles.summaryStatItem}>
-                            <Text style={[styles.summaryStatValue, { color: '#10b981' }]}>
-                                {stats.occupied}
-                            </Text>
+                            <Text style={[styles.summaryStatValue, { color: '#10b981' }]}>{String(stats.occupied)}</Text>
                             <Text style={styles.summaryStatLabel}>Available</Text>
                         </View>
-                        {pillar?.slotStats?.reserved && pillar.slotStats.reserved > 0 && (
-                            <>
+                        {(pillar?.slotStats?.reserved ?? 0) > 0 && (
+                            <View style={{ flexDirection: "row", alignItems: "center" }}>
                                 <View style={styles.summaryStatDivider} />
                                 <View style={styles.summaryStatItem}>
                                     <Text style={[styles.summaryStatValue, { color: '#f59e0b' }]}>
-                                        {stats.reserved}
+                                        {String(stats.reserved)}
                                     </Text>
                                     <Text style={styles.summaryStatLabel}>Reserved</Text>
                                 </View>
-                            </>
+                            </View>
                         )}
                     </View>
 
                     {/* Slots Grid */}
-                    <Text style={styles.slotsTitle}>Battery Slots ({slots.length})</Text>
+                    <Text style={styles.slotsTitle}>Battery Slots ({String(slots.length)})</Text>
                     <ScrollView style={styles.slotsList} showsVerticalScrollIndicator={false}>
                         <View style={styles.gridWrapper}>
                             {groupedSlots.map((row, rowIndex) => (
