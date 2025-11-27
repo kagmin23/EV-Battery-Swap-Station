@@ -72,7 +72,14 @@ export const StationCard: React.FC<StationCardProps> = ({
                     </div>
                     <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-2 rounded-lg">
                         <Battery className="h-4 w-4 mr-2 text-green-500" />
-                        <span>{station.batteryCounts?.total ?? station.availableBatteries ?? 0} batteries</span>
+                        <span>
+                            {station.batteryCounts?.total ?? station.availableBatteries ?? 0} batteries
+                            {typeof station.batteryCounts?.isBooking === 'number' && station.batteryCounts.isBooking > 0 && (
+                                <span className="ml-2 text-xs text-amber-600">
+                                    ({station.batteryCounts.isBooking} booking)
+                                </span>
+                            )}
+                        </span>
                     </div>
                     <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-2 rounded-lg">
                         <Users className="h-4 w-4 mr-2 text-purple-500" />

@@ -18,6 +18,8 @@ export interface Station {
         charging: number;
         inUse: number;
         faulty: number;
+        // Số lượng pin đang được booking tại station
+        isBooking?: number;
     };
     lastActive?: Date;
     createdAt: Date;

@@ -25,6 +25,8 @@ export interface Station {
         charging: number;
         inUse: number;
         faulty: number;
+        // Số lượng pin đang được booking tại station (backend trả về trường isBooking)
+        isBooking?: number;
     };
     createdAt: string;
     updatedAt: string;
